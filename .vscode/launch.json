@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Customer App (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder:nayab_qist_point_customer}/lib/main.dart",
+      "cwd": "${workspaceFolder:nayab_qist_point_customer}",
+      "args": [
+        "-d",
+        "chrome",
+        "--web-port=8081"
+      ]
+    },
+    {
+      "name": "Admin App (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder:nayab_qist_point_admin}/lib/main.dart",
+      "cwd": "${workspaceFolder:nayab_qist_point_admin}",
+      "args": [
+        "-d",
+        "chrome",
+        "--web-port=8080"
+      ]
+    }
+  ]
+}
