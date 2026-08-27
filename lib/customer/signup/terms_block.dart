@@ -14,17 +14,20 @@ class TermsBlock extends StatefulWidget {
   State<TermsBlock> createState() => TermsBlockState();
 }
 
-// یہاں 'AutomaticKeepAliveClientMixin' کا اضافہ کیا گیا ہے
 class TermsBlockState extends State<TermsBlock> with AutomaticKeepAliveClientMixin {
   static const String termsText = '''
-میں ہوش و حواس میں اقرار کرتا/کرتی ہوں کہ میں یہ موبائل قسطوں پر لے رہا/رہی ہوں. تمام درج کردہ کوائف بشمول نام، ولدیت اور قوم سو فیصد درست ہیں۔ میں بروقت ماہانہ قسط ادا کرنے کا مکمل پابند ہوں۔ کسی بھی تنازع یا خلاف ورزی کی صورت میں معاملہ عدالت جانے کے بجائے ہمارے پہلے سے طے شدہ ثالثوں کے بورڈ کے سامنے پیش کیا جائے گا، اور ثالثی ایکٹ کے تحت فیصلہ صادر ہوگا۔ تمام شرائط و ضوابط مجھ پر لازم ہوں گے۔
+1. معلومات کی تصدیق: میں اقرار کرتا/کرتی ہوں کہ اس فارم میں فراہم کردہ تمام کوائف اور معلومات (میرا نام، پتہ، شناختی کارڈ، فون نمبر اور ضامن کی تفصیلات) بالکل درست اور مبنی بر حقیقت ہیں۔
+
+2. شرائط و ضوابط کی قبولیت: میں نے ادارے (نایاب قسط پوائنٹ) کے تمام قوانین، قواعد و ضوابط اچھی طرح پڑھ اور سمجھ لیے ہیں اور میں ان سے مکمل طور پر متفق ہوں۔
+
+3. غلط معلومات کی صورت میں قانونی کارروائی: اگر میری فراہم کردہ کسی بھی معلومات یا دستاویزی ثبوت میں جھوٹ، دھوکہ دہی يا جعل سازی ثابت ہوئی، تو ادارہ میرے خلاف تعزیراتِ پاکستان کی دفعہ 420 کے تحت فوری قانونی و عدالتی کارروائی کرنے کا مکمل حق رکھتا ہے، جس کی تمام تر ذمہ داری مجھ پر عائد ہوگی۔
 ''';
 
   final ScrollController _scrollController = ScrollController();
   late bool _isChecked;
 
   @override
-  bool get wantKeepAlive => true; // ٹک کی حالت ہمیشہ زندہ رہے گی
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -40,59 +43,89 @@ class TermsBlockState extends State<TermsBlock> with AutomaticKeepAliveClientMix
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // لازمی ہے
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '4. اقرار نامہ اور ضابطہ اخلاق',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            const SizedBox(height: 6),
-            const Text('براہ کرم درج ذیل بیان حلفی اور شرائط کا مطالعہ کریں:', style: TextStyle(fontSize: 10, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Container(
-              height: 120,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
+    super.build(context);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'اقرار نامہ اور ضابطہ اخلاق',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
               ),
-              child: Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
+              const SizedBox(height: 6),
+              const Text(
+                'براہ کرم درج ذیل بیان حلفی اور شرائط کا مطالعہ کریں:',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 140,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Scrollbar(
                   controller: _scrollController,
-                  child: const Text(termsText, style: TextStyle(fontSize: 11, height: 1.4, color: Colors.black87)),
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: const Text(
+                      termsText,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(fontSize: 11, height: 1.5, color: Colors.black87),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Checkbox(
-                  value: _isChecked,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _isChecked = value ?? false;
-                      if (widget.onTermsChanged != null) {
-                        widget.onTermsChanged!(_isChecked);
-                      }
-                    });
-                  },
+              const SizedBox(height: 10),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  setState(() {
+                    _isChecked = !_isChecked;
+                    if (widget.onTermsChanged != null) {
+                      widget.onTermsChanged!(_isChecked);
+                    }
+                  });
+                },
+                child: Row(
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: _isChecked,
+                        activeColor: Colors.red[800],
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _isChecked = value ?? false;
+                            if (widget.onTermsChanged != null) {
+                              widget.onTermsChanged!(_isChecked);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'میں نے شرائط پڑھ لی ہیں اور ان سے متفق ہوں',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-                const Expanded(
-                  child: Text('میں نے شرائط پڑھ لی ہیں اور ان سے متفق ہوں', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

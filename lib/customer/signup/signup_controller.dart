@@ -4,13 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/customer/signup/customer_info.dart';
 import 'package:nayab_qist_point_customer/customer/signup/guarantor_info.dart';
-import 'package:nayab_qist_point_customer/customer/signup/item_package_ui.dart';
 import 'package:nayab_qist_point_customer/customer/signup/signup_requests_service.dart';
 
 class SignUpController extends ChangeNotifier {
   final GlobalKey<CustomerInfoWidgetState> customerKey = GlobalKey<CustomerInfoWidgetState>();
   final GlobalKey<GuarantorInfoWidgetState> guarantorKey = GlobalKey<GuarantorInfoWidgetState>();
-  final GlobalKey<ItemPackageUIState> packageKey = GlobalKey<ItemPackageUIState>();
 
   bool _isTermsAccepted = false;
   bool get isTermsAccepted => _isTermsAccepted;
@@ -38,7 +36,6 @@ class SignUpController extends ChangeNotifier {
     if (formKey.currentState!.validate()) {
       final Map<String, dynamic> customerData = customerKey.currentState?.getCustomerData() ?? {};
       final Map<String, dynamic> guarantorData = guarantorKey.currentState?.getGuarantorData() ?? {};
-      final Map<String, dynamic> packageData = packageKey.currentState?.getPackageData() ?? {};
 
       String rawPhone = customerData['customerPhone'] ?? '';
       if (rawPhone.trim().isEmpty) {
@@ -55,11 +52,10 @@ class SignUpController extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // 🎯 ۱. FirebaseAuth - Non-blocking (بغیر await کے آزاد تھریڈ پر)
+      // 🎯 ۱. FirebaseAuth - Non-blocking (آزاد تھریڈ پر)
       String password = cleanPhone.length >= 4 ? cleanPhone.substring(cleanPhone.length - 4) : cleanPhone;
       String fakeEmail = '$cleanPhone@nayabqist.com';
 
-      // اسے غیر بلاکنگ بنانے کا ٹائپ-سیف طریقہ
       () async {
         try {
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -71,18 +67,17 @@ class SignUpController extends ChangeNotifier {
         }
       }();
 
-      // 🎯 ۲. آؤٹ باکس / فائربیس سروس کو فوری کال
-      bool isSyncedOnline = false;
+      // 🎯 ۲. لوکل باکسز اور آؤٹ باکس میں ڈیٹا پروسیسنگ کے لیے سروس کو کال
+      bool isSavedLocally = false;
       try {
-        isSyncedOnline = await SignupRequestsService().sendSignupRequest(
+        isSavedLocally = await SignupRequestsService().processRegistration(
           cleanPhone: cleanPhone,
           customerData: customerData,
           guarantorData: guarantorData,
-          packageData: packageData,
           isTermsAccepted: _isTermsAccepted,
         );
       } catch (e) {
-        debugPrint('Service execution error: $e');
+        debugPrint('❌ [Controller Error] Registration Process Failed: $e');
       }
 
       _isLoading = false;
@@ -93,18 +88,17 @@ class SignUpController extends ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isSyncedOnline 
-                ? 'درخواست کامیابی سے سبمٹ ہو گئی ہے!' 
-                : 'درخواست آف لائن آؤٹ باکس میں محفوظ ہو گئی ہے!',
+              isSavedLocally 
+                ? 'درخواست کامیابی سے آؤٹ باکس میں محفوظ ہو گئی ہے!' 
+                : 'درخواست محفوظ کرنے میں ناکامی ہوئی!',
             ),
-            backgroundColor: isSyncedOnline ? Colors.green : Colors.orange.shade800,
+            backgroundColor: isSavedLocally ? Colors.green : Colors.red,
             duration: const Duration(seconds: 2),
           ),
         );
       }
 
-      // 🎯 ۴. لازمی true ریٹرن کریں تاکہ SignupPage فوراً بند (Pop) ہو جائے
-      return true;
+      return isSavedLocally;
     }
     return false;
   }

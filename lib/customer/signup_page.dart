@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/customer/signup/customer_info.dart';
 import 'package:nayab_qist_point_customer/customer/signup/guarantor_info.dart';
-import 'package:nayab_qist_point_customer/customer/signup/item_package_ui.dart';
 import 'package:nayab_qist_point_customer/customer/signup/terms_block.dart';
 import 'package:nayab_qist_point_customer/customer/signup/signup_controller.dart';
 
@@ -96,9 +95,6 @@ class _SignupPageState extends State<SignupPage> {
             const SizedBox(height: 16),
 
             GuarantorInfoWidget(key: _controller.guarantorKey),
-            const SizedBox(height: 16),
-
-            ItemPackageUI(key: _controller.packageKey),
             const SizedBox(height: 16),
 
             ListenableBuilder(

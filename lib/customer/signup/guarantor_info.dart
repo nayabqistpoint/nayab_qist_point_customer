@@ -13,11 +13,11 @@ class GuarantorInfoWidgetState extends State<GuarantorInfoWidget> {
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController fatherNameController = TextEditingController();
-  final TextEditingController casteController = TextEditingController(); // قوم کا الگ خانہ
+  final TextEditingController casteController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController cnicController = TextEditingController();
-  final TextEditingController relationshipController = TextEditingController(); // رشتے کا الگ خانہ
-  final TextEditingController addressController = TextEditingController(); // گھر کا پتہ
+  final TextEditingController relationshipController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
   String? guarantorSelfiePath;
 
   @override
@@ -62,135 +62,141 @@ class GuarantorInfoWidgetState extends State<GuarantorInfoWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // فکسڈ: ٹائٹل کو Expanded دیا گیا ہے تاکہ اوور فلو نہ ہو
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Text(
-                  '2. ضامن کی معلومات',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 🎯 سرخی اور چیک باکس (مکمل محفوظ لے آؤٹ)
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                setState(() {
+                  isGuarantorPresent = !isGuarantorPresent;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: isGuarantorPresent,
+                        activeColor: Colors.red[800],
+                        onChanged: (bool? value) {
+                          setState(() {
+                            isGuarantorPresent = value ?? false;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Flexible(
+                      child: Text(
+                        'ضامن کی معلومات',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'کیا ضامن موجود ہے؟',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: isGuarantorPresent,
-                    activeThumbColor: Colors.red[800],
-                    onChanged: (value) {
-                      setState(() {
-                        isGuarantorPresent = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
 
-          if (isGuarantorPresent) ...[
-            const SizedBox(height: 12),
-            _buildTextField(controller: nameController, label: 'ضامن کا پورا نام', icon: Icons.person),
-            const SizedBox(height: 12),
-            _buildTextField(controller: fatherNameController, label: 'ضامن کے والد / شوہر کا نام', icon: Icons.person_outline),
-            const SizedBox(height: 12),
-            _buildTextField(controller: casteController, label: 'قوم', icon: Icons.group),
-            const SizedBox(height: 12),
-            _buildTextField(controller: phoneController, label: 'ضامن کا موبائل نمبر', icon: Icons.phone, keyboardType: TextInputType.phone),
-            const SizedBox(height: 12),
-            _buildTextField(controller: cnicController, label: 'ضامن کا شناختی کارڈ نمبر (CNIC)', icon: Icons.credit_card, keyboardType: TextInputType.number),
-            const SizedBox(height: 12),
-            _buildTextField(controller: relationshipController, label: 'کسٹمر کے ساتھ رشتہ', icon: Icons.handshake),
-            const SizedBox(height: 12),
-            _buildTextField(controller: addressController, label: 'گھر کا پتہ', icon: Icons.home),
-            const SizedBox(height: 16),
+            if (isGuarantorPresent) ...[
+              const Divider(height: 20),
+              _buildTextField(controller: nameController, label: 'ضامن کا پورا نام', icon: Icons.person),
+              const SizedBox(height: 12),
+              _buildTextField(controller: fatherNameController, label: 'ضامن کے والد / شوہر کا نام', icon: Icons.person_outline),
+              const SizedBox(height: 12),
+              _buildTextField(controller: casteController, label: 'قوم', icon: Icons.group),
+              const SizedBox(height: 12),
+              _buildTextField(controller: phoneController, label: 'ضامن کا موبائل نمبر', icon: Icons.phone, keyboardType: TextInputType.phone),
+              const SizedBox(height: 12),
+              _buildTextField(controller: cnicController, label: 'ضامن کا شناختی کارڈ نمبر (CNIC)', icon: Icons.credit_card, keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _buildTextField(controller: relationshipController, label: 'کسٹمر کے ساتھ رشتہ', icon: Icons.handshake),
+              const SizedBox(height: 12),
+              _buildTextField(controller: addressController, label: 'گھر کا پتہ', icon: Icons.home),
+              const SizedBox(height: 16),
 
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // فکسڈ: سیلفی والے ٹیکسٹ کو Expanded میں لپیٹا گیا ہے
-                  Expanded(
-                    child: Row(
+              // 🎯 سیلفی باکس (Wrap استعمال کیا گیا ہے تاکہ ہر سائز کی اسکرین پر بٹن خود بخود فٹ آئے)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           guarantorSelfiePath != null ? Icons.check_circle : Icons.camera_alt,
                           color: guarantorSelfiePath != null ? Colors.green : Colors.red[800],
-                          size: 22,
+                          size: 20,
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            guarantorSelfiePath != null ? 'ضامن کی سیلفی لے لی گئی ہے' : 'ضامن کی لائیو سیلفی لیں',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: guarantorSelfiePath != null ? Colors.green.shade700 : Colors.black87,
-                            ),
+                        Text(
+                          guarantorSelfiePath != null ? 'ضامن کی سیلفی محفوظ ہے' : 'ضامن کی لائیو سیلفی لیں',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: guarantorSelfiePath != null ? Colors.green.shade700 : Colors.black87,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final XFile? photo = await ImagePicker().pickImage(
-                        source: ImageSource.camera,
-                        preferredCameraDevice: CameraDevice.front,
-                        imageQuality: 80,
-                      );
-                      if (photo != null) {
-                        setState(() {
-                          guarantorSelfiePath = photo.path;
-                        });
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('ضامن کی سیلفی محفوظ ہو گئی ہے')),
-                          );
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final XFile? photo = await ImagePicker().pickImage(
+                          source: ImageSource.camera,
+                          preferredCameraDevice: CameraDevice.front,
+                          imageQuality: 80,
+                        );
+                        if (photo != null) {
+                          setState(() {
+                            guarantorSelfiePath = photo.path;
+                          });
                         }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: guarantorSelfiePath != null ? Colors.green : Colors.red[800],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: guarantorSelfiePath != null ? Colors.green : Colors.red[800],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: Icon(guarantorSelfiePath != null ? Icons.done : Icons.camera, size: 16),
+                      label: Text(guarantorSelfiePath != null ? 'دوبارہ لیں' : 'تصویر لیں', style: const TextStyle(fontSize: 11)),
                     ),
-                    icon: Icon(guarantorSelfiePath != null ? Icons.done : Icons.camera, size: 16),
-                    label: Text(guarantorSelfiePath != null ? 'دوبارہ لیں' : 'تصویر لیں', style: const TextStyle(fontSize: 12)),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -204,6 +210,7 @@ class GuarantorInfoWidgetState extends State<GuarantorInfoWidget> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textAlign: TextAlign.right,
       validator: (value) {
         if (isGuarantorPresent && (value == null || value.trim().isEmpty)) {
           return 'یہ خانہ خالی نہیں چھوڑ سکتے';

@@ -1,48 +1,41 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-// 🎯 کسٹمر ایپ کا اپنا درست امپورٹ پاتھ:
+// 🎯 کنفیگریشن اور سروس امپورٹس
+import 'firebase_options.dart';
+import 'customer/signup/outbox_sync_service.dart';
 import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1️⃣ فائر بیس انیشلائزیشن
   try {
-    if (kIsWeb) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: "AIzaSyDuo41m3PSRaj0xk4RSuidvjpChTjoM7Qw",
-          authDomain: "nayab-qist-point.firebaseapp.com",
-          projectId: "nayab-qist-point",
-          storageBucket: "nayab-qist-point.firebasestorage.app",
-          messagingSenderId: "559470553711",
-          appId: "1:559470553711:web:1434ea9e05cc073c633b9a",
-          measurementId: "G-33TSZN62T6",
-        ),
-      );
-    } else {
-      await Firebase.initializeApp();
-    }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('✅ [Firebase] فائر بیس کامیابی سے انیشلائز ہو گیا۔');
   } catch (e) {
-    debugPrint('Firebase initialization skipped or failed: $e');
+    debugPrint('❌ [Firebase Error] فائر بیس انیشلائزیشن میں مسئلہ: $e');
   }
 
+  // 2️⃣ ہائیو لوکل ڈیٹا بیس انیشلائزیشن
   await Hive.initFlutter();
 
-  // 🎯 تمام ضروری ہائیو باکسز کی انیشلائزیشن
+  // 🎯 تمام ضروری ہائیو باکسز کو اوپن کرنا
   await Hive.openBox('bankBox');
   await Hive.openBox('customerBox');
+  await Hive.openBox('guarantorBox');
   await Hive.openBox('expenseBox');
   await Hive.openBox('packageBox');
   await Hive.openBox('stockBox');
   await Hive.openBox('transactionBox');
   await Hive.openBox('usersBox');
-  await Hive.openBox('signupRequestsBox');
-  await Hive.openBox('purchaseRequestsBox');
-  await Hive.openBox('paymentRequestsBox');
-  await Hive.openBox('outboxBox'); // 👈 outboxBox (بالکل درست فارمیٹنگ)
+  await Hive.openBox('outboxBox');
+
+  // 3️⃣ ایپ سٹارٹ ہوتے ہی پینڈنگ آؤٹ باکس سنکنگ چیک کرنا
+  OutboxSyncService().syncNow();
 
   runApp(const CustomerApp());
 }
@@ -64,7 +57,6 @@ class CustomerApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
-      // کسٹمر ایپ کا شروعاتی پیج
       home: const CustomerLoginPage(),
     );
   }

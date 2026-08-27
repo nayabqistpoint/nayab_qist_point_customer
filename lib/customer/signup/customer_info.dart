@@ -8,8 +8,7 @@ class CustomerInfoWidget extends StatefulWidget {
   State<CustomerInfoWidget> createState() => CustomerInfoWidgetState();
 }
 
-// یہاں 'AutomaticKeepAliveClientMixin' ملایا گیا ہے تاکہ ڈیٹا ری بلڈ ہونے پر اڑے نہیں
-class CustomerInfoWidgetState extends State<CustomerInfoWidget> with AutomaticKeepAliveClientMixin {
+class CustomerInfoWidgetState extends State<CustomerInfoWidget> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController fatherNameController = TextEditingController();
   final TextEditingController casteController = TextEditingController();
@@ -17,12 +16,6 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> with AutomaticKe
   final TextEditingController cnicController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   String? customerSelfiePath;
-
-  // کیمرے سے تصویر لینے کے لیے ImagePicker کا انسٹنس
-  final ImagePicker _picker = ImagePicker();
-
-  @override
-  bool get wantKeepAlive => true; // یہ ڈیٹا کو ہمیشہ زندہ اور محفوظ رکھے گا
 
   @override
   void dispose() {
@@ -35,36 +28,6 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> with AutomaticKe
     super.dispose();
   }
 
-  // اصلی کیمرہ کھول کر تصویر لینے کا فنکشن
-  Future<void> _takeCustomerSelfie() async {
-    try {
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front, // فرنٹ کیمرہ (سیلفی) کے لیے
-        imageQuality: 80, // تصویر کا سائز مناسب رکھنے کے لیے
-      );
-
-      if (photo != null) {
-        setState(() {
-          customerSelfiePath = photo.path; // یہاں اصلی کیمرے کی تصویر کا سچا پاتھ سیو ہو گا
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('کسٹمر کی سیلفی محفوظ ہو گئی ہے')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('کیمرہ کھولنے میں مسئلہ آیا: $e')),
-        );
-      }
-    }
-  }
-
-  // پیرنٹ پیج کو صرف اس فنکشن کے ذریعے کسٹمر کا ڈیٹا ملے گا
   Map<String, dynamic> getCustomerData() {
     return {
       'customerName': nameController.text.trim(),
@@ -79,97 +42,110 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> with AutomaticKe
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin کے لیے لازمی ہے
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '1. کسٹمر کی ذاتی معلومات',
-            style: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+    // 🎯 مکمل اردو ڈائریکشن (RTL)
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 🎯 صاف ستھرا ٹائٹل
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              child: Text(
+                'کسٹمر کی ذاتی معلومات',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _buildTextField(controller: nameController, label: 'کسٹمر کا پورا نام', icon: Icons.person),
-          const SizedBox(height: 12),
-          _buildTextField(controller: fatherNameController, label: 'والد / شوہر کا نام', icon: Icons.person_outline),
-          const SizedBox(height: 12),
-          _buildTextField(controller: casteController, label: 'قوم', icon: Icons.group),
-          const SizedBox(height: 12),
-          // موبائل نمبر والے خانے میں پاسورڈ یا براؤزر کی سجیشن مکمل بند کر دی گئی ہے
-          _buildTextField(
-            controller: phoneController, 
-            label: 'موبائل نمبر', 
-            icon: Icons.phone, 
-            keyboardType: TextInputType.phone,
-            isPhoneOrId: true,
-          ),
-          const SizedBox(height: 12),
-          _buildTextField(
-            controller: cnicController, 
-            label: 'شناختی کارڈ نمبر (CNIC)', 
-            icon: Icons.credit_card, 
-            keyboardType: TextInputType.number,
-            isPhoneOrId: true,
-          ),
-          const SizedBox(height: 12),
-          _buildTextField(controller: addressController, label: 'گھر کا پتہ', icon: Icons.home),
-          const SizedBox(height: 16),
+            const Divider(height: 16),
+            const SizedBox(height: 4),
 
-          // سیلفی سیکشن
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      customerSelfiePath != null ? Icons.check_circle : Icons.camera_alt,
-                      color: customerSelfiePath != null ? Colors.green : Colors.red[800],
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      customerSelfiePath != null ? 'کسٹمر کی سیلفی لے لی گئی ہے' : 'کسٹمر کی لائیو سیلفی لیں',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: customerSelfiePath != null ? Colors.green.shade700 : Colors.black87,
+            _buildTextField(controller: nameController, label: 'کسٹمر کا پورا نام', icon: Icons.person),
+            const SizedBox(height: 12),
+            _buildTextField(controller: fatherNameController, label: 'والد / شوہر کا نام', icon: Icons.person_outline),
+            const SizedBox(height: 12),
+            _buildTextField(controller: casteController, label: 'قوم', icon: Icons.group),
+            const SizedBox(height: 12),
+            _buildTextField(controller: phoneController, label: 'موبائل نمبر', icon: Icons.phone, keyboardType: TextInputType.phone),
+            const SizedBox(height: 12),
+            _buildTextField(controller: cnicController, label: 'شناختی کارڈ نمبر (CNIC)', icon: Icons.credit_card, keyboardType: TextInputType.number),
+            const SizedBox(height: 12),
+            _buildTextField(controller: addressController, label: 'گھر کا پتہ', icon: Icons.home),
+            const SizedBox(height: 16),
+
+            // 🎯 رسپانسو سیلفی ڈبہ (Wrap کے ساتھ)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        customerSelfiePath != null ? Icons.check_circle : Icons.camera_alt,
+                        color: customerSelfiePath != null ? Colors.green : Colors.red[800],
+                        size: 20,
                       ),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _takeCustomerSelfie, // اب یہ اصل کیمرہ کھولے گا
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: customerSelfiePath != null ? Colors.green : Colors.red[800],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      const SizedBox(width: 8),
+                      Text(
+                        customerSelfiePath != null ? 'کسٹمر کی سیلفی محفوظ ہے' : 'کسٹمر کی لائیو سیلفی لیں',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: customerSelfiePath != null ? Colors.green.shade700 : Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                  icon: Icon(customerSelfiePath != null ? Icons.done : Icons.camera, size: 16),
-                  label: Text(customerSelfiePath != null ? 'دوبارہ لیں' : 'تصویر لیں', style: const TextStyle(fontSize: 12)),
-                ),
-              ],
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final XFile? photo = await ImagePicker().pickImage(
+                        source: ImageSource.camera,
+                        preferredCameraDevice: CameraDevice.front,
+                        imageQuality: 80,
+                      );
+                      if (photo != null) {
+                        setState(() {
+                          customerSelfiePath = photo.path;
+                        });
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: customerSelfiePath != null ? Colors.green : Colors.red[800],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: Icon(customerSelfiePath != null ? Icons.done : Icons.camera, size: 16),
+                    label: Text(customerSelfiePath != null ? 'دوبارہ لیں' : 'تصویر لیں', style: const TextStyle(fontSize: 11)),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -179,14 +155,11 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> with AutomaticKe
     required String label,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
-    bool isPhoneOrId = false,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      enableSuggestions: !isPhoneOrId,
-      autocorrect: false,
-      autofillHints: isPhoneOrId ? [] : null,
+      textAlign: TextAlign.right,
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return 'یہ خانہ خالی نہیں چھوڑ سکتے';
