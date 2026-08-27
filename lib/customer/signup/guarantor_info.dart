@@ -72,18 +72,22 @@ class GuarantorInfoWidgetState extends State<GuarantorInfoWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // فکسڈ: ٹائٹل کو Expanded دیا گیا ہے تاکہ اوور فلو نہ ہو
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '2. ضامن کی معلومات',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              const Expanded(
+                child: Text(
+                  '2. ضامن کی معلومات',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
                     'کیا ضامن موجود ہے؟',
@@ -131,24 +135,30 @@ class GuarantorInfoWidgetState extends State<GuarantorInfoWidget> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        guarantorSelfiePath != null ? Icons.check_circle : Icons.camera_alt,
-                        color: guarantorSelfiePath != null ? Colors.green : Colors.red[800],
-                        size: 22,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        guarantorSelfiePath != null ? 'ضامن کی سیلفی لے لی گئی ہے' : 'ضامن کی لائیو سیلفی لیں',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: guarantorSelfiePath != null ? Colors.green.shade700 : Colors.black87,
+                  // فکسڈ: سیلفی والے ٹیکسٹ کو Expanded میں لپیٹا گیا ہے
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          guarantorSelfiePath != null ? Icons.check_circle : Icons.camera_alt,
+                          color: guarantorSelfiePath != null ? Colors.green : Colors.red[800],
+                          size: 22,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            guarantorSelfiePath != null ? 'ضامن کی سیلفی لے لی گئی ہے' : 'ضامن کی لائیو سیلفی لیں',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: guarantorSelfiePath != null ? Colors.green.shade700 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () async {
                       final XFile? photo = await ImagePicker().pickImage(
