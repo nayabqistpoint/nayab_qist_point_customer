@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer/header/customer_header_ui.dart';
-import 'package:nayab_qist_point_customer/customer/form/customer_form_ui.dart';
-import 'package:nayab_qist_point_customer/customer/form/customer_form_logic.dart';
-import 'package:nayab_qist_point_customer/customer/contact/customer_contact_ui.dart';
-import 'package:nayab_qist_point_customer/customer/contact/customer_contact_logic.dart';
-import 'package:nayab_qist_point_customer/customer/footer/customer_footer_ui.dart';
-import 'package:nayab_qist_point_customer/customer/footer/customer_footer_logic.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/header/customer_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/form/customer_form_ui.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/form/customer_form_logic.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/contact/customer_contact_ui.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/contact/customer_contact_logic.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_footer_ui.dart';
+import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_footer_logic.dart';
+
+// 🎯 ڈیٹا بیس مانیٹر پیج کا امپورٹ
+import 'package:nayab_qist_point_customer/shared/database_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({super.key});
@@ -78,6 +81,41 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // 🛠️ 3. عارضی Three Dots Button (ڈیٹا بیس پیج کھولنے کے لیے)
+          Positioned(
+            top: 40,
+            right: 15,
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white, size: 28),
+              color: Colors.white,
+              onSelected: (value) {
+                if (value == 'db_monitor') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DatabasePage()),
+                  );
+                }
+              },
+              itemBuilder: (BuildContext context) {
+                return [
+                  const PopupMenuItem<String>(
+                    value: 'db_monitor',
+                    child: Row(
+                      children: [
+                        Icon(Icons.storage, color: Colors.teal),
+                        SizedBox(width: 10),
+                        Text(
+                          'Database Monitor',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ];
+              },
             ),
           ),
         ],

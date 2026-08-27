@@ -4,7 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 // 🎯 کسٹمر ایپ کا اپنا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/customer/customer_login_page.dart';
+import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,10 +31,18 @@ void main() async {
 
   await Hive.initFlutter();
 
-  // 🎯 کسٹمر ایپ کے لیے ضروری باکسز
+  // 🎯 تمام ضروری ہائیو باکسز کی انیشلائزیشن
+  await Hive.openBox('bankBox');
   await Hive.openBox('customerBox');
+  await Hive.openBox('expenseBox');
   await Hive.openBox('packageBox');
-  await Hive.openBox('outboxBox');
+  await Hive.openBox('stockBox');
+  await Hive.openBox('transactionBox');
+  await Hive.openBox('usersBox');
+  await Hive.openBox('signupRequestsBox');
+  await Hive.openBox('purchaseRequestsBox');
+  await Hive.openBox('paymentRequestsBox');
+  await Hive.openBox('outboxBox'); // 👈 outboxBox (بالکل درست فارمیٹنگ)
 
   runApp(const CustomerApp());
 }
