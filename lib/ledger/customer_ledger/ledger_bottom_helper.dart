@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/customer_ledger/pay_now/pay_now_widget.dart';
-import 'package:nayab_qist_point_customer/customer_ledger/purchase_now/purchase_now.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
+import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_widget.dart';
+import 'package:nayab_qist_point_customer/ledger/purchase_now/purchase_now.dart';
 
 class LedgerBottomHelper {
   static Future<void> handleLeftButton(BuildContext context, CustomerLedgerController controller) =>

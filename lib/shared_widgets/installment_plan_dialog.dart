@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 کسٹمر ایپ کا اپنا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/customer_ledger/pay_now/pay_now_widget.dart';
+import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_widget.dart';
 
 /// 🎯 گلوبل فنکشن: پوری ایپ (اور RequestCardHelper) میں انسٹالمنٹ ڈائیلاگ اوپن کرنے کے لیے
 void showInstallmentPlanDialog(BuildContext context, String customerPhone, {bool isAdmin = false}) {

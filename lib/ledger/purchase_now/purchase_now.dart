@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 // 🎯 سٹرکچر کے مطابق درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer_ledger/purchase_now/item_package_ui.dart';
-import 'package:nayab_qist_point_customer/customer_ledger/purchase_now/purchase_now_controller.dart';
+import 'package:nayab_qist_point_customer/ledger/purchase_now/item_package_ui.dart';
+import 'package:nayab_qist_point_customer/ledger/purchase_now/purchase_now_controller.dart';
 
 class PurchaseNow extends StatefulWidget {
   final String customerMobileNumber;

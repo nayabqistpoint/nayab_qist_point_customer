@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer_login_page/header/customer_header_ui.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/form/customer_form_ui.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/form/customer_form_logic.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/contact/customer_contact_ui.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/contact/customer_contact_logic.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_footer_ui.dart';
-import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_footer_logic.dart';
+import 'package:nayab_qist_point_customer/login_page/header/customer_header_ui.dart';
+import 'package:nayab_qist_point_customer/login_page/form/customer_form_ui.dart';
+import 'package:nayab_qist_point_customer/login_page/form/customer_form_logic.dart';
+import 'package:nayab_qist_point_customer/login_page/contact/customer_contact_ui.dart';
+import 'package:nayab_qist_point_customer/login_page/contact/customer_contact_logic.dart';
+import 'package:nayab_qist_point_customer/login_page/footer/customer_footer_ui.dart';
+import 'package:nayab_qist_point_customer/login_page/footer/customer_footer_logic.dart';
 
 // 🎯 ڈیٹا بیس مانیٹر پیج کا امپورٹ
 import 'package:nayab_qist_point_customer/database_page.dart';

@@ -3,7 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 سٹرکچر کے مطابق shared فولڈر کے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog.dart';
-import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/balance_helper.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/balance_helper.dart';
 
 class LedgerTopHelper {
   static String getHeaderTitle({
