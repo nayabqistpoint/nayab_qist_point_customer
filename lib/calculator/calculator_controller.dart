@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // 🎯 سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_config.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_config.dart';
 
 class CalculaterController extends ChangeNotifier {
   double _totalAmount = 0.0;

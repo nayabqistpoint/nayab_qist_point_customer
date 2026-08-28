@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_controller.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart';
 
 class CalculaterList extends StatelessWidget {
   final Function(Map<String, dynamic>)? onPackageSelected;

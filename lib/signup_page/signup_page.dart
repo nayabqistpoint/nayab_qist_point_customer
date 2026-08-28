@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer/signup/customer_info.dart';
-import 'package:nayab_qist_point_customer/customer/signup/guarantor_info.dart';
-import 'package:nayab_qist_point_customer/customer/signup/terms_block.dart';
-import 'package:nayab_qist_point_customer/customer/signup/signup_controller.dart';
+import 'package:nayab_qist_point_customer/signup_page/customer_info.dart';
+import 'package:nayab_qist_point_customer/signup_page/guarantor_info.dart';
+import 'package:nayab_qist_point_customer/signup_page/terms_block.dart';
+import 'package:nayab_qist_point_customer/signup_page/signup_controller.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});

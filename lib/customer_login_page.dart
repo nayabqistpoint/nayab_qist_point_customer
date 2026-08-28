@@ -10,7 +10,7 @@ import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_fo
 import 'package:nayab_qist_point_customer/customer_login_page/footer/customer_footer_logic.dart';
 
 // 🎯 ڈیٹا بیس مانیٹر پیج کا امپورٹ
-import 'package:nayab_qist_point_customer/shared/database_page.dart';
+import 'package:nayab_qist_point_customer/database_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({super.key});

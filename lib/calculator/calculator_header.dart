@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_controller.dart'; 
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_config.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart'; 
+import 'package:nayab_qist_point_customer/calculator/calculator_config.dart';
 
 class CalculaterHeader extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataChanged;

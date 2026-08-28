@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer/pay_now/pay_now_controller.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/pay_now/pay_now_controller.dart';
 
 class PayNowBody extends StatefulWidget {
   const PayNowBody({super.key});

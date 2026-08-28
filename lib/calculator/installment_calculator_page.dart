@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // 🎯 سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_controller.dart'; 
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_header.dart';
-import 'package:nayab_qist_point_customer/shared/calculator/calculator_list.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart'; 
+import 'package:nayab_qist_point_customer/calculator/calculator_header.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_list.dart';
 
 class InstallmentCalculaterPage extends StatefulWidget {
   const InstallmentCalculaterPage({super.key});

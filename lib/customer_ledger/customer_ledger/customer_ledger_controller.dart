@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/shared/installment_calculator_page.dart';
+import 'package:nayab_qist_point_customer/calculator/installment_calculator_page.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
   final dynamic customer;

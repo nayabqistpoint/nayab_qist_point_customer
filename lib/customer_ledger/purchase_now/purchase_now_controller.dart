@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 import 'dart:developer' as developer;
 
 // 🎯 سٹرکچر کے مطابق درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/customer/signup/item_package_ui.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/purchase_now/item_package_ui.dart';
 
 class PurchaseNowController {
   // پیکج یو آئی کی گلوبل کی (Key)

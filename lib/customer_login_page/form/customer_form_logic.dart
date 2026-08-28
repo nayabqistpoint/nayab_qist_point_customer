@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // 🎯 shared ڈائریکٹری کے اندر فائل کا درست پاتھ:
-import 'package:nayab_qist_point_customer/shared/customer_ledger_page.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger_page.dart';
 
 class CustomerFormLogic {
   // 🎯 Lazy Getter: جب بٹن دبائیں گے صرف تب فائر بیس کال ہوگا

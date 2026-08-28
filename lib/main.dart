@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 // 🎯 کنفیگریشن اور سروس امپورٹس
 import 'firebase_options.dart';
-import 'customer/signup/outbox_sync_service.dart';
+import 'signup_page/outbox_sync_service.dart';
 import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {

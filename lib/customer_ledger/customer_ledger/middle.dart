@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/customer_ledger/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/shared/customer_ledger/ledger_middle_helper.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/customer_ledger_controller.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/ledger_middle_helper.dart';
 
 class LedgerMiddleWidget extends StatelessWidget {
   final CustomerLedgerController controller;

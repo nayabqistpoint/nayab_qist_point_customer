@@ -4,9 +4,9 @@ import 'package:record/record.dart'; // اصلی آڈیو ریکارڈنگ پی�
 import 'package:path_provider/path_provider.dart'; // ٹیمپریری پاتھ کے لیے
 
 // 🎯 سٹرکچر کے مطابق درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/installment_calculator_page.dart';
-import 'package:nayab_qist_point_customer/customer/signup/item_package_logic.dart';
-import 'package:nayab_qist_point_customer/shared/imei_details_dialog.dart';
+import 'package:nayab_qist_point_customer/calculator/installment_calculator_page.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/purchase_now/item_package_logic.dart';
+import 'package:nayab_qist_point_customer/shared_widgets/imei_details_dialog.dart';
 
 class ItemPackageUI extends StatefulWidget {
   const ItemPackageUI({super.key});

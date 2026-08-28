@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق بالکل درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/customer_ledger/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/shared/customer_ledger/top.dart';
-import 'package:nayab_qist_point_customer/shared/customer_ledger/middle.dart';
-import 'package:nayab_qist_point_customer/shared/customer_ledger/bottom.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/customer_ledger_controller.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/top.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/middle.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/bottom.dart';
 
 class CustomerLedgerPage extends StatefulWidget {
   final dynamic customer;

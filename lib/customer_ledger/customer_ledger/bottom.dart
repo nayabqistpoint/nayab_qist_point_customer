@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کے درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/shared/customer_ledger/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/shared/customer_ledger/ledger_bottom_helper.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/customer_ledger_controller.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/ledger_bottom_helper.dart';
 
 class LedgerBottomWidget extends StatelessWidget {
   final CustomerLedgerController controller;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 // 🎯 سٹرکچر کے مطابق بالکل درست امپورٹ پاتھس:
-import 'package:nayab_qist_point_customer/customer/pay_now/pay_now_body.dart';
-import 'package:nayab_qist_point_customer/customer/pay_now/pay_now_controller.dart';
-import 'package:nayab_qist_point_customer/shared/payment_source_card.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/pay_now/pay_now_body.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/pay_now/pay_now_controller.dart';
+import 'package:nayab_qist_point_customer/shared_widgets/payment_source_card.dart';
 
 class PayNowWidget extends StatefulWidget {
   final String customerMobileNumber;

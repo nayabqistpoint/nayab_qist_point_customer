@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/shared/customer_ledger/balance_helper.dart';
+import 'package:nayab_qist_point_customer/customer_ledger/customer_ledger/balance_helper.dart';
 
 class LedgerItemData {
   final double amount, runningBalance;
