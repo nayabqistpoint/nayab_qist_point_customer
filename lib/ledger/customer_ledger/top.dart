@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 تصویر کے سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_top_helper.dart';
 
@@ -11,12 +10,9 @@ class LedgerTopWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAdmin = controller.isAdmin;
     final String phone = controller.customerPhone;
     final String title = LedgerTopHelper.getHeaderTitle(
-      customer: controller.customer,
-      customerData: controller.customerData,
-      isAdmin: isAdmin,
+      customerDetails: controller.customerDetails,
     );
 
     return Column(
@@ -28,19 +24,31 @@ class LedgerTopWidget extends StatelessWidget {
           color: const Color(0xFFE53935),
           child: Row(
             children: [
-              IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(title, style: TextStyle(fontSize: isAdmin ? 18 : 16, fontWeight: FontWeight.bold, color: Colors.white), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
               const SizedBox(width: 8),
-              const CircleAvatar(radius: 16, backgroundColor: Colors.white24, child: Icon(Icons.person, size: 20, color: Colors.white)),
-              if (!isAdmin)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  onSelected: (v) => v == 'logout' ? Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false) : null,
-                  itemBuilder: (_) => [const PopupMenuItem(value: 'logout', child: Text("لاگ آؤٹ"))],
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              const SizedBox(width: 8),
+              const CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, size: 20, color: Colors.white),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onSelected: (v) => v == 'logout' ? Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false) : null,
+                itemBuilder: (_) => [const PopupMenuItem(value: 'logout', child: Text("لاگ آؤٹ"))],
+              ),
             ],
           ),
         ),
@@ -76,7 +84,7 @@ class LedgerTopWidget extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: InkWell(
-                        onTap: () => LedgerTopHelper.openInstallmentDialog(context, phone, isAdmin),
+                        onTap: () => LedgerTopHelper.openInstallmentDialog(context, phone),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
@@ -85,7 +93,14 @@ class LedgerTopWidget extends StatelessWidget {
                             children: [
                               _textCol("اقساط کا پلان", "تفصیلات دیکھیں", Colors.indigo.shade900, Colors.black54, 11, 8),
                               Container(height: 28, width: 1, color: Colors.indigo.shade100, margin: const EdgeInsets.symmetric(horizontal: 4)),
-                              _textCol("Rs ${totalShort.toStringAsFixed(0)}", totalShort > 0 ? "کل شارٹ" : "شارٹ نہیں", totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800, totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800, 13, 8),
+                              _textCol(
+                                "Rs ${totalShort.toStringAsFixed(0)}",
+                                totalShort > 0 ? "کل شارٹ" : "شارٹ نہیں",
+                                totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                                totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                                13,
+                                8,
+                              ),
                             ],
                           ),
                         ),
@@ -100,20 +115,13 @@ class LedgerTopWidget extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // 🟢 ۳۔ کیپسولز
+        // 🟢 ۳۔ قسط کیلکولیٹر کیپسول
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            children: isAdmin
-                ? [
-                    _capsule("رپورٹ", () {}), const SizedBox(width: 6),
-                    _capsule("تاریخ", () {}), const SizedBox(width: 6),
-                    _capsule("ریمائنڈر", () {}), const SizedBox(width: 6),
-                    _capsule("ایس ایم ایس", () {}),
-                  ]
-                : [
-                    _capsule("قسط کیلکولیٹر", () => controller.openInstallmentCalculator(context), isCalc: true),
-                  ],
+            children: [
+              _capsule("قسط کیلکولیٹر", () => controller.openInstallmentCalculator(context)),
+            ],
           ),
         ),
 
@@ -124,34 +132,38 @@ class LedgerTopWidget extends StatelessWidget {
   }
 
   Widget _textCol(String t1, String t2, Color c1, Color c2, double s1, double s2) => Expanded(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(t1, style: TextStyle(fontSize: s1, fontWeight: FontWeight.w900, color: c1), maxLines: 1),
-        Text(t2, style: TextStyle(fontSize: s2, fontWeight: FontWeight.bold, color: c2), maxLines: 1),
-      ],
-    ),
-  );
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(t1, style: TextStyle(fontSize: s1, fontWeight: FontWeight.w900, color: c1), maxLines: 1),
+            Text(t2, style: TextStyle(fontSize: s2, fontWeight: FontWeight.bold, color: c2), maxLines: 1),
+          ],
+        ),
+      );
 
-  Widget _capsule(String text, VoidCallback onTap, {bool isCalc = false}) => Expanded(
-    child: Material(
-      color: isCalc ? Colors.blue.shade50 : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(border: Border.all(color: isCalc ? Colors.blue.shade300 : Colors.black26), borderRadius: BorderRadius.circular(20)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isCalc) ...[Icon(Icons.calculate, size: 16, color: Colors.blue.shade800), const SizedBox(width: 4)],
-              Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isCalc ? Colors.blue.shade800 : Colors.black87)),
-            ],
+  Widget _capsule(String text, VoidCallback onTap) => Expanded(
+        child: Material(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.blue.shade300),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calculate, size: 16, color: Colors.blue.shade800),
+                  const SizedBox(width: 4),
+                  Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue.shade800)),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }

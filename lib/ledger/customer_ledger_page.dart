@@ -7,15 +7,11 @@ import 'package:nayab_qist_point_customer/ledger/customer_ledger/middle.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/bottom.dart';
 
 class CustomerLedgerPage extends StatefulWidget {
-  final dynamic customer;
-  final Map<String, dynamic> customerData;
-  final bool isAdmin; 
+  final String? customerPhone; // 🎯 کسٹمر کا موبائل نمبر بطور پرائمری آئی ڈی
 
   const CustomerLedgerPage({
     super.key,
-    this.customer,
-    this.customerData = const {}, 
-    this.isAdmin = true, 
+    this.customerPhone,
   });
 
   @override
@@ -29,9 +25,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
   void initState() {
     super.initState();
     _controller = CustomerLedgerController(
-      customer: widget.customer,
-      customerData: widget.customerData,
-      isAdmin: widget.isAdmin,
+      customerPhone: widget.customerPhone ?? '', // 🎯 صرف موبائل نمبر بطور سنگل سورس پاس ہو رہا ہے
     );
   }
 
@@ -55,13 +49,11 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                   child: Column(
                     children: [
                       LedgerTopWidget(controller: _controller),
-                      
                       LedgerMiddleWidget(controller: _controller),
                     ],
                   ),
                 ),
               ),
-
               LedgerBottomWidget(controller: _controller),
             ],
           ),

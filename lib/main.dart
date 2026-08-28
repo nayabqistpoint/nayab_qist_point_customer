@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 // 🎯 کنفیگریشن اور سروس امپورٹس
 import 'firebase_options.dart';
 import 'signup_page/outbox_sync_service.dart';
+import 'services/master_live_sync_service.dart'; // 🎯 ماسٹر لائیو سنک سروس
 import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {
@@ -34,8 +35,9 @@ void main() async {
   await Hive.openBox('usersBox');
   await Hive.openBox('outboxBox');
 
-  // 3️⃣ ایپ سٹارٹ ہوتے ہی پینڈنگ آؤٹ باکس سنکنگ چیک کرنا
+  // 3️⃣ آؤٹ باکس سنکنگ اور ماسٹر لائیو سنک سروس انیشلائزیشن
   OutboxSyncService().syncNow();
+  MasterLiveSyncService().startMasterLiveSync(); // 🎯 فائر اسٹور سے ہائیو لائیو سنک شروع
 
   runApp(const CustomerApp());
 }

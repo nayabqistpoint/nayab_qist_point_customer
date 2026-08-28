@@ -1,101 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/calculator/installment_calculator_page.dart';
-
 class CustomerLedgerController extends ChangeNotifier {
-  final dynamic customer;
-  final Map<String, dynamic> customerData;
-  final String? directName;
-  final String? directCast;
-  final bool isAdmin;
+  final String customerPhone;
 
-  CustomerLedgerController({
-    this.customer,
-    this.customerData = const {},
-    this.directName,
-    this.directCast,
-    this.isAdmin = true,
-  });
+  bool isLoading = true;
+  Map<String, dynamic>? customerDetails;
+  List<Map<String, dynamic>> transactions = [];
 
-  /// 🎯 کسٹمر کا موبائل نمبر (یونیک آئی ڈی - تمام غیر ضروری علامات صاف کر کے)
-  String get customerPhone {
-    String phone = '';
-    if (customer != null) {
-      try {
-        phone = (customer.phone ?? (customer is Map ? customer['customerPhone'] : '')).toString();
-      } catch (_) {}
-    }
-    if (phone.isEmpty && customerData.isNotEmpty) {
-      phone = (customerData['customerPhone'] ?? customerData['phone'] ?? customerData['mobile'] ?? customerData['phoneNumber'] ?? '').toString();
-    }
-    return phone.replaceAll(RegExp(r'[^0-9]'), '');
+  CustomerLedgerController({required this.customerPhone}) {
+    loadLedgerData();
   }
 
-  String get customerId => customerPhone;
+  Future<void> loadLedgerData() async {
+    isLoading = true;
+    notifyListeners();
 
-  /// 🎯 customerBox یا پاس شدہ ڈیٹا سے نام نکالنا
-  String get customerName {
-    if (directName != null && directName!.trim().isNotEmpty) return directName!;
+    try {
+      final customerBox = Hive.box('customerBox');
+      final usersBox = Hive.box('usersBox');
 
-    final map = _getCustomerFromBox();
-    if (map != null) {
-      final name = (map['name'] ?? map['customerName'] ?? map['fullName'] ?? '').toString().trim();
-      if (name.isNotEmpty) return name;
+      dynamic rawCustomer = customerBox.get(customerPhone) ?? usersBox.get(customerPhone);
+
+      if (rawCustomer != null) {
+        customerDetails = Map<String, dynamic>.from(rawCustomer as Map);
+      } else {
+        customerDetails = {
+          'phone': customerPhone,
+          'customerName': 'کسٹمر ($customerPhone)',
+        };
+      }
+
+      final transactionBox = Hive.box('transactionBox');
+      transactions.clear();
+
+      for (var key in transactionBox.keys) {
+        final rawTx = transactionBox.get(key);
+        if (rawTx != null) {
+          final txMap = Map<String, dynamic>.from(rawTx as Map);
+          if (txMap['customerPhone'] == customerPhone || txMap['phone'] == customerPhone) {
+            transactions.add(txMap);
+          }
+        }
+      }
+
+      transactions.sort((a, b) {
+        String dateA = a['date'] ?? '';
+        String dateB = b['date'] ?? '';
+        return dateB.compareTo(dateA);
+      });
+    } catch (e) {
+      debugPrint('❌ [LedgerController Error] $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-
-    if (customerData.isNotEmpty) {
-      final n = (customerData['customerName'] ?? customerData['name'] ?? customerData['fullName'] ?? '').toString().trim();
-      if (n.isNotEmpty) return n;
-    }
-
-    if (customer != null && customer is Map) {
-      return (customer['customerName'] ?? customer['name'] ?? '').toString().trim();
-    }
-
-    return '';
   }
 
-  /// 🎯 customerBox یا پاس شدہ ڈیٹا سے قوم / ذات نکالنا
-  String get customerCast {
-    if (directCast != null && directCast!.trim().isNotEmpty) return directCast!;
-
-    final map = _getCustomerFromBox();
-    if (map != null) {
-      final cast = (map['cast'] ?? map['caste'] ?? map['customerCaste'] ?? '').toString().trim();
-      if (cast.isNotEmpty) return cast;
-    }
-
-    if (customerData.isNotEmpty) {
-      final c = (customerData['customerCaste'] ?? customerData['cast'] ?? customerData['caste'] ?? '').toString().trim();
-      if (c.isNotEmpty) return c;
-    }
-
-    return '';
-  }
-
-  /// 🔒 customerBox سے فون نمبر میچ کر کے ریکارڈر لانے کا مشترکہ ہیلپر (ڈپلیکیشن سے پاک)
-  Map<String, dynamic>? _getCustomerFromBox() {
-    final phone = customerPhone;
-    if (phone.isEmpty || !Hive.isBoxOpen('customerBox')) return null;
-
-    final box = Hive.box('customerBox');
-    for (final val in box.values.whereType<Map>()) {
-      final p = (val['phone'] ?? val['mobile'] ?? val['customerPhone'] ?? val['customerId'] ?? '')
-          .toString()
-          .replaceAll(RegExp(r'[^0-9]'), '');
-      if (p == phone) return Map<String, dynamic>.from(val);
-    }
-    return null;
-  }
-
-  void loadCustomerTransactions() => notifyListeners();
-
+  // 🎯 🚀 مطلوبہ میتھڈ جو top.dart میں کال ہو رہا ہے:
   void openInstallmentCalculator(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const InstallmentCalculaterPage()),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('قسط کیلکولیٹر', textAlign: TextAlign.center),
+        content: const Text('اقساط کا کیلکولیٹر جلد دستیاب ہوگا۔', textAlign: TextAlign.center),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('بند کریں'),
+          ),
+        ],
+      ),
     );
   }
+
+  double get totalAmount {
+    return transactions.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['totalAmount']?.toString() ?? '0') ?? 0.0);
+    });
+  }
+
+  double get totalPaid {
+    return transactions.fold(0.0, (sum, item) {
+      return sum + (double.tryParse(item['paidAmount']?.toString() ?? '0') ?? 0.0);
+    });
+  }
+
+  double get remainingBalance => totalAmount - totalPaid;
 }

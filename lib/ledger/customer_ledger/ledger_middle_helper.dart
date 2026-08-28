@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
+// 🎯 shared فولڈر کا درست امپورٹ پاتھ:
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/balance_helper.dart';
 
 class LedgerItemData {
@@ -11,18 +11,27 @@ class LedgerItemData {
   final Color amountColor, capColor;
 
   LedgerItemData({
-    required this.amount, required this.runningBalance, required this.type,
-    required this.day, required this.month, required this.year,
-    required this.description, required this.isApproved,
-    required this.amountColor, required this.capColor,
+    required this.amount,
+    required this.runningBalance,
+    required this.type,
+    required this.day,
+    required this.month,
+    required this.year,
+    required this.description,
+    required this.isApproved,
+    required this.amountColor,
+    required this.capColor,
   });
 }
 
 class LedgerMiddleHelper {
-  static const List<String> _m = ["جنوری","فروری","مارچ","اپریل","مئی","جون","جولائی","اگست","ستمبر","اکتوبر","نومبر","دسمبر"];
+  static const List<String> _m = ["جنوری", "فروری", "مارچ", "اپریل", "مئی", "جون", "جولائی", "اگست", "ستمبر", "اکتوبر", "نومبر", "دسمبر"];
 
+  /// 🎯 processTransactions میتھڈ (isAdmin کو اختیاری/حذف کر دیا گیا ہے)
   static List<LedgerItemData> processTransactions({
-    required Box box, required String customerPhone, required bool isAdmin,
+    required Box box,
+    required String customerPhone,
+    bool isAdmin = false, // 🎯 اختیاری پیرامیٹر تاکہ پرانے کالز پر ایرر نہ آئے
   }) {
     final String phone = customerPhone.trim();
     if (phone.isEmpty) {
@@ -70,18 +79,19 @@ class LedgerMiddleHelper {
 
       DateTime dt = DateTime.tryParse((tx['createdAt'] ?? tx['timestamp'] ?? tx['date'] ?? '').toString()) ?? DateTime.now();
 
-      if (!isAdmin || isApproved) {
-        list.add(LedgerItemData(
-          amount: amt.abs(), runningBalance: runningAcc, type: type,
-          day: dt.day.toString(),
-          month: (dt.month >= 1 && dt.month <= 12) ? _m[dt.month - 1] : "اگست",
-          year: dt.year.toString(),
-          description: (tx['description'] ?? tx['note'] ?? 'تفصیل...').toString(),
-          isApproved: isApproved,
-          amountColor: (type == 'received' || (type == 'purchase' && amt > 0)) ? Colors.green.shade700 : Colors.red.shade700,
-          capColor: BalanceHelper.getAmountColor(runningAcc),
-        ));
-      }
+      // کسٹمر ایپ کے لیے تمام ٹرانزیکشنز (منظور شدہ اور زیرِ التوا دونوں) آئٹم لسٹ میں شامل ہوں گی
+      list.add(LedgerItemData(
+        amount: amt.abs(),
+        runningBalance: runningAcc,
+        type: type,
+        day: dt.day.toString(),
+        month: (dt.month >= 1 && dt.month <= 12) ? _m[dt.month - 1] : "اگست",
+        year: dt.year.toString(),
+        description: (tx['description'] ?? tx['note'] ?? 'تفصیل...').toString(),
+        isApproved: isApproved,
+        amountColor: (type == 'received' || (type == 'purchase' && amt > 0)) ? Colors.green.shade700 : Colors.red.shade700,
+        capColor: BalanceHelper.getAmountColor(runningAcc),
+      ));
     }
 
     return list.reversed.toList();

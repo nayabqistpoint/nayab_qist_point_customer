@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_bottom_helper.dart';
 
@@ -11,8 +10,6 @@ class LedgerBottomWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAdmin = controller.isAdmin;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
       decoration: const BoxDecoration(
@@ -22,14 +19,14 @@ class LedgerBottomWidget extends StatelessWidget {
       child: Row(
         children: [
           _btn(
-            isAdmin ? "پیمنٹ آؤٹ" : "خریداری کی درخواست",
-            isAdmin ? Colors.red : Colors.orange.shade800,
+            "خریداری کی درخواست",
+            Colors.orange.shade800,
             () => LedgerBottomHelper.handleLeftButton(context, controller),
           ),
           const SizedBox(width: 15),
           _btn(
-            isAdmin ? "پیمنٹ ان" : "قسط ادا کریں",
-            isAdmin ? Colors.green : Colors.blue.shade800,
+            "قسط ادا کریں",
+            Colors.blue.shade800,
             () => LedgerBottomHelper.handleRightButton(context, controller),
           ),
         ],
