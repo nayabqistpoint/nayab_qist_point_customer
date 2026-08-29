@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class DiscountWidget extends StatefulWidget {
-  final List<String> categories; // 🎯 پیرنٹ ویجٹ سے categories حاصل کرنے کے لیے
+  final List<String> categories;
   final Function(String categoryName, double discountValue, bool isPercentage) onDiscountChanged;
 
   const DiscountWidget({
     super.key,
-    required this.categories, // 🎯 پیرامیٹر لازمی کر دیا گیا ہے
+    required this.categories,
     required this.onDiscountChanged,
   });
 
@@ -59,8 +59,6 @@ class _DiscountWidgetState extends State<DiscountWidget> {
             color: Color(0xFFE53935),
           ),
           const SizedBox(width: 4),
-
-          // 🎯 کیٹیگری ڈراپ ڈاؤن
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedCategory,
@@ -95,8 +93,6 @@ class _DiscountWidgetState extends State<DiscountWidget> {
             ),
           ),
           const Spacer(),
-
-          // 🎯 ٹوگل سوئچ (Rs / %)
           Container(
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
@@ -144,8 +140,6 @@ class _DiscountWidgetState extends State<DiscountWidget> {
             ),
           ),
           const SizedBox(width: 8),
-
-          // 🎯 ان پٹ باکس
           SizedBox(
             width: 90,
             height: 38,

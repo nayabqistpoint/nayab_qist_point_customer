@@ -5,7 +5,7 @@ import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_body.dart';
 import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_controller.dart';
 import 'package:nayab_qist_point_customer/shared_widgets/payment_source_card.dart';
 import 'package:nayab_qist_point_customer/shared_widgets/discount_widget.dart';
-import 'package:nayab_qist_point_customer/services/sync_service.dart';
+import 'package:nayab_qist_point_customer/services/pay_now_sync_service.dart';
 
 class PayNowWidget extends StatefulWidget {
   final String customerMobileNumber;
@@ -29,12 +29,27 @@ class _PayNowWidgetState extends State<PayNowWidget> {
   void initState() {
     super.initState();
     if (widget.initialAmount != null && widget.initialAmount! > 0) {
-      final String formattedAmount = widget.initialAmount!.toStringAsFixed(0);
-      payNowController.amountController.text = formattedAmount;
+      payNowController.amountController.text = widget.initialAmount!.toStringAsFixed(0);
     }
   }
 
-  /// 🎯 RTL اور روان اردو میں سنیک بار پیغامات
+  void _showRtlSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            message,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _handleSave() async {
     final cardState = _paymentCardKey.currentState;
     bool isSplit = cardState != null && cardState.isSplitMode;
@@ -43,46 +58,18 @@ class _PayNowWidgetState extends State<PayNowWidget> {
     double netAmount = payNowController.netPayableAmount;
     double enteredPaymentTotal = cardState?.totalReceived ?? 0.0;
 
-    // 🎯 1. اگر رقم 0 یا خالی ہو
     if (payNowController.enteredAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Directionality(
-            textDirection: TextDirection.rtl,
-            child: const Text(
-              "برائے مہربانی قسط کی درست رقم درج کریں!",
-              textAlign: TextAlign.right,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showRtlSnackBar("برائے مہربانی قسط کی درست رقم درج کریں!");
       return;
     }
 
-    // 🎯 2. اگر بینک/کیش کی رقم نیٹ رقم کے برابر نہ ہو
     if (enteredPaymentTotal != netAmount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text(
-              "رقم کا حساب غلط ہے! ڈسکاؤنٹ نکال کر کل رقم Rs. ${netAmount.toStringAsFixed(0)} بنتی ہے، جبکہ آپ نے Rs. ${enteredPaymentTotal.toStringAsFixed(0)} درج کی ہے۔ برائے مہربانی برابر رقم درج کریں۔",
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-        ),
+      _showRtlSnackBar(
+        "رقم کا حساب غلط ہے! ڈسکاؤنٹ نکال کر کل رقم Rs. ${netAmount.toStringAsFixed(0)} بنتی ہے، جبکہ آپ نے Rs. ${enteredPaymentTotal.toStringAsFixed(0)} درج کی ہے۔ برائے مہربانی برابر رقم درج کریں۔",
       );
       return;
     }
 
-    // 🎯 3. بالکل درست ہونے پر سنک سروس کو بھیجیں
     final payload = payNowController.buildTransactionPayload(
       paymentSource: selectedPaymentSource,
       splitPaymentsList: splitList,
@@ -92,20 +79,7 @@ class _PayNowWidgetState extends State<PayNowWidget> {
 
     if (mounted && success) {
       payNowController.clearForm();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Directionality(
-            textDirection: TextDirection.rtl,
-            child: const Text(
-              "قسط کی درخواست کامیابی سے جمع ہو گئی ہے!",
-              textAlign: TextAlign.right,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showRtlSnackBar("قسط کی درخواست کامیابی سے جمع ہو گئی ہے!", isError: false);
       Navigator.pop(context);
     }
   }
@@ -122,23 +96,14 @@ class _PayNowWidgetState extends State<PayNowWidget> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: const [
-            Text(
-              "قسط ادا کریں",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            Text(
-              "نایاب قسط پوائنٹ",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
+            Text("قسط ادا کریں", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text("نایاب قسط پوائنٹ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           ],
         ),
         elevation: 0,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('settings')
-            .doc('app_config')
-            .snapshots(),
+        stream: FirebaseFirestore.instance.collection('settings').doc('app_config').snapshots(),
         builder: (context, snapshot) {
           List<String> availableBanks = ['Cash'];
           List<String> discountCategories = ['Discounts'];
@@ -185,9 +150,7 @@ class _PayNowWidgetState extends State<PayNowWidget> {
                               ),
                             ),
                             prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(color: Colors.red, width: 2),
@@ -226,9 +189,7 @@ class _PayNowWidgetState extends State<PayNowWidget> {
                                 selectedSource: selectedPaymentSource,
                                 onChanged: (newValue) {
                                   if (newValue != null) {
-                                    setState(() {
-                                      selectedPaymentSource = newValue;
-                                    });
+                                    setState(() => selectedPaymentSource = newValue);
                                   }
                                 },
                                 noteController: payNowController.descriptionController,

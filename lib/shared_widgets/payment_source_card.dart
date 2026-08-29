@@ -96,7 +96,6 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
     });
   }
 
-  // 🎯 کل موصول شدہ رقم معلوم کرنے کا گیٹر
   double get totalReceived {
     if (_isSplitMode) {
       return _rows.fold(
