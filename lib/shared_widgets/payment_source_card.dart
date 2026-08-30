@@ -1,131 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
-class PaymentRowItem {
-  String source;
-  final TextEditingController amountController;
-
-  PaymentRowItem({required this.source, String amount = ''})
-      : amountController = TextEditingController(text: amount);
-}
+import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_controller.dart';
 
 class PaymentSourceCard extends StatefulWidget {
-  final String? selectedSource;
+  final PayNowController controller;
   final List<String> availableBanks;
-  final ValueChanged<String?> onChanged;
-  final TextEditingController? noteController;
-  final ValueChanged<String>? onAttachmentPicked;
 
   const PaymentSourceCard({
     super.key,
-    required this.selectedSource,
+    required this.controller,
     required this.availableBanks,
-    required this.onChanged,
-    this.noteController,
-    this.onAttachmentPicked,
   });
 
   @override
-  State<PaymentSourceCard> createState() => PaymentSourceCardState();
+  State<PaymentSourceCard> createState() => _PaymentSourceCardState();
 }
 
-class PaymentSourceCardState extends State<PaymentSourceCard> {
-  bool _isSplitMode = false;
-  final List<PaymentRowItem> _rows = [];
-  late final TextEditingController noteController;
-  final TextEditingController _singleAmountController = TextEditingController();
+class _PaymentSourceCardState extends State<PaymentSourceCard> {
   String? _attachedImagePath;
-
-  bool get isSplitMode => _isSplitMode;
-
-  @override
-  void initState() {
-    super.initState();
-    noteController = widget.noteController ?? TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    for (var row in _rows) {
-      row.amountController.dispose();
-    }
-    _singleAmountController.dispose();
-    if (widget.noteController == null) noteController.dispose();
-    super.dispose();
-  }
 
   void _pickAttachment() async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() => _attachedImagePath = image.path);
-      widget.onAttachmentPicked?.call(image.path);
+      widget.controller.attachmentPath = image.path;
     }
-  }
-
-  void _toggleSplitMode(List<String> sources) {
-    setState(() {
-      _isSplitMode = true;
-      _rows.clear();
-      final String first = widget.selectedSource ?? sources.first;
-      final String second = sources.firstWhere((s) => s != first, orElse: () => sources.first);
-      _rows.addAll([
-        PaymentRowItem(source: first),
-        PaymentRowItem(source: second),
-      ]);
-    });
-  }
-
-  void _addRow(List<String> sources) {
-    setState(() {
-      final String next = sources.firstWhere(
-        (s) => !_rows.any((r) => r.source == s),
-        orElse: () => sources.first,
-      );
-      _rows.add(PaymentRowItem(source: next));
-    });
-  }
-
-  void _removeRow(int index) {
-    setState(() {
-      _rows[index].amountController.dispose();
-      _rows.removeAt(index);
-      if (_rows.length <= 1) {
-        _isSplitMode = false;
-        if (_rows.isNotEmpty) widget.onChanged(_rows.first.source);
-      }
-    });
-  }
-
-  double get totalReceived {
-    if (_isSplitMode) {
-      return _rows.fold(
-          0.0, (total, item) => total + (double.tryParse(item.amountController.text) ?? 0.0));
-    } else {
-      return double.tryParse(_singleAmountController.text) ?? 0.0;
-    }
-  }
-
-  List<Map<String, dynamic>> getSplitPaymentsList() {
-    if (!_isSplitMode) return [];
-    return _rows
-        .map((r) => {
-              'source': r.source,
-              'amount': double.tryParse(r.amountController.text) ?? 0.0,
-            })
-        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final List<String> banks = widget.availableBanks.isEmpty ? ['Cash'] : widget.availableBanks;
-    final String current = (widget.selectedSource != null && banks.contains(widget.selectedSource))
-        ? widget.selectedSource!
+    final String current = banks.contains(widget.controller.selectedPaymentSource)
+        ? widget.controller.selectedPaymentSource
         : banks.first;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!_isSplitMode) ...[
+        if (!widget.controller.isSplitMode) ...[
           Row(
             children: [
               const Text("Payment Type", style: TextStyle(fontSize: 15, color: Colors.black54)),
@@ -135,7 +47,13 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
                   value: current,
                   icon: const Icon(Icons.arrow_drop_down),
                   items: banks.map((s) => _buildDropdownItem(s)).toList(),
-                  onChanged: widget.onChanged,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        widget.controller.selectedPaymentSource = val;
+                      });
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -143,10 +61,9 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
               SizedBox(
                 width: 85,
                 child: TextField(
-                  controller: _singleAmountController,
+                  controller: widget.controller.singlePaymentAmountController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     hintText: '0',
                     hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
@@ -159,12 +76,12 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
           ),
           const SizedBox(height: 4),
           InkWell(
-            onTap: () => _toggleSplitMode(banks),
+            onTap: () => widget.controller.toggleSplitMode(banks),
             child: const Text("+ Add Payment Type",
                 style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
           ),
         ] else ...[
-          ..._rows.asMap().entries.map((entry) {
+          ...widget.controller.splitRows.asMap().entries.map((entry) {
             final int idx = entry.key;
             final item = entry.value;
             final String rowCurrent = banks.contains(item.source) ? item.source : banks.first;
@@ -179,13 +96,15 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
                       isDense: true,
                       items: banks.map((s) => _buildDropdownItem(s)).toList(),
                       onChanged: (val) {
-                        if (val != null) setState(() => item.source = val);
+                        if (val != null) {
+                          setState(() => item.source = val);
+                        }
                       },
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black45),
-                    onPressed: () => _removeRow(idx),
+                    onPressed: () => widget.controller.removeSplitRow(idx),
                   ),
                   const Spacer(),
                   const Text("Rs ", style: TextStyle(fontSize: 14, color: Colors.black87)),
@@ -195,7 +114,6 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
                       controller: item.amountController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
                         hintText: '0',
                         hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
@@ -213,11 +131,11 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               InkWell(
-                onTap: () => _addRow(banks),
+                onTap: () => widget.controller.addSplitRow(banks),
                 child: const Text("+ Add Payment Type",
                     style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
               ),
-              Text("Received Rs ${totalReceived.toStringAsFixed(0)}",
+              Text("Received Rs ${widget.controller.totalReceivedAmount.toStringAsFixed(0)}",
                   style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -232,7 +150,7 @@ class PaymentSourceCardState extends State<PaymentSourceCard> {
               child: SizedBox(
                 height: 60,
                 child: TextField(
-                  controller: noteController,
+                  controller: widget.controller.descriptionController,
                   maxLines: 2,
                   decoration: InputDecoration(
                     labelText: "Description",

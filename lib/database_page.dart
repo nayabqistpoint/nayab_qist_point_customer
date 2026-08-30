@@ -10,16 +10,15 @@ class DatabasePage extends StatefulWidget {
 }
 
 class _DatabasePageState extends State<DatabasePage> {
+  // 🎯 فعال باکسز کی فہرست (bankBox, expenseBox, outboxBox کی جگہ settingsBox شامل)
   final List<String> _boxNames = [
-    'bankBox',
     'customerBox',
     'guarantorBox',
-    'expenseBox',
     'packageBox',
     'stockBox',
     'transactionBox',
     'usersBox',
-    'outboxBox',
+    'settingsBox', // 👈 انسپکٹر میں لوکل سیٹنگز مانیٹر کرنے کے لیے
   ];
 
   @override
@@ -109,7 +108,6 @@ class _DatabasePageState extends State<DatabasePage> {
     );
   }
 
-  // 🎯 باکس کا ڈیٹا دکھانے کے لیے Bottom Sheet
   void _showBoxDataDetails(String boxName, Box box) {
     showModalBottomSheet(
       context: context,
@@ -164,7 +162,7 @@ class _DatabasePageState extends State<DatabasePage> {
                                 margin: const EdgeInsets.symmetric(vertical: 6),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  side: BorderSide(color: Colors.grey.shade300), // 🎯 Border.all کی جگہ BorderSide کا استعمال
+                                  side: BorderSide(color: Colors.grey.shade300),
                                 ),
                                 child: ExpansionTile(
                                   leading: const Icon(Icons.vpn_key, color: Colors.teal),
@@ -209,7 +207,6 @@ class _DatabasePageState extends State<DatabasePage> {
     );
   }
 
-  // 🎯 باکس ڈلیٹ کی تصدیق
   void _confirmClearBox(String boxName, Box? box) {
     showDialog(
       context: context,
@@ -225,7 +222,7 @@ class _DatabasePageState extends State<DatabasePage> {
               if (!mounted) return;
               setState(() {});
               if (dialogContext.mounted) {
-                Navigator.pop(dialogContext); // 🎯 Safe context usage
+                Navigator.pop(dialogContext);
               }
             },
             child: const Text('صاف کریں', style: TextStyle(color: Colors.white)),

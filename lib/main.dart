@@ -4,8 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 
 // 🎯 کنفیگریشن اور سروس امپورٹس
 import 'firebase_options.dart';
-import 'signup_page/outbox_sync_service.dart';
-import 'services/master_live_sync_service.dart'; // 🎯 ماسٹر لائیو سنک سروس
+import 'services/master_pull_service.dart';
+import 'services/master_push_sync_service.dart'; // 👈 پش سروس کا امپورٹ
 import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {
@@ -24,20 +24,18 @@ void main() async {
   // 2️⃣ ہائیو لوکل ڈیٹا بیس انیشلائزیشن
   await Hive.initFlutter();
 
-  // 🎯 تمام ضروری ہائیو باکسز کو اوپن کرنا
-  await Hive.openBox('bankBox');
+  // 🎯 صرف مطلوبہ باکسز کو اوپن کرنا
   await Hive.openBox('customerBox');
   await Hive.openBox('guarantorBox');
-  await Hive.openBox('expenseBox');
   await Hive.openBox('packageBox');
   await Hive.openBox('stockBox');
   await Hive.openBox('transactionBox');
   await Hive.openBox('usersBox');
-  await Hive.openBox('outboxBox');
+  await Hive.openBox('settingsBox');
 
-  // 3️⃣ آؤٹ باکس سنکنگ اور ماسٹر لائیو سنک سروس انیشلائزیشن
-  OutboxSyncService().syncNow();
-  MasterLiveSyncService().startMasterLiveSync(); // 🎯 فائر اسٹور سے ہائیو لائیو سنک شروع
+  // 3️⃣ بیک گراؤنڈ لائیو سنک سروسز (Pull + Push) کو ریڈی رکھنا
+  MasterLiveSyncService().startMasterLiveSync();
+  await MasterPushSyncService().initAutoPushListener(); // 👈 پش لسنر ایکٹیو ہو گیا
 
   runApp(const CustomerApp());
 }

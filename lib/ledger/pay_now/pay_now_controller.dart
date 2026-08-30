@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/services/pay_now_sync_service.dart';
+
+class PaymentRowItem {
+  String source;
+  final TextEditingController amountController;
+
+  PaymentRowItem({required this.source, String amount = ''})
+      : amountController = TextEditingController(text: amount);
+}
 
 class PayNowController extends ChangeNotifier {
   final TextEditingController amountController = TextEditingController();
@@ -6,18 +15,30 @@ class PayNowController extends ChangeNotifier {
 
   double _enteredAmount = 0.0;
   double get enteredAmount => _enteredAmount;
-
   String customerMobileNumber = "";
+
   String? audioPath;
   String? attachmentPath;
 
-  // 🎯 ڈسکاؤنٹ ویری ایبلز
   String discountCategory = 'Discounts';
   double discountValue = 0.0;
   bool isDiscountPercentage = false;
 
+  String selectedPaymentSource = 'Cash';
+  bool isSplitMode = false;
+  final List<PaymentRowItem> splitRows = [];
+  final TextEditingController singlePaymentAmountController = TextEditingController();
+
   PayNowController() {
     amountController.addListener(_onAmountChanged);
+    singlePaymentAmountController.addListener(_onSinglePaymentAmountChanged);
+  }
+
+  void initialize({required String mobileNumber, double? initialAmount}) {
+    customerMobileNumber = mobileNumber;
+    if (initialAmount != null && initialAmount > 0) {
+      amountController.text = initialAmount.toStringAsFixed(0);
+    }
   }
 
   void _onAmountChanged() {
@@ -28,7 +49,21 @@ class PayNowController extends ChangeNotifier {
     }
   }
 
-  // 🎯 خالص ڈسکاؤنٹ رقم معلوم کرنے کا فنکشن
+  void _onSinglePaymentAmountChanged() {
+    notifyListeners();
+  }
+
+  void updateDiscount({
+    required String category,
+    required double value,
+    required bool isPercentage,
+  }) {
+    discountCategory = category;
+    discountValue = value;
+    isDiscountPercentage = isPercentage;
+    notifyListeners();
+  }
+
   double get calculatedDiscountAmount {
     if (discountValue <= 0) return 0.0;
     if (isDiscountPercentage) {
@@ -37,55 +72,143 @@ class PayNowController extends ChangeNotifier {
     return discountValue;
   }
 
-  // 🎯 نیٹ رقم جو کسٹمر نے ادا کرنی ہے (رقم مائنس ڈسکاؤنٹ)
   double get netPayableAmount {
     double net = _enteredAmount - calculatedDiscountAmount;
     return net < 0 ? 0.0 : net;
   }
 
-  // 🎯 پے لوڈ تیار کرنے کا فنکشن (currentDate کو اب شامل کر دیا گیا ہے)
-  Map<String, dynamic> buildTransactionPayload({
-    required String paymentSource,
-    List<Map<String, dynamic>>? splitPaymentsList,
-  }) {
-    final String description = descriptionController.text.trim();
-    final String currentDate = "${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}";
+  double get totalReceivedAmount {
+    if (isSplitMode) {
+      return splitRows.fold(
+        0.0,
+        (total, item) => total + (double.tryParse(item.amountController.text) ?? 0.0),
+      );
+    } else {
+      return double.tryParse(singlePaymentAmountController.text) ?? 0.0;
+    }
+  }
 
-    return {
-      'type': 'received',
-      'customerPhone': customerMobileNumber,
-      'customerId': customerMobileNumber,
-      'enteredAmount': _enteredAmount,
-      'discount': {
-        'category': discountCategory,
-        'value': discountValue,
-        'isPercentage': isDiscountPercentage,
-        'discountAmount': calculatedDiscountAmount,
-      },
-      'netAmount': netPayableAmount,
-      'source': paymentSource,
-      'splitPayments': splitPaymentsList ?? [],
-      'description': description,
-      'date': currentDate, // 🎯 currentDate اب استعمال ہو گئی ہے
-      'picturePath': attachmentPath ?? '',
-      'audioPath': audioPath ?? 'Not Recorded',
-      'timestamp': DateTime.now().toIso8601String(),
-      'status': 'pending',
-      'isApproved': false,
-    };
+  /// 🎯 اسپلٹ موڈ آن کرتے وقت سنگل رقم کو پہلی رو میں منتقل کرنا اور لسٹنر لگانا
+  void toggleSplitMode(List<String> sources) {
+    isSplitMode = true;
+    final String initialSingleText = singlePaymentAmountController.text;
+
+    for (var r in splitRows) {
+      r.amountController.removeListener(notifyListeners);
+      r.amountController.dispose();
+    }
+    splitRows.clear();
+
+    final String first = sources.contains(selectedPaymentSource) ? selectedPaymentSource : sources.first;
+    final String second = sources.firstWhere((s) => s != first, orElse: () => sources.first);
+
+    // پہلی رو میں پرانی لکھی رقم محفوظ رہے گی
+    final item1 = PaymentRowItem(source: first, amount: initialSingleText);
+    final item2 = PaymentRowItem(source: second);
+
+    item1.amountController.addListener(notifyListeners);
+    item2.amountController.addListener(notifyListeners);
+
+    splitRows.addAll([item1, item2]);
+    notifyListeners();
+  }
+
+  /// 🎯 نئی رو شامل کرتے وقت پرانی رقمیں محفوظ رہیں گی اور نیا لسٹنر بھی لگے گا
+  void addSplitRow(List<String> sources) {
+    final String next = sources.firstWhere(
+      (s) => !splitRows.any((r) => r.source == s),
+      orElse: () => sources.first,
+    );
+    final newItem = PaymentRowItem(source: next);
+    newItem.amountController.addListener(notifyListeners);
+    splitRows.add(newItem);
+    notifyListeners();
+  }
+
+  void removeSplitRow(int index) {
+    splitRows[index].amountController.removeListener(notifyListeners);
+    splitRows[index].amountController.dispose();
+    splitRows.removeAt(index);
+    if (splitRows.length <= 1) {
+      isSplitMode = false;
+      if (splitRows.isNotEmpty) {
+        selectedPaymentSource = splitRows.first.source;
+        singlePaymentAmountController.text = splitRows.first.amountController.text;
+      }
+    }
+    notifyListeners();
+  }
+
+  List<Map<String, dynamic>> getSplitPaymentsList() {
+    if (!isSplitMode) return [];
+    return splitRows
+        .map((r) => {
+              'source': r.source,
+              'amount': double.tryParse(r.amountController.text) ?? 0.0,
+            })
+        .toList();
+  }
+
+  String? validateForm() {
+    if (_enteredAmount <= 0) {
+      return "برائے مہربانی قسط کی درست رقم درج کریں!";
+    }
+
+    final double net = netPayableAmount;
+    final double received = totalReceivedAmount;
+
+    if (received != net) {
+      return "رقم کا حساب غلط ہے! ڈسکاؤنٹ نکال کر کل رقم Rs. ${net.toStringAsFixed(0)} بنتی ہے، جبکہ آپ نے Rs. ${received.toStringAsFixed(0)} درج کی ہے۔ برائے مہربانی برابر رقم درج کریں۔";
+    }
+
+    return null;
+  }
+
+  Future<bool> submitTransaction() async {
+    return await SyncService.processAndUploadTransaction(
+      customerMobileNumber: customerMobileNumber,
+      enteredAmount: _enteredAmount,
+      netPayableAmount: netPayableAmount,
+      selectedPaymentSource: selectedPaymentSource,
+      discountCategory: discountCategory,
+      discountValue: discountValue,
+      isDiscountPercentage: isDiscountPercentage,
+      calculatedDiscountAmount: calculatedDiscountAmount,
+      splitPaymentsList: getSplitPaymentsList(),
+      description: descriptionController.text.trim(),
+      attachmentPath: attachmentPath,
+      audioPath: audioPath,
+    );
   }
 
   void clearForm() {
     amountController.clear();
     descriptionController.clear();
+    singlePaymentAmountController.clear();
+    for (var r in splitRows) {
+      r.amountController.removeListener(notifyListeners);
+      r.amountController.dispose();
+    }
+    splitRows.clear();
     _enteredAmount = 0.0;
     discountValue = 0.0;
     discountCategory = 'Discounts';
     isDiscountPercentage = false;
     audioPath = null;
     attachmentPath = null;
+    isSplitMode = false;
     notifyListeners();
   }
-}
 
-final PayNowController payNowController = PayNowController();
+  @override
+  void dispose() {
+    amountController.dispose();
+    descriptionController.dispose();
+    singlePaymentAmountController.dispose();
+    for (var r in splitRows) {
+      r.amountController.removeListener(notifyListeners);
+      r.amountController.dispose();
+    }
+    super.dispose();
+  }
+}

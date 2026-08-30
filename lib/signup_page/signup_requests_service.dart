@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 ایک ہی فولڈر (lib/customer/signup/) میں موجود ہونے کی وجہ سے Relative Import:
-import 'outbox_sync_service.dart';
-
 class SignupRequestsService {
   Future<bool> processRegistration({
     required String cleanPhone,
@@ -12,48 +9,69 @@ class SignupRequestsService {
     required bool isTermsAccepted,
   }) async {
     try {
-      final String docId = cleanPhone;
-      final Box customerBox = Hive.box('customerBox');
-      final Box guarantorBox = Hive.box('guarantorBox');
-      final Box outboxBox = Hive.box('outboxBox');
+      final String customerKey = cleanPhone;
+
+      // 1️⃣ تینوں ہائیو باکسز حاصل کرنا
+      final Box customerBox = Hive.isBoxOpen('customerBox')
+          ? Hive.box('customerBox')
+          : await Hive.openBox('customerBox');
+
+      final Box guarantorBox = Hive.isBoxOpen('guarantorBox')
+          ? Hive.box('guarantorBox')
+          : await Hive.openBox('guarantorBox');
+
+      final Box usersBox = Hive.isBoxOpen('usersBox')
+          ? Hive.box('usersBox')
+          : await Hive.openBox('usersBox');
+
       final String nowIso = DateTime.now().toIso8601String();
 
-      // 1️⃣ کسٹمر اور ضامن کا پے لوڈ تیار کرنا
+      // 2️⃣ 🎯 کسٹمر کا پے لوڈ
       final Map<String, dynamic> finalCustomerMap = {
+        'customerId': cleanPhone,
         ...customerData,
-        'customerPhone': cleanPhone,
-        'status': 'pending',
+        'status': 'Pending',
+        'isSynced': false,
         'createdAt': nowIso,
       };
 
+      // 3️⃣ 🎯 ضامن (Guarantor) کا پے لوڈ
       bool isGuarantorPresent = guarantorData['isGuarantorPresent'] ?? false;
       final Map<String, dynamic> finalGuarantorMap = {
+        'customerId': cleanPhone,
         ...guarantorData,
-        'status': 'pending',
+        'status': 'Pending',
+        'isSynced': false,
         'createdAt': nowIso,
       };
 
-      // 🎯 STEP 1: لوکل ہائیو کسٹمر اور ضامن باکسز میں سیو کرنا
-      await customerBox.put(docId, finalCustomerMap);
-      if (isGuarantorPresent) {
-        await guarantorBox.put(docId, finalGuarantorMap);
-      }
-      debugPrint('✅ [STEP 1/2] کسٹمر اور ضامن کا ڈیٹا لوکل Hive باکسز میں محفوظ ہو گیا ہے۔');
+      // 4️⃣ 🎯 یوزرز (UsersBox) کا پے لوڈ (docId ہٹا کر customerId شامل کر دیا گیا ہے)
+      String generatedPin = cleanPhone.length >= 4 
+          ? cleanPhone.substring(cleanPhone.length - 4) 
+          : cleanPhone;
 
-      // 🎯 STEP 2: آؤٹ باکس پے لوڈ (فائر بیس کی ہدایات کے ساتھ)
-      final Map<String, dynamic> outboxPayload = {
-        'docId': docId,
-        'operationType': 'signup', // 👈 یہ بتائے گا کہ پروسیس سائن اپ کا ہے
-        'customerInfo': finalCustomerMap,
-        'hasGuarantor': isGuarantorPresent,
-        'guarantorInfo': isGuarantorPresent ? finalGuarantorMap : null,
+      final Map<String, dynamic> finalUserMap = {
+        'customerId': cleanPhone,       // 👈 docId کی جگہ یونیورسل customerId
+        'phone': cleanPhone,            // 👈 لاگ ان / یوزر نیم
+        'pin': generatedPin,
+        'isAdmin': false,
+        'status': 'Pending',
+        'isSynced': false,
+        'createdAt': nowIso,
       };
 
-      await outboxBox.put(docId, outboxPayload);
-      debugPrint('✅ [STEP 2/2] ڈیٹا فائر بیس کی ہدایات کے ساتھ outboxBox میں منتقل ہو گیا۔');
+      // 🎯 STEP 1: کسٹمر باکس میں ڈیٹا سیو کرنا
+      await customerBox.put(customerKey, finalCustomerMap);
 
-      // 🎯 آؤٹ باکس سنک سروس کو الرٹ کرنا
-      OutboxSyncService().syncNow();
+      // 🎯 STEP 2: ضامن باکس میں ڈیٹا سیو کرنا (اگر موجود ہو)
+      if (isGuarantorPresent) {
+        await guarantorBox.put(customerKey, finalGuarantorMap);
+        debugPrint('✅ ضامن کا ڈیٹا guarantorBox میں محفوظ ہو گیا۔');
+      }
+
+      // 🎯 STEP 3: یوزرز باکس میں پینڈنگ اتھینٹیکیشن ڈیٹا سیو کرنا
+      await usersBox.put(customerKey, finalUserMap);
+      debugPrint('✅ یوزر کا محفوظ لاگ ان ڈیٹا (Status: Pending) usersBox میں محفوظ ہو گیا۔');
 
       return true;
     } catch (e) {

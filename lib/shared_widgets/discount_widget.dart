@@ -157,9 +157,9 @@ class _DiscountWidgetState extends State<DiscountWidget> {
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide(
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  borderSide: const BorderSide(
                     color: Color(0xFFE53935),
                     width: 1.5,
                   ),

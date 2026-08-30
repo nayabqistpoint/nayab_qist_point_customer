@@ -20,7 +20,7 @@ class LedgerTopWidget extends StatelessWidget {
       children: [
         // 🟢 ۱۔ ہیڈر پٹی
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: const Color(0xFFE53935),
           child: Row(
             children: [
@@ -30,15 +30,36 @@ class LedgerTopWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    ValueListenableBuilder<Box>(
+                      valueListenable: Hive.box('settingsBox').listenable(),
+                      builder: (context, box, _) {
+                        final syncData = LedgerTopHelper.getFormattedSyncData();
+                        return Text(
+                          "${syncData['date']} - ${syncData['time']} ${syncData['period']} :آخری سنک",
+                          style: const TextStyle(fontSize: 10, color: Colors.white70),
+                          textAlign: TextAlign.center,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.sync, color: Colors.white),
+                onPressed: () => LedgerTopHelper.triggerSync(context, phone),
+              ),
               const CircleAvatar(
                 radius: 16,
                 backgroundColor: Colors.white24,

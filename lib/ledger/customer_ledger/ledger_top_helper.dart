@@ -1,11 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 shared فولڈر کا درست امپورٹ پاتھ:
 import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/balance_helper.dart';
+import 'package:nayab_qist_point_customer/services/master_sync_manager.dart';
 
 class LedgerTopHelper {
+  /// 🎯 سنک پروسیس چلانا اور SnackBar دکھانا
+  static Future<void> triggerSync(BuildContext context, String phone) async {
+    await MasterSyncManager().runFullSync(phone);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ڈیٹا کامیابی سے سنک ہو گیا ہے'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// 🎯 آخری سنک کا وقت اور تاریخ الگ الگ فارمیٹ میں حاصل کرنا (RTL کے لیے)
+  static Map<String, String> getFormattedSyncData() {
+    try {
+      if (!Hive.isBoxOpen('settingsBox')) {
+        return {'time': '--:--', 'period': '', 'date': '--/--/----'};
+      }
+      final box = Hive.box('settingsBox');
+      final timeStr = box.get('lastSyncedTime');
+      if (timeStr == null) {
+        return {'time': '--:--', 'period': '', 'date': '--/--/----'};
+      }
+
+      final dateTime = DateTime.parse(timeStr).toLocal();
+
+      int hour = dateTime.hour;
+      final String period = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12;
+      if (hour == 0) hour = 12;
+
+      final String formattedHour = hour.toString().padLeft(2, '0');
+      final String minute = dateTime.minute.toString().padLeft(2, '0');
+      final String day = dateTime.day.toString().padLeft(2, '0');
+      final String month = dateTime.month.toString().padLeft(2, '0');
+
+      return {
+        'time': '$formattedHour:$minute',
+        'period': period,
+        'date': '$day/$month/${dateTime.year}',
+      };
+    } catch (_) {
+      return {'time': '--:--', 'period': '', 'date': '--/--/----'};
+    }
+  }
+
   /// 🎯 موبائل نمبر کی بنیاد پر کسٹمر کا نام اور ٹائٹل جنریٹ کرنا
   static String getHeaderTitle({
     Map<String, dynamic>? customerDetails,
@@ -25,7 +73,6 @@ class LedgerTopHelper {
     String name = '';
     String cast = '';
 
-    // ۱۔ customerBox سے ڈیٹا تلاش کرنا
     if (phone.isNotEmpty && Hive.isBoxOpen('customerBox')) {
       final box = Hive.box('customerBox');
       for (final val in box.values.whereType<Map>()) {
@@ -40,7 +87,6 @@ class LedgerTopHelper {
       }
     }
 
-    // ۲۔ اگر باکس سے نہ ملے تو لوکل ڈائریکٹ میپ سے اٹھانا
     if (name.isEmpty) {
       final source = customerDetails ?? customerData;
       if (source != null) {
@@ -49,7 +95,6 @@ class LedgerTopHelper {
       }
     }
 
-    // ۳۔ کسٹمر ایپ کے لیے صاف ستھرا ٹائٹل فارمیٹ
     if (name.isNotEmpty) {
       return cast.isNotEmpty ? "نایاب قسط پوائنٹ ($name $cast)" : "نایاب قسط پوائنٹ ($name)";
     }

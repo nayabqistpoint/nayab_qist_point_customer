@@ -30,6 +30,31 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
   final CustomerFooterLogic _footerLogic = CustomerFooterLogic();
 
   @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  /// 🎯 محفوظ شدہ کریڈینشلز (Remember Me) کو لوڈ کرنے کا میتھڈ
+  Future<void> _loadSavedCredentials() async {
+    final creds = await _formLogic.loadRememberedCredentials();
+    if (creds != null && mounted) {
+      setState(() {
+        _phoneController.text = creds['phone'] ?? '';
+        _passwordController.text = creds['pin'] ?? '';
+        _rememberMe = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -63,11 +88,12 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                       rememberMe: _rememberMe,
                       onTogglePasswordVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                       onRememberMeChanged: (bool? val) => setState(() => _rememberMe = val ?? false),
-                      onFingerprintTap: () => _formLogic.handleFingerprintAuthentication(),
+                      onFingerprintTap: () => _formLogic.handleFingerprintAuthentication(context), // 👈 context پاس کر دیا گیا ہے
                       onLoginPressed: () => _formLogic.handleLoginSubmission(
                         context,
                         _phoneController,
                         _passwordController,
+                        rememberMe: _rememberMe, // 👈 rememberMe فلیگ پاس کر دیا گیا ہے
                       ),
                     ),
                     CustomerContactUi(
