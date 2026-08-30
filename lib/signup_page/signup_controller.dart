@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // 🎯 کسٹمر ایپ کے اپنے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/signup_page/customer_info.dart';
 import 'package:nayab_qist_point_customer/signup_page/guarantor_info.dart';
-import 'package:nayab_qist_point_customer/signup_page/signup_requests_service.dart';
+import 'package:nayab_qist_point_customer/services/signup_sync_service.dart';
 
 class SignUpController extends ChangeNotifier {
   final GlobalKey<CustomerInfoWidgetState> customerKey = GlobalKey<CustomerInfoWidgetState>();

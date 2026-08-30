@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_middle_helper.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/middle_row_logic.dart';
 
 class LedgerMiddleWidget extends StatelessWidget {
   final CustomerLedgerController controller;

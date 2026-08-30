@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog.dart';
-import 'package:nayab_qist_point_customer/ledger/customer_ledger/balance_helper.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener.dart';
 import 'package:nayab_qist_point_customer/services/master_sync_manager.dart';
 
 class LedgerTopHelper {
