@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-// 🎯 تصویر کے سٹرکچر کے مطابق بالکل درست امپورٹ پاتھس:
+// 🎯 تمام امپورٹس بالکل وہی ہیں جو آپ کی اصل فائل میں تھیں
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/top.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/middle_row_ui.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/bottom.dart';
 
 class CustomerLedgerPage extends StatefulWidget {
-  final String? customerPhone; // 🎯 کسٹمر کا موبائل نمبر بطور پرائمری آئی ڈی
+  final String? customerPhone;
 
   const CustomerLedgerPage({
     super.key,
@@ -25,7 +25,7 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
   void initState() {
     super.initState();
     _controller = CustomerLedgerController(
-      customerPhone: widget.customerPhone ?? '', // 🎯 صرف موبائل نمبر بطور سنگل سورس پاس ہو رہا ہے
+      customerPhone: widget.customerPhone ?? '',
     );
   }
 
@@ -42,21 +42,24 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
       builder: (context, child) {
         return Scaffold(
           backgroundColor: Colors.white,
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      LedgerTopWidget(controller: _controller),
-                      // 🎯 یہاں LedgerMiddleWidget کی جگہ درست نام MiddleRowUi لگا دیا گیا ہے
-                      MiddleRowUi(controller: _controller),
-                    ],
+          body: SafeArea(
+            child: Column(
+              children: [
+                // ۱۔ اوپر کا حصہ (ایپ بار، کارڈز اور قسط کیلکولیٹر - یہ اوپر ساکن رہے گا)
+                LedgerTopWidget(controller: _controller),
+
+                // ۲۔ درمیانی لسٹ (صرف یہی درمیانی لسٹ اسکرول ہوگی)
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: MiddleRowUi(controller: _controller),
                   ),
                 ),
-              ),
-              LedgerBottomWidget(controller: _controller),
-            ],
+
+                // ۳۔ نچلا حصہ (بٹن - یہ نیچے ساکن رہیں گے)
+                LedgerBottomWidget(controller: _controller),
+              ],
+            ),
           ),
         );
       },
