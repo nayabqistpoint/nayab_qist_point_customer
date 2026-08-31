@@ -49,7 +49,8 @@ class _CustomerLedgerPageState extends State<CustomerLedgerPage> {
                   child: Column(
                     children: [
                       LedgerTopWidget(controller: _controller),
-                      LedgerMiddleWidget(controller: _controller),
+                      // 🎯 یہاں LedgerMiddleWidget کی جگہ درست نام MiddleRowUi لگا دیا گیا ہے
+                      MiddleRowUi(controller: _controller),
                     ],
                   ),
                 ),

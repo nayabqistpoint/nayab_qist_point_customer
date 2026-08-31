@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog.dart';
-import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener_service.dart';
 import 'package:nayab_qist_point_customer/services/master_sync_manager.dart';
 
 class LedgerTopHelper {
@@ -62,12 +62,16 @@ class LedgerTopHelper {
     Map<String, dynamic>? customerData,
     bool isAdmin = false,
   }) {
-    String phone = customerPhone ?? customerDetails?['phone'] ?? customerDetails?['customerPhone'] ?? '';
-    
+    String phone = customerPhone ??
+        customerDetails?['phone'] ??
+        customerDetails?['customerPhone'] ??
+        '';
+
     if (phone.isEmpty && customerData != null) {
-      phone = (customerData['customerPhone'] ?? customerData['phone'] ?? '').toString();
+      phone = (customerData['customerPhone'] ?? customerData['phone'] ?? '')
+          .toString();
     }
-    
+
     phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
 
     String name = '';
@@ -76,12 +80,20 @@ class LedgerTopHelper {
     if (phone.isNotEmpty && Hive.isBoxOpen('customerBox')) {
       final box = Hive.box('customerBox');
       for (final val in box.values.whereType<Map>()) {
-        final p = (val['phone'] ?? val['mobile'] ?? val['customerPhone'] ?? val['customerId'] ?? '')
+        final p = (val['phone'] ??
+                val['mobile'] ??
+                val['customerPhone'] ??
+                val['customerId'] ??
+                '')
             .toString()
             .replaceAll(RegExp(r'[^0-9]'), '');
         if (p == phone) {
-          name = (val['name'] ?? val['customerName'] ?? val['fullName'] ?? '').toString().trim();
-          cast = (val['cast'] ?? val['caste'] ?? val['customerCaste'] ?? '').toString().trim();
+          name = (val['name'] ?? val['customerName'] ?? val['fullName'] ?? '')
+              .toString()
+              .trim();
+          cast = (val['cast'] ?? val['caste'] ?? val['customerCaste'] ?? '')
+              .toString()
+              .trim();
           break;
         }
       }
@@ -90,39 +102,71 @@ class LedgerTopHelper {
     if (name.isEmpty) {
       final source = customerDetails ?? customerData;
       if (source != null) {
-        name = (source['name'] ?? source['customerName'] ?? '').toString().trim();
+        name = (source['name'] ?? source['customerName'] ?? '')
+            .toString()
+            .trim();
         cast = (source['cast'] ?? source['caste'] ?? '').toString().trim();
       }
     }
 
     if (name.isNotEmpty) {
-      return cast.isNotEmpty ? "نایاب قسط پوائنٹ ($name $cast)" : "نایاب قسط پوائنٹ ($name)";
+      return cast.isNotEmpty
+          ? "نایاب قسط پوائنٹ ($name $cast)"
+          : "نایاب قسط پوائنٹ ($name)";
     }
     return "نایاب قسط پوائنٹ";
   }
 
+  /// 🎯 نیا اور اپ ڈیٹڈ بیلنس حساب (txAmount اور txColor کی بنیاد پر)
   static Map<String, dynamic> getBalanceData(Box box, String customerPhone) {
-    final double balance = BalanceHelper.calculateCustomerBalance(box, customerPhone);
+    final processedList = LedgerListenerService.getProcessedTransactions(
+      box: box,
+      customerPhone: customerPhone,
+    );
+
+    // اگر کوئی منظور شدہ اینٹریز ہیں تو آخری رننگ بیلنس لیں
+    double finalBalance = 0.0;
+    if (processedList.isNotEmpty) {
+      // چونکہ لسٹ ریورس ہے، سب سے پہلی اینٹری میں ہی تازہ ترین رننگ بیلنس ہوتا ہے
+      finalBalance = processedList.first.runningBalance;
+    }
+
+    Color color;
+    if (finalBalance > 0) {
+      color = Colors.green.shade700; // ایڈوانس / کریڈٹ
+    } else if (finalBalance < 0) {
+      color = Colors.red.shade700; // بقایا دینا / ڈیبٹ
+    } else {
+      color = Colors.black87;
+    }
+
     return {
-      'amount': balance.abs().toStringAsFixed(0),
-      'color': BalanceHelper.getAmountColor(balance),
-      'label': balance >= 0 ? "بقایا لینا / ایڈوانس" : "بقایا دینا ہے",
+      'amount': "Rs. ${finalBalance.abs().toStringAsFixed(0)}",
+      'color': color,
+      'label': finalBalance >= 0 ? "بقایا لینا / ایڈوانس" : "بقایا دینا ہے",
     };
   }
 
-  static double getShortAmount(String customerPhone) => InstallmentPlanDialog.calculateTotalShort(customerPhone);
+  static double getShortAmount(String customerPhone) =>
+      InstallmentPlanDialog.calculateTotalShort(customerPhone);
 
-  static void openInstallmentDialog(BuildContext context, String customerPhone, [bool isAdmin = false]) {
+  static void openInstallmentDialog(
+      BuildContext context, String customerPhone,
+      [bool isAdmin = false]) {
     showDialog(
       context: context,
       builder: (_) => InstallmentPlanDialog(customerPhone: customerPhone),
     );
   }
 
-  static BoxDecoration boxDecoration(Color borderClr, Color shadowClr) => BoxDecoration(
+  static BoxDecoration boxDecoration(Color borderClr, Color shadowClr) =>
+      BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderClr, width: 1.5),
-        boxShadow: [BoxShadow(color: shadowClr, blurRadius: 8, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: shadowClr, blurRadius: 8, offset: const Offset(0, 4))
+        ],
       );
 }

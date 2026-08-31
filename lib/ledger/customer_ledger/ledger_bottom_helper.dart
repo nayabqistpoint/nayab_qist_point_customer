@@ -6,14 +6,16 @@ import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_widget.dart';
 import 'package:nayab_qist_point_customer/ledger/purchase_now/purchase_now.dart';
 
 class LedgerBottomHelper {
-  static Future<void> handleLeftButton(BuildContext context, CustomerLedgerController controller) =>
+  static Future<void> handleLeftButton(
+          BuildContext context, CustomerLedgerController controller) =>
       _navigateAndReload(
         context,
         controller,
         PurchaseNow(customerMobileNumber: controller.customerPhone),
       );
 
-  static Future<void> handleRightButton(BuildContext context, CustomerLedgerController controller) =>
+  static Future<void> handleRightButton(
+          BuildContext context, CustomerLedgerController controller) =>
       _navigateAndReload(
         context,
         controller,
@@ -25,7 +27,8 @@ class LedgerBottomHelper {
     CustomerLedgerController controller,
     Widget targetScreen,
   ) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
+    await Navigator.push(
+        context, MaterialPageRoute(builder: (_) => targetScreen));
     controller.loadLedgerData();
   }
 }

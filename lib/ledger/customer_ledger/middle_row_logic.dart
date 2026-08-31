@@ -1,99 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener_service.dart';
 
-// 🎯 shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener.dart';
-
-class LedgerItemData {
-  final double amount, runningBalance;
-  final String type, day, month, year, description;
+class LedgerRowViewModel {
+  final String amountText;
+  final String runningBalanceText;
+  final String day;
+  final String month;
+  final String year;
+  final String description;
   final bool isApproved;
-  final Color amountColor, capColor;
+  final Color amountColor;
 
-  LedgerItemData({
-    required this.amount,
-    required this.runningBalance,
-    required this.type,
+  LedgerRowViewModel({
+    required this.amountText,
+    required this.runningBalanceText,
     required this.day,
     required this.month,
     required this.year,
     required this.description,
     required this.isApproved,
     required this.amountColor,
-    required this.capColor,
   });
 }
 
-class LedgerMiddleHelper {
-  static const List<String> _m = ["جنوری", "فروری", "مارچ", "اپریل", "مئی", "جون", "جولائی", "اگست", "ستمبر", "اکتوبر", "نومبر", "دسمبر"];
+class MiddleRowLogic {
+  static const List<String> _months = [
+    "جنوری", "فروری", "مارچ", "اپریل", "مئی", "جون",
+    "جولائی", "اگست", "ستمبر", "اکتوبر", "نومبر", "دسمبر"
+  ];
 
-  /// 🎯 processTransactions میتھڈ (isAdmin کو اختیاری/حذف کر دیا گیا ہے)
-  static List<LedgerItemData> processTransactions({
+  static List<LedgerRowViewModel> process({
     required Box box,
     required String customerPhone,
-    bool isAdmin = false, // 🎯 اختیاری پیرامیٹر تاکہ پرانے کالز پر ایرر نہ آئے
   }) {
-    final String phone = customerPhone.trim();
-    if (phone.isEmpty) {
-      return [];
-    }
+    final rawList = LedgerListenerService.getProcessedTransactions(
+      box: box,
+      customerPhone: customerPhone,
+    );
 
-    // ۱۔ ڈیٹا فلٹر کرنا
-    final rawTxList = box.keys.map((k) {
-      final v = box.get(k);
-      return (v is Map) ? (Map<String, dynamic>.from(v)..[ '_k'] = k) : null;
-    }).where((tx) => tx != null && (tx['customerPhone'] ?? tx['customerId'] ?? '').toString().trim() == phone).cast<Map<String, dynamic>>().toList();
+    return rawList.map((item) {
+      String mName = (item.date.month >= 1 && item.date.month <= 12)
+          ? _months[item.date.month - 1]
+          : "";
 
-    if (rawTxList.isEmpty) {
-      return [];
-    }
-
-    // ۲۔ ٹائم سٹیمپ پر سارٹنگ (Oldest -> Newest)
-    rawTxList.sort((a, b) {
-      final dtA = DateTime.tryParse((a['createdAt'] ?? a['timestamp'] ?? a['date'] ?? '').toString()) ?? DateTime(2000);
-      final dtB = DateTime.tryParse((b['createdAt'] ?? b['timestamp'] ?? b['date'] ?? '').toString()) ?? DateTime(2000);
-      final cmp = dtA.compareTo(dtB);
-      return cmp != 0 ? cmp : a['_k'].toString().compareTo(b['_k'].toString());
-    });
-
-    double runningAcc = 0.0;
-    List<LedgerItemData> list = [];
-
-    // ۳۔ رننگ بیلنس اور ڈیٹا کی تیاری
-    for (var tx in rawTxList) {
-      String type = (tx['type'] ?? '').toString().toLowerCase();
-      String status = (tx['status'] ?? '').toString().toLowerCase();
-      bool isApproved = (tx['isApproved'] == true) || (status != 'pending' && tx['isApproved'] != false);
-
-      double amt = (type == 'purchase')
-          ? double.tryParse((tx['remainingBalance'] ?? tx['remaining'] ?? 0).toString()) ?? 0.0
-          : double.tryParse((tx['amount'] ?? tx['netAmount'] ?? 0).toString()) ?? 0.0;
-
-      if (isApproved) {
-        if (type == 'received' || (type == 'purchase' && amt > 0)) {
-          runningAcc += amt;
-        } else if (type == 'paid' || type == 'sale' || (type == 'purchase' && amt < 0)) {
-          runningAcc -= amt.abs();
-        }
-      }
-
-      DateTime dt = DateTime.tryParse((tx['createdAt'] ?? tx['timestamp'] ?? tx['date'] ?? '').toString()) ?? DateTime.now();
-
-      // کسٹمر ایپ کے لیے تمام ٹرانزیکشنز (منظور شدہ اور زیرِ التوا دونوں) آئٹم لسٹ میں شامل ہوں گی
-      list.add(LedgerItemData(
-        amount: amt.abs(),
-        runningBalance: runningAcc,
-        type: type,
-        day: dt.day.toString(),
-        month: (dt.month >= 1 && dt.month <= 12) ? _m[dt.month - 1] : "اگست",
-        year: dt.year.toString(),
-        description: (tx['description'] ?? tx['note'] ?? 'تفصیل...').toString(),
-        isApproved: isApproved,
-        amountColor: (type == 'received' || (type == 'purchase' && amt > 0)) ? Colors.green.shade700 : Colors.red.shade700,
-        capColor: BalanceHelper.getAmountColor(runningAcc),
-      ));
-    }
-
-    return list.reversed.toList();
+      return LedgerRowViewModel(
+        amountText: "Rs. ${item.amount.toStringAsFixed(0)}",
+        runningBalanceText: item.isApproved ? item.runningBalance.abs().toStringAsFixed(0) : "--",
+        day: item.date.day.toString(),
+        month: mName,
+        year: item.date.year.toString(),
+        description: item.description,
+        isApproved: item.isApproved,
+        amountColor: item.amountColor,
+      );
+    }).toList();
   }
 }
