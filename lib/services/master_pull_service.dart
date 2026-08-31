@@ -61,11 +61,21 @@ class MasterLiveSyncService {
         // ۱۔ stockBox: مکمل اوپن کلیکشن
         if (boxName == 'stockBox') {
           final QuerySnapshot snap = await _firestore.collection(boxName).get();
+          final Set<String> firestoreIds = snap.docs.map((doc) => doc.id.toString()).toSet();
+
           for (var doc in snap.docs) {
             if (doc.data() is Map) {
               final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data() as Map);
               final orderedData = _reorderFields(data);
-              await hiveBox.put(doc.id, orderedData);
+              await hiveBox.put(doc.id.toString(), orderedData);
+            }
+          }
+
+          // 🎯 فائر سٹور سے ڈیلیٹ ہونے والے ڈیٹا کو ہائیو سے حذف کرنا
+          final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
+          for (var localKey in localKeys) {
+            if (!firestoreIds.contains(localKey)) {
+              await hiveBox.delete(localKey);
             }
           }
         } 
@@ -76,11 +86,30 @@ class MasterLiveSyncService {
               .where('customerId', isEqualTo: cleanPhone)
               .get();
 
+          // فائر سٹور پر اس کسٹمر کی موجودہ تمام ڈاکومنٹ آئی ڈیز کا سیٹ
+          final Set<String> firestoreDocIds = snap.docs.map((doc) => doc.id.toString()).toSet();
+
+          // الف) فائر سٹور کا نیا ڈیٹا ہائیو میں ڈالنا (سٹرنگ کی کے ساتھ)
           for (var doc in snap.docs) {
             if (doc.data() is Map) {
               final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data() as Map);
               final orderedData = _reorderFields(data);
-              await hiveBox.put(doc.id, orderedData);
+              await hiveBox.put(doc.id.toString(), orderedData);
+            }
+          }
+
+          // ب) 🎯 اہم ترین تبدیلی: اگر فائر سٹور سے ڈاکومنٹ ڈیلیٹ ہو گیا ہے یا پرانی انٹیجر کیز پڑی ہیں، انہیں ہائیو سے کاٹنا
+          final localKeys = hiveBox.keys.toList();
+          for (var key in localKeys) {
+            final String stringKey = key.toString();
+            final item = hiveBox.get(key);
+
+            if (item is Map) {
+              final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
+              // اگر یہ اسی کسٹمر کی اینٹری ہے لیکن فائر سٹور پر اب موجود نہیں ہے، تو ہائیو سے کاٹ دیں
+              if (p == cleanPhone && !firestoreDocIds.contains(stringKey)) {
+                await hiveBox.delete(key);
+              }
             }
           }
         } 
@@ -91,12 +120,15 @@ class MasterLiveSyncService {
             final Map<String, dynamic> data = Map<String, dynamic>.from(docSnap.data() as Map);
             final orderedData = _reorderFields(data);
             await hiveBox.put(cleanPhone, orderedData);
+          } else {
+            // اگر فائر سٹور میں یہ ڈاکومنٹ ختم ہو چکا ہے تو لوکل ہائیو سے بھی ریموو کریں
+            await hiveBox.delete(cleanPhone);
           }
         }
       }
 
       await Hive.box('settingsBox').put('lastSyncedTime', DateTime.now().toIso8601String());
-      debugPrint('🎉 [MasterPull] ڈیٹا کیز کی مکمل ترتیب کے ساتھ ہائیو میں سنک ہو گیا۔');
+      debugPrint('🎉 [MasterPull] ڈیٹا فائر سٹور کے مطابق ہائیو میں مکمل سنک اور ڈیلیٹ ہو گیا۔');
 
     } catch (e) {
       debugPrint('❌ [MasterPull Error]: $e');
