@@ -12,7 +12,7 @@ class LedgerRowViewModel {
   final bool isApproved;
   final Color amountColor;
 
-  LedgerRowViewModel({
+  const LedgerRowViewModel({
     required this.amountText,
     required this.runningBalanceText,
     required this.day,
@@ -40,15 +40,20 @@ class MiddleRowLogic {
     );
 
     return rawList.map((item) {
-      String mName = (item.date.month >= 1 && item.date.month <= 12)
-          ? _months[item.date.month - 1]
+      final int monthIndex = item.date.month - 1;
+      final String monthName = (monthIndex >= 0 && monthIndex < _months.length)
+          ? _months[monthIndex]
           : "";
+
+      final String runningBalanceStr = item.isApproved 
+          ? item.runningBalance.abs().toStringAsFixed(0) 
+          : "--";
 
       return LedgerRowViewModel(
         amountText: "Rs. ${item.amount.toStringAsFixed(0)}",
-        runningBalanceText: item.isApproved ? item.runningBalance.abs().toStringAsFixed(0) : "--",
+        runningBalanceText: runningBalanceStr,
         day: item.date.day.toString(),
-        month: mName,
+        month: monthName,
         year: item.date.year.toString(),
         description: item.description,
         isApproved: item.isApproved,

@@ -13,7 +13,7 @@ class LedgerItemData {
   final String description;
   final Color amountColor;
 
-  LedgerItemData({
+  const LedgerItemData({
     required this.key,
     required this.amount,
     required this.runningBalance,
@@ -38,17 +38,24 @@ class LedgerListenerService {
     final String phone = customerPhone.trim();
     if (phone.isEmpty) return [];
 
-    final rawTxList = box.keys.map((k) {
+    final List<Map<String, dynamic>> rawTxList = [];
+
+    // ۱۔ سنگل پاس لُوپ: صرف مطلوبہ کسٹمر کی اینٹریز کی فلٹرنگ
+    for (var k in box.keys) {
       final v = box.get(k);
-      return (v is Map) ? (Map<String, dynamic>.from(v)..[ '_k'] = k.toString()) : null;
-    }).where((tx) {
-      if (tx == null) return false;
-      final p = (tx['customerPhone'] ?? tx['customerId'] ?? '').toString().trim();
-      return p == phone;
-    }).cast<Map<String, dynamic>>().toList();
+      if (v is Map) {
+        final Map<String, dynamic> tx = Map<String, dynamic>.from(v);
+        final p = (tx['customerPhone'] ?? tx['customerId'] ?? '').toString().trim();
+        if (p == phone) {
+          tx['_k'] = k.toString();
+          rawTxList.add(tx);
+        }
+      }
+    }
 
     if (rawTxList.isEmpty) return [];
 
+    // ۲۔ تاریخ کی بنیاد پر ترتیب (Ascending Sort)
     rawTxList.sort((a, b) {
       final dtA = DateTime.tryParse((a['createdAt'] ?? a['timestamp'] ?? a['date'] ?? '').toString()) ?? DateTime(2000);
       final dtB = DateTime.tryParse((b['createdAt'] ?? b['timestamp'] ?? b['date'] ?? '').toString()) ?? DateTime(2000);
@@ -57,14 +64,15 @@ class LedgerListenerService {
     });
 
     double runningAcc = 0.0;
-    List<LedgerItemData> list = [];
+    final List<LedgerItemData> list = [];
 
+    // ۳۔ رننگ بیلنس اور لسٹ آئٹمز کا جائزہ
     for (var tx in rawTxList) {
-      String status = (tx['status'] ?? '').toString().toLowerCase();
-      bool isApproved = (status == 'approved') || (status != 'pending' && tx['isApproved'] != false);
+      final String status = (tx['status'] ?? '').toString().toLowerCase();
+      final bool isApproved = (status == 'approved') || (status != 'pending' && tx['isApproved'] != false);
 
-      double amt = double.tryParse((tx['txAmount'] ?? tx['amount'] ?? tx['netAmount'] ?? 0).toString()) ?? 0.0;
-      String colorType = (tx['txColor'] ?? '').toString().toLowerCase();
+      final double amt = double.tryParse((tx['txAmount'] ?? tx['amount'] ?? tx['netAmount'] ?? 0).toString()) ?? 0.0;
+      final String colorType = (tx['txColor'] ?? '').toString().toLowerCase();
 
       bool isCredit;
       if (colorType == 'green') {
@@ -72,7 +80,7 @@ class LedgerListenerService {
       } else if (colorType == 'red') {
         isCredit = false;
       } else {
-        String type = (tx['type'] ?? '').toString().toLowerCase();
+        final String type = (tx['type'] ?? '').toString().toLowerCase();
         isCredit = (type == 'received' || type == 'pay_now');
       }
 
@@ -84,14 +92,11 @@ class LedgerListenerService {
         }
       }
 
-      Color amountColor;
-      if (!isApproved) {
-        amountColor = Colors.orange.shade800;
-      } else {
-        amountColor = isCredit ? Colors.green.shade700 : Colors.red.shade700;
-      }
+      final Color amountColor = !isApproved
+          ? Colors.orange.shade800
+          : (isCredit ? Colors.green.shade700 : Colors.red.shade700);
 
-      DateTime dt = DateTime.tryParse((tx['createdAt'] ?? tx['timestamp'] ?? tx['date'] ?? '').toString()) ?? DateTime.now();
+      final DateTime dt = DateTime.tryParse((tx['createdAt'] ?? tx['timestamp'] ?? tx['date'] ?? '').toString()) ?? DateTime.now();
 
       list.add(LedgerItemData(
         key: tx['_k'].toString(),
@@ -110,7 +115,7 @@ class LedgerListenerService {
   }
 }
 
-/// 🎯 ledger_top_helper.dart کے ایررز ختم کرنے کے لیے بالکُلی تیار ہیلپر کلاس
+/// 🎯 Ledger Top Helper Class
 class BalanceHelper {
   static double calculateCustomerBalance(Box box, String customerPhone) {
     final list = LedgerListenerService.getProcessedTransactions(box: box, customerPhone: customerPhone);
