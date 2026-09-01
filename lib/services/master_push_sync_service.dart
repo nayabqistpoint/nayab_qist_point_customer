@@ -10,12 +10,11 @@ class MasterPushSyncService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isPushing = false;
-  
-  /// 🛑 Mutex Flag: جب Pull چالو ہو تو Push خاموش رہے گی
-  bool isPullingActive = false; 
+  bool isPullingActive = false;
 
   String _activeCustomerPhone = '';
   final List<StreamSubscription> _hiveSubscriptions = [];
+  Timer? _debounceTimer;
 
   static const List<String> _targetBoxes = [
     'customerBox',
@@ -40,22 +39,29 @@ class MasterPushSyncService {
     for (String boxName in _targetBoxes) {
       final box = Hive.box(boxName);
       final sub = box.watch().listen((event) {
-        // اگر Pull چالو ہے تو Push ٹرگر نہ کریں
-        if (isPullingActive || _isPushing) return;
-
-        if (event.value is Map) {
-          final data = Map<String, dynamic>.from(event.value as Map);
-          if (data['isSynced'] == false) {
-            pushUnsyncedData(_activeCustomerPhone);
-          }
-        }
+        // 🎯 جب بھی Hive میں کوئی اینٹری آئے یا بدلے، پش کو فوری چیک کریں
+        _schedulePush();
       });
       _hiveSubscriptions.add(sub);
     }
     debugPrint('🚀 [MasterPush] ریئل ٹائم ہائیو لسنر ایکٹیو ہو گیا ہے۔');
   }
 
+  /// 🎯 چھوٹے وقفے (Debounce) کے ساتھ پش ٹرگر کرنا تاکہ Pull کا رکاوٹ نہ بنے
+  void _schedulePush() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!isPullingActive && !_isPushing) {
+        pushUnsyncedData(_activeCustomerPhone);
+      } else {
+        // اگر Pull جاری تھا، تو 1 سیکنڈ بعد دوبارہ کوشش کریں
+        Timer(const Duration(seconds: 1), () => pushUnsyncedData(_activeCustomerPhone));
+      }
+    });
+  }
+
   Future<void> stopAutoPushListener() async {
+    _debounceTimer?.cancel();
     for (var sub in _hiveSubscriptions) {
       await sub.cancel();
     }
@@ -64,7 +70,7 @@ class MasterPushSyncService {
 
   /// 🟢 لوکل ہائیو کی غیر سنک شدہ اینٹریز (isSynced == false) کو WriteBatch سے اپلوڈ کرنا
   Future<void> pushUnsyncedData([String? activePhone]) async {
-    if (isPullingActive) return; // Pull چالو ہو تو پش روکا جائے گا
+    if (isPullingActive) return;
 
     if (activePhone != null && activePhone.trim().isNotEmpty) {
       _activeCustomerPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
@@ -88,6 +94,7 @@ class MasterPushSyncService {
 
           final data = Map<String, dynamic>.from(rawData);
 
+          // 🎯 صرف وہی اینٹری اٹھائیں جس کا isSynced == false ہو
           if (data['isSynced'] == false) {
             final Map<String, dynamic> firestoreData = Map<String, dynamic>.from(data);
             firestoreData['isSynced'] = true;
@@ -112,7 +119,7 @@ class MasterPushSyncService {
       if (totalCount > 0) {
         await batch.commit();
 
-        // کامیابی کے بعد Hive میں isSynced = true لکھتے وقت لسنر کو گارڈ کریں
+        // کامیابی پر Hive میں isSynced = true اپڈیٹ کریں
         for (var update in pendingHiveUpdates) {
           final box = Hive.box(update['boxName'] as String);
           await box.put(update['key'], update['data']);

@@ -21,9 +21,7 @@ class MasterLiveSyncService {
     'stockBox',
   ];
 
-  Future<void> initPullService() async {
-    await _ensureBoxesOpened();
-  }
+  Future<void> initPullService() async => await _ensureBoxesOpened();
 
   /// 🟢 فائر اسٹور سے لائیو لسنرز (Snapshots) ایکٹیو کرنا
   Future<void> startMasterLiveSync(String activePhone) async {
@@ -39,31 +37,25 @@ class MasterLiveSyncService {
       if (boxName == 'stockBox') {
         // ۱۔ stockBox: تمام ڈاکومنٹس
         final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
-          if (MasterPushSyncService().isPushing) return;
+          await _processSnapshot(
+            onProcess: () async {
+              final firestoreIds = snap.docs.map((doc) => doc.id).toSet();
 
-          MasterPushSyncService().isPullingActive = true;
-
-          try {
-            final Set<String> firestoreIds = snap.docs.map((doc) => doc.id.toString()).toSet();
-
-            for (var doc in snap.docs) {
-              if (doc.exists) { // 👈 لائن 50 کی ورننگ ختم کر دی گئی ہے
-                final Map<String, dynamic> rawData = _sanitizeData(doc.id, doc.data());
-                await hiveBox.put(doc.id.toString(), _reorderFields(rawData));
+              for (var doc in snap.docs) {
+                if (doc.exists) {
+                  final preparedData = _prepareData(doc.id, doc.data());
+                  await hiveBox.put(doc.id, preparedData);
+                }
               }
-            }
 
-            final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
-            for (var localKey in localKeys) {
-              if (!firestoreIds.contains(localKey)) {
-                await hiveBox.delete(localKey);
+              // حذف شدہ اسٹاک ہائیو سے صاف کرنا
+              final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
+              for (var key in localKeys) {
+                if (!firestoreIds.contains(key)) await hiveBox.delete(key);
               }
-            }
-          } catch (e) {
-            debugPrint('❌ [Stock Pull Error]: $e');
-          } finally {
-            MasterPushSyncService().isPullingActive = false;
-          }
+            },
+            errorTag: 'Stock Pull',
+          );
         });
         _firestoreSubscriptions.add(sub);
       } else if (boxName == 'transactionBox') {
@@ -73,58 +65,47 @@ class MasterLiveSyncService {
             .where('customerId', isEqualTo: cleanPhone)
             .snapshots()
             .listen((snap) async {
-          if (MasterPushSyncService().isPushing) return;
+          await _processSnapshot(
+            onProcess: () async {
+              final firestoreDocIds = snap.docs.map((doc) => doc.id).toSet();
 
-          MasterPushSyncService().isPullingActive = true;
-
-          try {
-            final Set<String> firestoreDocIds = snap.docs.map((doc) => doc.id.toString()).toSet();
-
-            for (var doc in snap.docs) {
-              if (doc.exists) { // 👈 لائن 85 کی ورننگ ختم کر دی گئی ہے
-                final Map<String, dynamic> rawData = _sanitizeData(doc.id, doc.data());
-                await hiveBox.put(doc.id.toString(), _reorderFields(rawData));
-              }
-            }
-
-            final localKeys = hiveBox.keys.toList();
-            for (var key in localKeys) {
-              final String stringKey = key.toString();
-              final item = hiveBox.get(key);
-
-              if (item is Map) {
-                final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
-                if (p == cleanPhone && !firestoreDocIds.contains(stringKey)) {
-                  await hiveBox.delete(key);
+              for (var doc in snap.docs) {
+                if (doc.exists) {
+                  final preparedData = _prepareData(doc.id, doc.data());
+                  await hiveBox.put(doc.id, preparedData);
                 }
               }
-            }
-          } catch (e) {
-            debugPrint('❌ [Transaction Pull Error]: $e');
-          } finally {
-            MasterPushSyncService().isPullingActive = false;
-          }
+
+              // حذف شدہ ٹرانزیکشنز ہائیو سے صاف کرنا
+              final localKeys = hiveBox.keys.toList();
+              for (var key in localKeys) {
+                final item = hiveBox.get(key);
+                if (item is Map) {
+                  final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
+                  if (p == cleanPhone && !firestoreDocIds.contains(key.toString())) {
+                    await hiveBox.delete(key);
+                  }
+                }
+              }
+            },
+            errorTag: 'Transaction Pull',
+          );
         });
         _firestoreSubscriptions.add(sub);
       } else {
-        // ۳۔ باقی تمام باکسز: Document ID ہی کسٹمر کا فون نمبر ہے
+        // ۳۔ باقی تمام باکسز: Document ID ہی کسٹمر فون نمبر ہے
         final sub = _firestore.collection(boxName).doc(cleanPhone).snapshots().listen((docSnap) async {
-          if (MasterPushSyncService().isPushing) return;
-
-          MasterPushSyncService().isPullingActive = true;
-
-          try {
-            if (docSnap.exists && docSnap.data() != null) {
-              final Map<String, dynamic> rawData = _sanitizeData(docSnap.id, docSnap.data()!);
-              await hiveBox.put(cleanPhone, _reorderFields(rawData));
-            } else {
-              await hiveBox.delete(cleanPhone);
-            }
-          } catch (e) {
-            debugPrint('❌ [$boxName Pull Error]: $e');
-          } finally {
-            MasterPushSyncService().isPullingActive = false;
-          }
+          await _processSnapshot(
+            onProcess: () async {
+              if (docSnap.exists && docSnap.data() != null) {
+                final preparedData = _prepareData(docSnap.id, docSnap.data()!);
+                await hiveBox.put(cleanPhone, preparedData);
+              } else {
+                await hiveBox.delete(cleanPhone);
+              }
+            },
+            errorTag: '$boxName Pull',
+          );
         });
         _firestoreSubscriptions.add(sub);
       }
@@ -132,14 +113,28 @@ class MasterLiveSyncService {
     debugPrint('🔥 [MasterPull] فائر اسٹور کا ریئل ٹائم لائیو لسنر چالو ہو گیا ہے۔');
   }
 
-  /// 🎯 خام ڈیٹا کو محفوظ اور ہائیو کے مطابق قابلِ استعمال بنانے والا میتھڈ
-  Map<String, dynamic> _sanitizeData(String docId, Map<String, dynamic> raw) {
+  /// 🎯 Wrapper logic for Pull execution and Mutex Lock
+  Future<void> _processSnapshot({required Future<void> Function() onProcess, required String errorTag}) async {
+    if (MasterPushSyncService().isPushing) return;
+    MasterPushSyncService().isPullingActive = true;
+
+    try {
+      await onProcess();
+    } catch (e) {
+      debugPrint('❌ [$errorTag Error]: $e');
+    } finally {
+      MasterPushSyncService().isPullingActive = false;
+    }
+  }
+
+  /// 🎯 ڈیٹا کو سنبھالنے، صاف کرنے اور ترتیب دینے کا واحد ہلکا پھلکا فنکشن
+  Map<String, dynamic> _prepareData(String docId, Map<String, dynamic> raw) {
     final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
 
-    // ۱۔ docId خودکار طور پر سیٹ کرنا اگر مینول اینٹری میں نہ ہو
+    // ۱۔ docId کی سیٹنگ
     data['docId'] = data['docId'] ?? docId;
 
-    // ۲۔ Timestamp کو سٹرنگ (ISO-8601) میں تبدیل کرنا تاکہ Hive بریک نہ ہو
+    // ۲۔ Timestamps کا علاج (ISO String conversion)
     if (data['createdAt'] is Timestamp) {
       data['createdAt'] = (data['createdAt'] as Timestamp).toDate().toIso8601String();
     } else if (data['createdAt'] == null) {
@@ -150,11 +145,19 @@ class MasterLiveSyncService {
       data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
     }
 
-    // ۳۔ ڈیفالٹ سنک اور اسٹیٹس فیلڈز
-    data['isSynced'] = data['isSynced'] ?? true;
-    data['status'] = data['status'] ?? 'pending';
+    // ۳۔ فیلڈز کی درست ترتیب (Reordering Logic)
+    final Map<String, dynamic> orderedMap = {};
+    data.forEach((key, value) {
+      if (key != 'status' && key != 'isSynced' && key != 'timestamp') {
+        orderedMap[key] = value;
+      }
+    });
 
-    return data;
+    orderedMap['status'] = data['status'] ?? 'pending';
+    orderedMap['isSynced'] = data['isSynced'] ?? true;
+    if (data.containsKey('timestamp')) orderedMap['timestamp'] = data['timestamp'];
+
+    return orderedMap;
   }
 
   Future<void> stopLiveSync() async {
@@ -162,21 +165,6 @@ class MasterLiveSyncService {
       await sub.cancel();
     }
     _firestoreSubscriptions.clear();
-  }
-
-  Map<String, dynamic> _reorderFields(Map<String, dynamic> rawData) {
-    final Map<String, dynamic> orderedMap = {};
-    rawData.forEach((key, value) {
-      if (key != 'status' && key != 'isSynced' && key != 'timestamp') {
-        orderedMap[key] = value;
-      }
-    });
-
-    if (rawData.containsKey('status')) orderedMap['status'] = rawData['status'];
-    orderedMap['isSynced'] = rawData['isSynced'] ?? true;
-    if (rawData.containsKey('timestamp')) orderedMap['timestamp'] = rawData['timestamp'];
-
-    return orderedMap;
   }
 
   Future<void> _ensureBoxesOpened() async {
