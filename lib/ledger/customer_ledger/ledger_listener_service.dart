@@ -40,7 +40,6 @@ class LedgerListenerService {
 
     final List<Map<String, dynamic>> rawTxList = [];
 
-    // ۱۔ سنگل پاس لُوپ: صرف مطلوبہ کسٹمر کی اینٹریز کی فلٹرنگ
     for (var k in box.keys) {
       final v = box.get(k);
       if (v is Map) {
@@ -55,7 +54,6 @@ class LedgerListenerService {
 
     if (rawTxList.isEmpty) return [];
 
-    // ۲۔ تاریخ کی بنیاد پر ترتیب (Ascending Sort)
     rawTxList.sort((a, b) {
       final dtA = DateTime.tryParse((a['createdAt'] ?? a['timestamp'] ?? a['date'] ?? '').toString()) ?? DateTime(2000);
       final dtB = DateTime.tryParse((b['createdAt'] ?? b['timestamp'] ?? b['date'] ?? '').toString()) ?? DateTime(2000);
@@ -66,7 +64,6 @@ class LedgerListenerService {
     double runningAcc = 0.0;
     final List<LedgerItemData> list = [];
 
-    // ۳۔ رننگ بیلنس اور لسٹ آئٹمز کا جائزہ
     for (var tx in rawTxList) {
       final String status = (tx['status'] ?? '').toString().toLowerCase();
       final bool isApproved = (status == 'approved') || (status != 'pending' && tx['isApproved'] != false);

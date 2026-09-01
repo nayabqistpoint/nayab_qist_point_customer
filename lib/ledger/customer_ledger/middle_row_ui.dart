@@ -106,8 +106,9 @@ class MiddleRowUi extends StatelessWidget {
                                     ),
                                     child: Text(
                                       item.runningBalanceText,
-                                      style: const TextStyle(
-                                        color: Colors.black87,
+                                      style: TextStyle(
+                                        // 🎯 لاجک سے آنے والا متحرک رنگ (مثبت پر سبز، منفی پر سرخ)
+                                        color: item.runningBalanceColor,
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),

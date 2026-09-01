@@ -11,6 +11,7 @@ class LedgerRowViewModel {
   final String description;
   final bool isApproved;
   final Color amountColor;
+  final Color runningBalanceColor; // 🎯 کیپسول کے رننگ بیلنس کا رنگ
 
   const LedgerRowViewModel({
     required this.amountText,
@@ -21,6 +22,7 @@ class LedgerRowViewModel {
     required this.description,
     required this.isApproved,
     required this.amountColor,
+    required this.runningBalanceColor,
   });
 }
 
@@ -49,6 +51,18 @@ class MiddleRowLogic {
           ? item.runningBalance.abs().toStringAsFixed(0) 
           : "--";
 
+      // 🎯 مجموعی رننگ بیلنس کی بنیاد پر کیپسول کے اندر کی رقم کا رنگ
+      Color capsuleColor;
+      if (!item.isApproved) {
+        capsuleColor = Colors.grey.shade600;
+      } else if (item.runningBalance > 0) {
+        capsuleColor = Colors.green.shade700; // 🟢 تمام پچھلی روز کا مجموعہ اگر مثبت ہے
+      } else if (item.runningBalance < 0) {
+        capsuleColor = Colors.red.shade700;   // 🔴 تمام پچھلی روز کا مجموعہ اگر منفی ہے
+      } else {
+        capsuleColor = Colors.black87;        // ⚪ اگر بیلنس صفر (0) ہے
+      }
+
       return LedgerRowViewModel(
         amountText: "Rs. ${item.amount.toStringAsFixed(0)}",
         runningBalanceText: runningBalanceStr,
@@ -58,6 +72,7 @@ class MiddleRowLogic {
         description: item.description,
         isApproved: item.isApproved,
         amountColor: item.amountColor,
+        runningBalanceColor: capsuleColor, // 👈 کیپسول کے لیے نیا رنگ پاس کر دیا گیا
       );
     }).toList();
   }
