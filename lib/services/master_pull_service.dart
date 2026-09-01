@@ -43,22 +43,27 @@ class MasterLiveSyncService {
 
           MasterPushSyncService().isPullingActive = true;
 
-          final Set<String> firestoreIds = snap.docs.map((doc) => doc.id.toString()).toSet();
+          try {
+            final Set<String> firestoreIds = snap.docs.map((doc) => doc.id.toString()).toSet();
 
-          for (var doc in snap.docs) {
-            final data = doc.data();
-            await hiveBox.put(doc.id.toString(), _reorderFields(data));
-          }
-
-          // فائر اسٹور سے حذف شدہ ڈیٹا کا لوکل ہائیو سے خاتمہ
-          final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
-          for (var localKey in localKeys) {
-            if (!firestoreIds.contains(localKey)) {
-              await hiveBox.delete(localKey);
+            for (var doc in snap.docs) {
+              if (doc.exists) { // 👈 لائن 50 کی ورننگ ختم کر دی گئی ہے
+                final Map<String, dynamic> rawData = _sanitizeData(doc.id, doc.data());
+                await hiveBox.put(doc.id.toString(), _reorderFields(rawData));
+              }
             }
-          }
 
-          MasterPushSyncService().isPullingActive = false;
+            final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
+            for (var localKey in localKeys) {
+              if (!firestoreIds.contains(localKey)) {
+                await hiveBox.delete(localKey);
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ [Stock Pull Error]: $e');
+          } finally {
+            MasterPushSyncService().isPullingActive = false;
+          }
         });
         _firestoreSubscriptions.add(sub);
       } else if (boxName == 'transactionBox') {
@@ -72,27 +77,33 @@ class MasterLiveSyncService {
 
           MasterPushSyncService().isPullingActive = true;
 
-          final Set<String> firestoreDocIds = snap.docs.map((doc) => doc.id.toString()).toSet();
+          try {
+            final Set<String> firestoreDocIds = snap.docs.map((doc) => doc.id.toString()).toSet();
 
-          for (var doc in snap.docs) {
-            final data = doc.data();
-            await hiveBox.put(doc.id.toString(), _reorderFields(data));
-          }
-
-          final localKeys = hiveBox.keys.toList();
-          for (var key in localKeys) {
-            final String stringKey = key.toString();
-            final item = hiveBox.get(key);
-
-            if (item is Map) {
-              final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
-              if (p == cleanPhone && !firestoreDocIds.contains(stringKey)) {
-                await hiveBox.delete(key);
+            for (var doc in snap.docs) {
+              if (doc.exists) { // 👈 لائن 85 کی ورننگ ختم کر دی گئی ہے
+                final Map<String, dynamic> rawData = _sanitizeData(doc.id, doc.data());
+                await hiveBox.put(doc.id.toString(), _reorderFields(rawData));
               }
             }
-          }
 
-          MasterPushSyncService().isPullingActive = false;
+            final localKeys = hiveBox.keys.toList();
+            for (var key in localKeys) {
+              final String stringKey = key.toString();
+              final item = hiveBox.get(key);
+
+              if (item is Map) {
+                final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
+                if (p == cleanPhone && !firestoreDocIds.contains(stringKey)) {
+                  await hiveBox.delete(key);
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ [Transaction Pull Error]: $e');
+          } finally {
+            MasterPushSyncService().isPullingActive = false;
+          }
         });
         _firestoreSubscriptions.add(sub);
       } else {
@@ -102,19 +113,48 @@ class MasterLiveSyncService {
 
           MasterPushSyncService().isPullingActive = true;
 
-          if (docSnap.exists && docSnap.data() != null) {
-            final data = docSnap.data()!;
-            await hiveBox.put(cleanPhone, _reorderFields(data));
-          } else {
-            await hiveBox.delete(cleanPhone);
+          try {
+            if (docSnap.exists && docSnap.data() != null) {
+              final Map<String, dynamic> rawData = _sanitizeData(docSnap.id, docSnap.data()!);
+              await hiveBox.put(cleanPhone, _reorderFields(rawData));
+            } else {
+              await hiveBox.delete(cleanPhone);
+            }
+          } catch (e) {
+            debugPrint('❌ [$boxName Pull Error]: $e');
+          } finally {
+            MasterPushSyncService().isPullingActive = false;
           }
-
-          MasterPushSyncService().isPullingActive = false;
         });
         _firestoreSubscriptions.add(sub);
       }
     }
     debugPrint('🔥 [MasterPull] فائر اسٹور کا ریئل ٹائم لائیو لسنر چالو ہو گیا ہے۔');
+  }
+
+  /// 🎯 خام ڈیٹا کو محفوظ اور ہائیو کے مطابق قابلِ استعمال بنانے والا میتھڈ
+  Map<String, dynamic> _sanitizeData(String docId, Map<String, dynamic> raw) {
+    final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+
+    // ۱۔ docId خودکار طور پر سیٹ کرنا اگر مینول اینٹری میں نہ ہو
+    data['docId'] = data['docId'] ?? docId;
+
+    // ۲۔ Timestamp کو سٹرنگ (ISO-8601) میں تبدیل کرنا تاکہ Hive بریک نہ ہو
+    if (data['createdAt'] is Timestamp) {
+      data['createdAt'] = (data['createdAt'] as Timestamp).toDate().toIso8601String();
+    } else if (data['createdAt'] == null) {
+      data['createdAt'] = DateTime.now().toIso8601String();
+    }
+
+    if (data['timestamp'] is Timestamp) {
+      data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+    }
+
+    // ۳۔ ڈیفالٹ سنک اور اسٹیٹس فیلڈز
+    data['isSynced'] = data['isSynced'] ?? true;
+    data['status'] = data['status'] ?? 'pending';
+
+    return data;
   }
 
   Future<void> stopLiveSync() async {
