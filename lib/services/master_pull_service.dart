@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'master_push_sync_service.dart';
 
 class MasterLiveSyncService {
   static final MasterLiveSyncService _instance = MasterLiveSyncService._internal();
@@ -8,6 +10,7 @@ class MasterLiveSyncService {
   MasterLiveSyncService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final List<StreamSubscription> _firestoreSubscriptions = [];
 
   static const List<String> _targetBoxes = [
     'customerBox',
@@ -18,87 +21,64 @@ class MasterLiveSyncService {
     'stockBox',
   ];
 
-  /// main.dart کے لیے ابتدائی تیاری
   Future<void> initPullService() async {
     await _ensureBoxesOpened();
   }
 
-  /// کسٹمر لاگ ان پر بیک گراؤنڈ سنک (UI کو بلاک کیے بغیر)
-  Future<void> onUserLoggedIn(String activePhone) async {
+  /// 🟢 فائر اسٹور سے لائیو لسنرز (Snapshots) ایکٹیو کرنا
+  Future<void> startMasterLiveSync(String activePhone) async {
     final cleanPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanPhone.isEmpty) return;
 
     await _ensureBoxesOpened();
+    await stopLiveSync();
 
-    // 🚀 بیک گراؤنڈ میں سنک فائر کریں تاکہ بٹن پر لوڈنگ نہ آئے
-    Future.microtask(() => _pullFromFirestore(cleanPhone));
-  }
+    for (String boxName in _targetBoxes) {
+      final hiveBox = Hive.box(boxName);
 
-  /// 🟢 فیلڈز کی درست ترتیب (Splay / Custom Key Reordering)
-  Map<String, dynamic> _reorderFields(Map<String, dynamic> rawData) {
-    final Map<String, dynamic> orderedMap = {};
+      if (boxName == 'stockBox') {
+        // ۱۔ stockBox: تمام ڈاکومنٹس
+        final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
+          if (MasterPushSyncService().isPushing) return;
 
-    // 1️⃣ پہلے بزنس لاجک کی تمام عام فیلڈز شامل کریں
-    rawData.forEach((key, value) {
-      if (key != 'status' && key != 'isSynced' && key != 'timestamp') {
-        orderedMap[key] = value;
-      }
-    });
+          MasterPushSyncService().isPullingActive = true;
 
-    // 2️⃣ اسٹیٹس اور سنک فیلڈز کو ہمیشہ اخر میں رکھیں
-    if (rawData.containsKey('status')) orderedMap['status'] = rawData['status'];
-    orderedMap['isSynced'] = rawData['isSynced'] ?? true;
-    if (rawData.containsKey('timestamp')) orderedMap['timestamp'] = rawData['timestamp'];
-
-    return orderedMap;
-  }
-
-  Future<void> _pullFromFirestore(String cleanPhone) async {
-    try {
-      for (String boxName in _targetBoxes) {
-        final hiveBox = Hive.box(boxName);
-
-        // ۱۔ stockBox: مکمل اوپن کلیکشن
-        if (boxName == 'stockBox') {
-          final QuerySnapshot snap = await _firestore.collection(boxName).get();
           final Set<String> firestoreIds = snap.docs.map((doc) => doc.id.toString()).toSet();
 
           for (var doc in snap.docs) {
-            if (doc.data() is Map) {
-              final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data() as Map);
-              final orderedData = _reorderFields(data);
-              await hiveBox.put(doc.id.toString(), orderedData);
-            }
+            final data = doc.data();
+            await hiveBox.put(doc.id.toString(), _reorderFields(data));
           }
 
-          // 🎯 فائر سٹور سے ڈیلیٹ ہونے والے ڈیٹا کو ہائیو سے حذف کرنا
+          // فائر اسٹور سے حذف شدہ ڈیٹا کا لوکل ہائیو سے خاتمہ
           final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
           for (var localKey in localKeys) {
             if (!firestoreIds.contains(localKey)) {
               await hiveBox.delete(localKey);
             }
           }
-        } 
-        // ۲۔ transactionBox: customerId فیلڈ کے ساتھ
-        else if (boxName == 'transactionBox') {
-          final QuerySnapshot snap = await _firestore
-              .collection(boxName)
-              .where('customerId', isEqualTo: cleanPhone)
-              .get();
 
-          // فائر سٹور پر اس کسٹمر کی موجودہ تمام ڈاکومنٹ آئی ڈیز کا سیٹ
+          MasterPushSyncService().isPullingActive = false;
+        });
+        _firestoreSubscriptions.add(sub);
+      } else if (boxName == 'transactionBox') {
+        // ۲۔ transactionBox: customerId فیلڈ کے ساتھ ٹریکنگ
+        final sub = _firestore
+            .collection(boxName)
+            .where('customerId', isEqualTo: cleanPhone)
+            .snapshots()
+            .listen((snap) async {
+          if (MasterPushSyncService().isPushing) return;
+
+          MasterPushSyncService().isPullingActive = true;
+
           final Set<String> firestoreDocIds = snap.docs.map((doc) => doc.id.toString()).toSet();
 
-          // الف) فائر سٹور کا نیا ڈیٹا ہائیو میں ڈالنا (سٹرنگ کی کے ساتھ)
           for (var doc in snap.docs) {
-            if (doc.data() is Map) {
-              final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data() as Map);
-              final orderedData = _reorderFields(data);
-              await hiveBox.put(doc.id.toString(), orderedData);
-            }
+            final data = doc.data();
+            await hiveBox.put(doc.id.toString(), _reorderFields(data));
           }
 
-          // ب) 🎯 اہم ترین تبدیلی: اگر فائر سٹور سے ڈاکومنٹ ڈیلیٹ ہو گیا ہے یا پرانی انٹیجر کیز پڑی ہیں، انہیں ہائیو سے کاٹنا
           final localKeys = hiveBox.keys.toList();
           for (var key in localKeys) {
             final String stringKey = key.toString();
@@ -106,33 +86,57 @@ class MasterLiveSyncService {
 
             if (item is Map) {
               final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
-              // اگر یہ اسی کسٹمر کی اینٹری ہے لیکن فائر سٹور پر اب موجود نہیں ہے، تو ہائیو سے کاٹ دیں
               if (p == cleanPhone && !firestoreDocIds.contains(stringKey)) {
                 await hiveBox.delete(key);
               }
             }
           }
-        } 
-        // ۳۔ باقی تمام باکسز: Doc ID ہی customerId ہے
-        else {
-          final DocumentSnapshot docSnap = await _firestore.collection(boxName).doc(cleanPhone).get();
-          if (docSnap.exists && docSnap.data() is Map) {
-            final Map<String, dynamic> data = Map<String, dynamic>.from(docSnap.data() as Map);
-            final orderedData = _reorderFields(data);
-            await hiveBox.put(cleanPhone, orderedData);
+
+          MasterPushSyncService().isPullingActive = false;
+        });
+        _firestoreSubscriptions.add(sub);
+      } else {
+        // ۳۔ باقی تمام باکسز: Document ID ہی کسٹمر کا فون نمبر ہے
+        final sub = _firestore.collection(boxName).doc(cleanPhone).snapshots().listen((docSnap) async {
+          if (MasterPushSyncService().isPushing) return;
+
+          MasterPushSyncService().isPullingActive = true;
+
+          if (docSnap.exists && docSnap.data() != null) {
+            final data = docSnap.data()!;
+            await hiveBox.put(cleanPhone, _reorderFields(data));
           } else {
-            // اگر فائر سٹور میں یہ ڈاکومنٹ ختم ہو چکا ہے تو لوکل ہائیو سے بھی ریموو کریں
             await hiveBox.delete(cleanPhone);
           }
-        }
+
+          MasterPushSyncService().isPullingActive = false;
+        });
+        _firestoreSubscriptions.add(sub);
       }
-
-      await Hive.box('settingsBox').put('lastSyncedTime', DateTime.now().toIso8601String());
-      debugPrint('🎉 [MasterPull] ڈیٹا فائر سٹور کے مطابق ہائیو میں مکمل سنک اور ڈیلیٹ ہو گیا۔');
-
-    } catch (e) {
-      debugPrint('❌ [MasterPull Error]: $e');
     }
+    debugPrint('🔥 [MasterPull] فائر اسٹور کا ریئل ٹائم لائیو لسنر چالو ہو گیا ہے۔');
+  }
+
+  Future<void> stopLiveSync() async {
+    for (var sub in _firestoreSubscriptions) {
+      await sub.cancel();
+    }
+    _firestoreSubscriptions.clear();
+  }
+
+  Map<String, dynamic> _reorderFields(Map<String, dynamic> rawData) {
+    final Map<String, dynamic> orderedMap = {};
+    rawData.forEach((key, value) {
+      if (key != 'status' && key != 'isSynced' && key != 'timestamp') {
+        orderedMap[key] = value;
+      }
+    });
+
+    if (rawData.containsKey('status')) orderedMap['status'] = rawData['status'];
+    orderedMap['isSynced'] = rawData['isSynced'] ?? true;
+    if (rawData.containsKey('timestamp')) orderedMap['timestamp'] = rawData['timestamp'];
+
+    return orderedMap;
   }
 
   Future<void> _ensureBoxesOpened() async {
@@ -141,6 +145,4 @@ class MasterLiveSyncService {
     }
     if (!Hive.isBoxOpen('settingsBox')) await Hive.openBox('settingsBox');
   }
-
-  void startMasterLiveSync() {}
 }

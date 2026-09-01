@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 // 🎯 کنفیگریشن اور سروس امپورٹس
 import 'firebase_options.dart';
 import 'services/master_pull_service.dart';
-import 'services/master_push_sync_service.dart'; // 👈 پش سروس کا امپورٹ
+import 'services/master_push_sync_service.dart';
 import 'package:nayab_qist_point_customer/customer_login_page.dart';
 
 void main() async {
@@ -33,9 +33,9 @@ void main() async {
   await Hive.openBox('usersBox');
   await Hive.openBox('settingsBox');
 
-  // 3️⃣ بیک گراؤنڈ لائیو سنک سروسز (Pull + Push) کو ریڈی رکھنا
-  MasterLiveSyncService().startMasterLiveSync();
-  await MasterPushSyncService().initAutoPushListener(); // 👈 پش لسنر ایکٹیو ہو گیا
+  // 3️⃣ بیک گراؤنڈ سنک سروسز کے لیے باکسز اور لسنرز ریڈی رکھنا
+  await MasterLiveSyncService().initPullService(); // 👈 درست میتھڈ (بغیر کسی فون نمبر کے انیشلائزیشن)
+  await MasterPushSyncService().initAutoPushListener();
 
   runApp(const CustomerApp());
 }

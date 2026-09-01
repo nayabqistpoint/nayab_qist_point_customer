@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger_page.dart';
-import '../../services/master_pull_service.dart';
+import '../../services/master_sync_manager.dart'; // 👈 1. نیا ماسٹر سنک مینیجر امپورٹ کیا
 
 class CustomerFormLogic {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -34,7 +34,7 @@ class CustomerFormLogic {
         final docSnap = await _firestore.collection('usersBox').doc(phone).get();
         if (docSnap.exists && docSnap.data() != null) {
           userData = Map<String, dynamic>.from(docSnap.data()!);
-          userData['isSynced'] = true; // 👈 1. فائر اسٹور سے ڈیٹا آتے ہی isSynced: true سیٹ کر دیا
+          userData['isSynced'] = true;
           await usersBox.put(phone, userData);
         }
       } catch (_) {}
@@ -43,7 +43,7 @@ class CustomerFormLogic {
         final localData = usersBox.get(phone);
         if (localData != null) {
           userData = Map<String, dynamic>.from(localData as Map);
-          userData['isSynced'] = true; // 👈 2. اگر لوکل ڈیٹا بھی ملے تو isSynced: true یقینی بنائیں
+          userData['isSynced'] = true;
         }
       }
 
@@ -66,8 +66,8 @@ class CustomerFormLogic {
         }
         await settingsBox.put('last_logged_phone', phone);
 
-        // 🎯 کسٹمر ڈیش بورڈ پر منتقل ہونے سے پہلے ماسٹر لائیو سنک کا آغاز
-        await MasterLiveSyncService().onUserLoggedIn(phone);
+        // 🎯 2. کسٹمر ڈیش بورڈ پر منتقل ہونے سے پہلے ریئل ٹائم لائیو سنک کا درست آغاز
+        await MasterSyncManager().startAutoSync(phone);
 
         if (context.mounted) {
           _showSnackBar(context, 'لاگ ان کامیاب!');
