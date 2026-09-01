@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger_page.dart';
-import '../../services/master_sync_manager.dart'; // 👈 1. نیا ماسٹر سنک مینیجر امپورٹ کیا
+import '../../services/master_sync_manager.dart';
 
 class CustomerFormLogic {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -66,12 +66,18 @@ class CustomerFormLogic {
         }
         await settingsBox.put('last_logged_phone', phone);
 
-        // 🎯 2. کسٹمر ڈیش بورڈ پر منتقل ہونے سے پہلے ریئل ٹائم لائیو سنک کا درست آغاز
-        await MasterSyncManager().startAutoSync(phone);
+        // 🎯 ۱۔ بیک گراؤنڈ میں سنک مینیجر کو شروع کر دیں (UI کو await کیے بغیر)
+        Future.microtask(() {
+          MasterSyncManager().startAutoSync(phone);
+        });
 
+        // 🎯 ۲۔ فوری اور بغیر کسی جھٹکے کے دوسرے پیج پر نیویگیٹ کریں
         if (context.mounted) {
           _showSnackBar(context, 'لاگ ان کامیاب!');
-          Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerLedgerPage(customerPhone: phone)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => CustomerLedgerPage(customerPhone: phone)),
+          );
         }
       } else {
         _showSnackBar(context, 'غلط موبائل نمبر یا پاسورڈ!', isError: true);
