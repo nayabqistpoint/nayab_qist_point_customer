@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog.dart';
+import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog_ui.dart';
+import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog_logic.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener_service.dart';
 import 'package:nayab_qist_point_customer/services/master_sync_manager.dart';
 
@@ -124,18 +125,16 @@ class LedgerTopHelper {
       customerPhone: customerPhone,
     );
 
-    // اگر کوئی منظور شدہ اینٹریز ہیں تو آخری رننگ بیلنس لیں
     double finalBalance = 0.0;
     if (processedList.isNotEmpty) {
-      // چونکہ لسٹ ریورس ہے، سب سے پہلی اینٹری میں ہی تازہ ترین رننگ بیلنس ہوتا ہے
       finalBalance = processedList.first.runningBalance;
     }
 
     Color color;
     if (finalBalance > 0) {
-      color = Colors.green.shade700; // ایڈوانس / کریڈٹ
+      color = Colors.green.shade700;
     } else if (finalBalance < 0) {
-      color = Colors.red.shade700; // بقایا دینا / ڈیبٹ
+      color = Colors.red.shade700;
     } else {
       color = Colors.black87;
     }
@@ -147,16 +146,16 @@ class LedgerTopHelper {
     };
   }
 
-  static double getShortAmount(String customerPhone) =>
-      InstallmentPlanDialog.calculateTotalShort(customerPhone);
+  /// 🎯 اصلی اور لائیو شارٹ اماؤنٹ لاجک
+  static double getShortAmount(String customerPhone) {
+    return InstallmentPlanDialogLogic.calculateTotalShort(customerPhone);
+  }
 
+  /// 🎯 نیا انسٹالمنٹ ڈائیلاگ اوپن کرنے کا میتھڈ
   static void openInstallmentDialog(
       BuildContext context, String customerPhone,
       [bool isAdmin = false]) {
-    showDialog(
-      context: context,
-      builder: (_) => InstallmentPlanDialog(customerPhone: customerPhone),
-    );
+    InstallmentPlanDialogUi.show(context, customerPhone, isAdmin: isAdmin);
   }
 
   static BoxDecoration boxDecoration(Color borderClr, Color shadowClr) =>

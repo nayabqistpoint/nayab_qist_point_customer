@@ -44,14 +44,15 @@ class PurchaseNowSyncService {
         }
       }
 
-      // 4. 🎯 [پہلا پے لوڈ] packageBox کے لیے (اصلی اور محفوظ فلو)
-      final String currentTimestamp = DateTime.now().toIso8601String();
+      // 4. 🎯 [پہلا پے لوڈ] packageBox کے لیے (یکساں createdAt تاریخ کے ساتھ)
+      final String currentIsoDate = DateTime.now().toIso8601String();
+      
       final Map<String, dynamic> finalPackagePayload = {
         'customerId': cleanPhone,       // 👈 کسٹمر کا موبائل نمبر (شناختی کی)
         ...rawPackageData,              // 👈 پیکج کیلکولیٹر کا ڈیٹا
         'status': 'pending',            // 👈 درخواست کا اسٹیٹس
         'isSynced': false,              // 👈 ماسٹر سنک کے لیے فلیگ
-        'timestamp': currentTimestamp,
+        'createdAt': currentIsoDate,    // 🎯 یکساں ISO تاریخ (timestamp کو ہٹا کر createdAt رکھا گیا ہے)
       };
 
       // فون نمبر کی Key پر packageBox میں سیو کرنا
@@ -74,12 +75,12 @@ class PurchaseNowSyncService {
       final Map<String, dynamic> transactionPayload = {
         'docId': uniqueDocId,                                                       // 👈 یونیک ڈاکومنٹ آئی ڈی
         'customerId': cleanPhone,                                                  // 👈 کسٹمر کا موبائل نمبر
-        'txAmount': totalAmt,                                                      // 👈 مطلوبہ رقم (صرف یہی رہے گی)
-        'txColor': 'red',                                                          // 👈 پرچیز/سیل کے لیے سرخ رنگ
-        'type': 'sale',                                                            // 👈 ٹائپ وہی (sale)
-        'status': 'pending',                                                       // 👈 پینڈنگ اسٹیٹس
-        'isSynced': false,                                                         // 👈 سنک فلیگ
-        'createdAt': currentTimestamp,                                             // 👈 یکساں ISO تاریخ
+        'txAmount': totalAmt,                                                       // 👈 مطلوبہ رقم (صرف یہی رہے گی)
+        'txColor': 'red',                                                           // 👈 پرچیز/سیل کے لیے سرخ رنگ
+        'type': 'sale',                                                             // 👈 ٹائپ وہی (sale)
+        'status': 'pending',                                                        // 👈 پینڈنگ اسٹیٹس
+        'isSynced': false,                                                          // 👈 سنک فلیگ
+        'createdAt': currentIsoDate,                                                // 🎯 بالکل وہی یکساں ISO تاریخ
         'mobileName': rawPackageData['mobileName'] ?? rawPackageData['deviceName'] ?? rawPackageData['title'] ?? 'N/A',
       };
 

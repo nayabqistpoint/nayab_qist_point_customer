@@ -1,24 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+// 🎯 قسط کیلکولیٹر پیج کا امپورٹ
+import 'package:nayab_qist_point_customer/calculator/installment_calculator_page.dart';
+
 class CustomerLedgerController extends ChangeNotifier {
   final String customerPhone;
 
   bool isLoading = true;
   Map<String, dynamic>? customerDetails;
-  List<Map<String, dynamic>> transactions = [];
 
   CustomerLedgerController({required this.customerPhone}) {
-    loadLedgerData();
+    loadCustomerProfile();
   }
 
+  /// 🟢 ۱۔ پرانی فائلوں اور Helpers کی مطابقت کے لیے Alias میتھڈ (بامشمول ledger_bottom_helper)
   Future<void> loadLedgerData() async {
+    await loadCustomerProfile();
+  }
+
+  /// 🟢 ۲۔ کسٹمر کی مکمل پروفائل معلومات اور فون نمبر لوڈ کرنا (جو باٹم ہیلپر کو پاس ہوتی ہیں)
+  Future<void> loadCustomerProfile() async {
     isLoading = true;
     notifyListeners();
 
     try {
-      final customerBox = Hive.box('customerBox');
-      final usersBox = Hive.box('usersBox');
+      final customerBox = Hive.isBoxOpen('customerBox') 
+          ? Hive.box('customerBox') 
+          : await Hive.openBox('customerBox');
+      final usersBox = Hive.isBoxOpen('usersBox') 
+          ? Hive.box('usersBox') 
+          : await Hive.openBox('usersBox');
 
       dynamic rawCustomer = customerBox.get(customerPhone) ?? usersBox.get(customerPhone);
 
@@ -27,28 +39,10 @@ class CustomerLedgerController extends ChangeNotifier {
       } else {
         customerDetails = {
           'phone': customerPhone,
+          'customerPhone': customerPhone,
           'customerName': 'کسٹمر ($customerPhone)',
         };
       }
-
-      final transactionBox = Hive.box('transactionBox');
-      transactions.clear();
-
-      for (var key in transactionBox.keys) {
-        final rawTx = transactionBox.get(key);
-        if (rawTx != null) {
-          final txMap = Map<String, dynamic>.from(rawTx as Map);
-          if (txMap['customerPhone'] == customerPhone || txMap['phone'] == customerPhone) {
-            transactions.add(txMap);
-          }
-        }
-      }
-
-      transactions.sort((a, b) {
-        String dateA = a['date'] ?? '';
-        String dateB = b['date'] ?? '';
-        return dateB.compareTo(dateA);
-      });
     } catch (e) {
       debugPrint('❌ [LedgerController Error] $e');
     } finally {
@@ -57,34 +51,13 @@ class CustomerLedgerController extends ChangeNotifier {
     }
   }
 
-  // 🎯 🚀 مطلوبہ میتھڈ جو top.dart میں کال ہو رہا ہے:
+  /// 🟢 ۳۔ قسط کیلکولیٹر کا صفحہ کھولنے کا میتھڈ
   void openInstallmentCalculator(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('قسط کیلکولیٹر', textAlign: TextAlign.center),
-        content: const Text('اقساط کا کیلکولیٹر جلد دستیاب ہوگا۔', textAlign: TextAlign.center),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('بند کریں'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const InstallmentCalculaterPage(),
       ),
     );
   }
-
-  double get totalAmount {
-    return transactions.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['totalAmount']?.toString() ?? '0') ?? 0.0);
-    });
-  }
-
-  double get totalPaid {
-    return transactions.fold(0.0, (sum, item) {
-      return sum + (double.tryParse(item['paidAmount']?.toString() ?? '0') ?? 0.0);
-    });
-  }
-
-  double get remainingBalance => totalAmount - totalPaid;
 }

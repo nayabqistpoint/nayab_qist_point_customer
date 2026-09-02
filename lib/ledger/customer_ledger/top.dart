@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/customer_ledger_controller.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_top_helper.dart';
+import 'package:nayab_qist_point_customer/shared_widgets/installment_listener_service.dart';
 
 class LedgerTopWidget extends StatelessWidget {
   final CustomerLedgerController controller;
@@ -43,7 +44,7 @@ class LedgerTopWidget extends StatelessWidget {
                     const SizedBox(height: 2),
                     ValueListenableBuilder<Box>(
                       valueListenable: Hive.box('settingsBox').listenable(),
-                      builder: (context, box, _) {
+                      builder: (context, box, child) {
                         final syncData = LedgerTopHelper.getFormattedSyncData();
                         return Text(
                           "${syncData['date']} - ${syncData['time']} ${syncData['period']} :آخری سنک",
@@ -76,58 +77,72 @@ class LedgerTopWidget extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // 🟢 ۲۔ لائیو بیلنس کارڈز
+        // 🟢 ۲۔ لائیو بیلنس اور انسٹالمنٹ شارٹ کارڈ (InstallmentListenerService کے ذریعے لائیو)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: IntrinsicHeight(
             child: ValueListenableBuilder<Box>(
-              valueListenable: Hive.box('transactionBox').listenable(),
-              builder: (context, box, _) {
-                final bData = LedgerTopHelper.getBalanceData(box, phone);
-                final double totalShort = LedgerTopHelper.getShortAmount(phone);
-                final Color bColor = bData['color'] as Color;
+              valueListenable: InstallmentListenerService.packageBoxListenable,
+              builder: (context, box1, child1) {
+                return ValueListenableBuilder<Box>(
+                  valueListenable: InstallmentListenerService.transactionBoxListenable,
+                  builder: (context, transactionBox, child2) {
+                    final bData = LedgerTopHelper.getBalanceData(transactionBox, phone);
+                    final double totalShort = LedgerTopHelper.getShortAmount(phone);
+                    final Color bColor = bData['color'] as Color;
 
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                        decoration: LedgerTopHelper.boxDecoration(bColor, bColor.withValues(alpha: 0.15)),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text("Rs ${bData['amount']}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: bColor)),
-                            Text(bData['label'].toString(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: bColor)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => LedgerTopHelper.openInstallmentDialog(context, phone),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-                          decoration: LedgerTopHelper.boxDecoration(Colors.indigo.shade300, Colors.indigo.shade100),
-                          child: Row(
-                            children: [
-                              _textCol("اقساط کا پلان", "تفصیلات دیکھیں", Colors.indigo.shade900, Colors.black54, 11, 8),
-                              Container(height: 28, width: 1, color: Colors.indigo.shade100, margin: const EdgeInsets.symmetric(horizontal: 4)),
-                              _textCol(
-                                "Rs ${totalShort.toStringAsFixed(0)}",
-                                totalShort > 0 ? "کل شارٹ" : "شارٹ نہیں",
-                                totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
-                                totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
-                                13,
-                                8,
-                              ),
-                            ],
+                    return Row(
+                      children: [
+                        // ۱۔ رننگ بیلنس کارڈ
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: LedgerTopHelper.boxDecoration(bColor, bColor.withValues(alpha: 0.15)),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  bData['amount'].toString(),
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: bColor),
+                                ),
+                                Text(
+                                  bData['label'].toString(),
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: bColor),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
+                        const SizedBox(width: 10),
+
+                        // ۲۔ لائیو اقساط کا پلان اور شارٹ ڈیو کارڈ
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => LedgerTopHelper.openInstallmentDialog(context, phone),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                              decoration: LedgerTopHelper.boxDecoration(Colors.indigo.shade300, Colors.indigo.shade100),
+                              child: Row(
+                                children: [
+                                  _textCol("اقساط کا پلان", "تفصیلات دیکھیں", Colors.indigo.shade900, Colors.black54, 11, 8),
+                                  Container(height: 28, width: 1, color: Colors.indigo.shade100, margin: const EdgeInsets.symmetric(horizontal: 4)),
+                                  _textCol(
+                                    totalShort > 0 ? "-Rs ${totalShort.toStringAsFixed(0)}" : "Rs 0",
+                                    totalShort > 0 ? "کل شارٹ" : "شارٹ نہیں",
+                                    totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                                    totalShort > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                                    13,
+                                    8,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
