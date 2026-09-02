@@ -83,13 +83,13 @@ class InstallmentPlanDialogLogic {
     final String cleanPhone = sanitizePhone(customerPhone);
     if (cleanPhone.isEmpty) return null;
 
-    // 🎯 ۱۔ کسٹمر کا پے لوڈ تلاش کرنا
+    // 🎯 ۱۔ کسٹمر کا پے لوڈ (پیکیج) تلاش کرنا (فون نمبر، docId، کی یا اندرونی فیلڈز سے)
     dynamic rawData = packageBox.get(cleanPhone);
     if (rawData == null) {
       for (var key in packageBox.keys) {
         final val = packageBox.get(key);
         if (val is Map) {
-          final p = sanitizePhone((val['customerPhone'] ?? val['customerId'] ?? val['phone'] ?? '').toString());
+          final p = sanitizePhone((val['customerPhone'] ?? val['customerId'] ?? val['phone'] ?? val['docId'] ?? key).toString());
           if (p == cleanPhone) {
             rawData = val;
             break;
@@ -101,11 +101,8 @@ class InstallmentPlanDialogLogic {
     if (rawData == null || rawData is! Map) return null;
 
     final data = Map<String, dynamic>.from(rawData);
-    
-    bool isPurchaseRequested = data['isPurchaseRequested'] == true;
-    if (!isPurchaseRequested) return null;
 
-    // 🎯 ۲۔ اسٹیٹس چیک (Pending ہو یا Approved)
+    // 🎯 ۲۔ پیکیج کا اسٹیٹس چیک (یکساں فارمیٹنگ اور ٹرم کے ساتھ)
     String rawStatus = (data['status'] ?? data['pkgStatus'] ?? 'pending').toString().toLowerCase().trim();
     bool isApproved = rawStatus == 'approved';
 
@@ -125,7 +122,7 @@ class InstallmentPlanDialogLogic {
     DateTime purchaseDate = DateTime.tryParse(dateStr) ?? DateTime.now();
     DateTime now = DateTime.now();
 
-    // 🎯 ۳۔ تمام منظور شدہ (Approved Green) رقم کا ایک مرکزی پول تیار کرنا
+    // 🎯 ۳۔ ٹرانزیکشن باکس سے صرف Approved اور Green رقم کا مجموعہ حساب کرنا
     double totalPaidPool = 0.0;
     for (var txKey in transactionBox.keys) {
       final rawTx = transactionBox.get(txKey);
@@ -135,6 +132,7 @@ class InstallmentPlanDialogLogic {
         final txStatus = (tx['status'] ?? '').toString().toLowerCase().trim();
         final txColor = (tx['txColor'] ?? '').toString().toLowerCase().trim();
 
+        // صرف اس کسٹمر کی اپرووڈ گرین ٹرانزیکشنز کاؤنٹ ہوں گی
         if (pPhone == cleanPhone && txStatus == 'approved' && txColor == 'green') {
           double amt = double.tryParse((tx['txAmount'] ?? tx['amount'] ?? 0).toString()) ?? 0.0;
           totalPaidPool += amt.abs();
@@ -144,9 +142,9 @@ class InstallmentPlanDialogLogic {
 
     List<InstallmentRowModel> rows = [];
     double totalOverdueShort = 0.0;
-    double remainingPaidPool = totalPaidPool; // واٹرفال ایڈجسٹمنٹ کے لیے
+    double remainingPaidPool = totalPaidPool;
 
-    // 🎯 ۴۔ واٹرفال ایڈجسٹمنٹ (قسط کی حد تک ادا کرنا اور اضافی رقم اگلی قسط میں منتقل کرنا)
+    // 🎯 ۴۔ واٹرفال قسطوں کی تقسیم اور شارٹ کا حساب
     for (int i = 1; i <= totalMonths; i++) {
       String label = (isAdvanceType && i == 1) ? "ایڈوانس (قسط 1)" : "قسط $i";
       double dueAmount = (isAdvanceType && i == 1) ? advanceAmount : monthlyInstallment;
@@ -164,14 +162,14 @@ class InstallmentPlanDialogLogic {
         dueDate = DateTime(year, month, 5);
       }
 
-      // اس قسط کے لیے وصولی کا حساب (زیادہ سے زیادہ dueAmount)
+      // وصولی کی رقم کو قسطوں پر برابری سے ایڈجسٹ کرنا
       double paidForThisRow = 0.0;
       if (remainingPaidPool >= dueAmount) {
         paidForThisRow = dueAmount;
-        remainingPaidPool -= dueAmount; // اضافی رقم اگلی قسط کے لیے بچ گئی
+        remainingPaidPool -= dueAmount;
       } else {
         paidForThisRow = remainingPaidPool;
-        remainingPaidPool = 0.0; // رقم ختم ہو گئی
+        remainingPaidPool = 0.0;
       }
 
       double short = (dueAmount - paidForThisRow) > 0 ? (dueAmount - paidForThisRow) : 0.0;
