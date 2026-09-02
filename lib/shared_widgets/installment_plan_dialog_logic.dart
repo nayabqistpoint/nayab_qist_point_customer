@@ -53,6 +53,10 @@ class InstallmentPlanDialogLogic {
     return months[(month - 1) % 12];
   }
 
+  static String sanitizePhone(String phone) {
+    return phone.replaceAll(RegExp(r'[^0-9]'), '').trim();
+  }
+
   static double calculateTotalShort(String customerPhone) {
     try {
       if (!Hive.isBoxOpen('packageBox') || !Hive.isBoxOpen('transactionBox')) return 0.0;
@@ -76,15 +80,16 @@ class InstallmentPlanDialogLogic {
     required Box packageBox,
     required Box transactionBox,
   }) {
-    final String cleanPhone = customerPhone.trim();
+    final String cleanPhone = sanitizePhone(customerPhone);
     if (cleanPhone.isEmpty) return null;
 
+    // 🎯 ۱۔ کسٹمر کا پے لوڈ تلاش کرنا
     dynamic rawData = packageBox.get(cleanPhone);
     if (rawData == null) {
       for (var key in packageBox.keys) {
         final val = packageBox.get(key);
         if (val is Map) {
-          final p = (val['customerPhone'] ?? val['customerId'] ?? val['phone'] ?? '').toString().trim();
+          final p = sanitizePhone((val['customerPhone'] ?? val['customerId'] ?? val['phone'] ?? '').toString());
           if (p == cleanPhone) {
             rawData = val;
             break;
@@ -100,7 +105,7 @@ class InstallmentPlanDialogLogic {
     bool isPurchaseRequested = data['isPurchaseRequested'] == true;
     if (!isPurchaseRequested) return null;
 
-    // 🎯 1. ایکسٹرا سپیس ہٹانے کے لیے .trim() کا اضافہ
+    // 🎯 ۲۔ اسٹیٹس چیک (Pending ہو یا Approved)
     String rawStatus = (data['status'] ?? data['pkgStatus'] ?? 'pending').toString().toLowerCase().trim();
     bool isApproved = rawStatus == 'approved';
 
@@ -116,19 +121,36 @@ class InstallmentPlanDialogLogic {
     var match = regExp.firstMatch(packageName);
     if (match != null) totalMonths = int.tryParse(match.group(1)!) ?? 6;
 
-    // 🎯 2. تارخِ خریداری کا درست نکالنا (createdAt یا timestamp)
     String dateStr = (data['createdAt'] ?? data['timestamp'] ?? '').toString();
     DateTime purchaseDate = DateTime.tryParse(dateStr) ?? DateTime.now();
     DateTime now = DateTime.now();
 
+    // 🎯 ۳۔ تمام منظور شدہ (Approved Green) رقم کا ایک مرکزی پول تیار کرنا
+    double totalPaidPool = 0.0;
+    for (var txKey in transactionBox.keys) {
+      final rawTx = transactionBox.get(txKey);
+      if (rawTx is Map) {
+        final tx = Map<String, dynamic>.from(rawTx);
+        final pPhone = sanitizePhone((tx['customerPhone'] ?? tx['customerId'] ?? tx['phone'] ?? '').toString());
+        final txStatus = (tx['status'] ?? '').toString().toLowerCase().trim();
+        final txColor = (tx['txColor'] ?? '').toString().toLowerCase().trim();
+
+        if (pPhone == cleanPhone && txStatus == 'approved' && txColor == 'green') {
+          double amt = double.tryParse((tx['txAmount'] ?? tx['amount'] ?? 0).toString()) ?? 0.0;
+          totalPaidPool += amt.abs();
+        }
+      }
+    }
+
     List<InstallmentRowModel> rows = [];
     double totalOverdueShort = 0.0;
+    double remainingPaidPool = totalPaidPool; // واٹرفال ایڈجسٹمنٹ کے لیے
 
+    // 🎯 ۴۔ واٹرفال ایڈجسٹمنٹ (قسط کی حد تک ادا کرنا اور اضافی رقم اگلی قسط میں منتقل کرنا)
     for (int i = 1; i <= totalMonths; i++) {
       String label = (isAdvanceType && i == 1) ? "ایڈوانس (قسط 1)" : "قسط $i";
       double dueAmount = (isAdvanceType && i == 1) ? advanceAmount : monthlyInstallment;
 
-      // 🎯 3. 5 تاریخ والی ڈیو ڈیٹس کا فارمولا
       DateTime dueDate;
       if (i == 1) {
         dueDate = purchaseDate;
@@ -142,41 +164,22 @@ class InstallmentPlanDialogLogic {
         dueDate = DateTime(year, month, 5);
       }
 
-      // 🎯 4. وصولی (Paid) గننا (فقط Approved + txColor == green)
-      double paid = 0.0;
-      if (isApproved) {
-        DateTime cycleStart = (i == 1)
-            ? purchaseDate.subtract(const Duration(days: 1))
-            : DateTime(dueDate.year, dueDate.month - 1, 6);
-        DateTime cycleEnd = DateTime(dueDate.year, dueDate.month, 5, 23, 59, 59);
-
-        for (var txKey in transactionBox.keys) {
-          final rawTx = transactionBox.get(txKey);
-          if (rawTx is Map) {
-            final tx = Map<String, dynamic>.from(rawTx);
-            final pPhone = (tx['customerPhone'] ?? tx['customerId'] ?? tx['phone'] ?? '').toString().trim();
-            final txStatus = (tx['status'] ?? '').toString().toLowerCase().trim();
-            final txColor = (tx['txColor'] ?? '').toString().toLowerCase().trim();
-
-            if (pPhone == cleanPhone && txStatus == 'approved' && txColor == 'green') {
-              String tDateStr = (tx['date'] ?? tx['createdAt'] ?? tx['timestamp'] ?? '').toString();
-              DateTime? txDate = DateTime.tryParse(tDateStr);
-              if (txDate != null && txDate.isAfter(cycleStart) && txDate.isBefore(cycleEnd)) {
-                double amt = double.tryParse((tx['txAmount'] ?? tx['amount'] ?? 0).toString()) ?? 0.0;
-                paid += amt.abs();
-              }
-            }
-          }
-        }
+      // اس قسط کے لیے وصولی کا حساب (زیادہ سے زیادہ dueAmount)
+      double paidForThisRow = 0.0;
+      if (remainingPaidPool >= dueAmount) {
+        paidForThisRow = dueAmount;
+        remainingPaidPool -= dueAmount; // اضافی رقم اگلی قسط کے لیے بچ گئی
+      } else {
+        paidForThisRow = remainingPaidPool;
+        remainingPaidPool = 0.0; // رقم ختم ہو گئی
       }
 
-      double short = (dueAmount - paid) > 0 ? (dueAmount - paid) : 0.0;
-      double progress = dueAmount > 0 ? (paid / dueAmount).clamp(0.0, 1.0) : 0.0;
+      double short = (dueAmount - paidForThisRow) > 0 ? (dueAmount - paidForThisRow) : 0.0;
+      double progress = dueAmount > 0 ? (paidForThisRow / dueAmount).clamp(0.0, 1.0) : 0.0;
 
       bool isOverdue = dueDate.isBefore(now) ||
           (dueDate.year == now.year && dueDate.month == now.month && dueDate.day == now.day);
 
-      // 🎯 5. اگر تاریخ گزر گئی یا آج ڈیو ہے تو شارٹ نیچے جمع ہوگا
       if (isOverdue && short > 0) {
         totalOverdueShort += short;
       }
@@ -187,7 +190,7 @@ class InstallmentPlanDialogLogic {
         monthText: getUrduMonth(dueDate.month),
         year: dueDate.year.toString(),
         due: dueAmount.toStringAsFixed(0),
-        paid: paid.toStringAsFixed(0),
+        paid: paidForThisRow.toStringAsFixed(0),
         short: short.toStringAsFixed(0),
         progress: progress,
         isOverdue: isOverdue,

@@ -44,21 +44,28 @@ class PurchaseNowSyncService {
         }
       }
 
-      // 4. 🎯 [پہلا پے لوڈ] packageBox کے لیے (یکساں createdAt تاریخ کے ساتھ)
+      // 4. 🎯 [پہلا پے لوڈ] packageBox کے لیے (غیر ضروری فیلڈز سے پاک، صاف ستھرا پے لوڈ)
       final String currentIsoDate = DateTime.now().toIso8601String();
       
+      // rawPackageData میں سے اگر پرانی فیلڈز آ رہی ہوں تو ان کی صفائی
+      final Map<String, dynamic> cleanPackageData = Map<String, dynamic>.from(rawPackageData)
+        ..remove('isPurchaseRequested')
+        ..remove('customerPhone')
+        ..remove('docId')
+        ..remove('timestamp');
+
       final Map<String, dynamic> finalPackagePayload = {
-        'customerId': cleanPhone,       // 👈 کسٹمر کا موبائل نمبر (شناختی کی)
-        ...rawPackageData,              // 👈 پیکج کیلکولیٹر کا ڈیٹا
+        'customerId': cleanPhone,       // 👈 صرف اور صرف کسٹمر کی شناختی آئی ڈی (فون نمبر)
+        ...cleanPackageData,            // 👈 کیلکولیٹر کا خالص ڈیٹا (mobileName, packageName, totalPrice, advanceAmount, monthlyInstallment وغیرہ)
         'status': 'pending',            // 👈 درخواست کا اسٹیٹس
         'isSynced': false,              // 👈 ماسٹر سنک کے لیے فلیگ
-        'createdAt': currentIsoDate,    // 🎯 یکساں ISO تاریخ (timestamp کو ہٹا کر createdAt رکھا گیا ہے)
+        'createdAt': currentIsoDate,    // 🎯 واحد اور یکساں ISO تاریخ
       };
 
       // فون نمبر کی Key پر packageBox میں سیو کرنا
       await packageBox.put(cleanPhone, finalPackagePayload);
 
-      // 5. 🎯 [دوسرا پے لوڈ] transactionBox کے لیے (یونیک آئی ڈی، رقم اور رنگ کے ساتھ)
+      // 5. 🎯 [دوسرا پے لوڈ] transactionBox کے لیے (آپ کا اصل پے لوڈ - بالکل نبا چھڑا ہوا)
       Box transactionBox;
       if (Hive.isBoxOpen('transactionBox')) {
         transactionBox = Hive.box('transactionBox');
