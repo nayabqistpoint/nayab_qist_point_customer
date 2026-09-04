@@ -27,36 +27,68 @@ class PendingMediaService {
 
         Map<String, dynamic> mediaMap = Map<String, dynamic>.from(rawData as Map);
         String? currentStatus = mediaMap['mediaStatus'];
-        String? rawMediaData = mediaMap['mediaData'];
-        String category = (mediaMap['category'] ?? 'general').toString();
 
-        // 🎯 صرف انہی ریکارڈز کو اپ لوڈ کریں جو PENDING_UPLOAD ہیں
-        if (currentStatus == 'PENDING_UPLOAD' &&
-            rawMediaData != null &&
-            rawMediaData.isNotEmpty &&
-            !rawMediaData.startsWith('http')) {
+        if (currentStatus == 'PENDING_UPLOAD') {
+          bool updated = false;
 
-          debugPrint("⏳ Uploading Base64 ($category) for Key: $key ...");
+          // 1️⃣ سائن اپ اور پرچیز سروسز کے لیے (mediaData)
+          if (mediaMap.containsKey('mediaData') &&
+              mediaMap['mediaData'] != null &&
+              !mediaMap['mediaData'].toString().startsWith('http') &&
+              !mediaMap['mediaData'].toString().startsWith('NO_')) {
+            
+            String? url = await _uploadToCloudinary(
+              rawData: mediaMap['mediaData'].toString(),
+              resourceType: 'image',
+              folder: 'nayab_qist_media/signup',
+            );
+            if (url != null) {
+              mediaMap['mediaData'] = url;
+              updated = true;
+            }
+          }
 
-          String resourceType = (category.contains('audio') || category.contains('video'))
-              ? 'video'
-              : 'image';
+          // 2️⃣ پے ناؤ کے لیے (pictureData)
+          if (mediaMap.containsKey('pictureData') &&
+              mediaMap['pictureData'] != null &&
+              !mediaMap['pictureData'].toString().startsWith('http') &&
+              !mediaMap['pictureData'].toString().startsWith('NO_')) {
 
-          String? downloadUrl = await _uploadToCloudinary(
-            rawData: rawMediaData,
-            resourceType: resourceType,
-            folder: 'nayab_qist_media/$category',
-          );
+            String? url = await _uploadToCloudinary(
+              rawData: mediaMap['pictureData'].toString(),
+              resourceType: 'image',
+              folder: 'nayab_qist_media/paynow_images',
+            );
+            if (url != null) {
+              mediaMap['pictureData'] = url;
+              updated = true;
+            }
+          }
 
-          if (downloadUrl != null && downloadUrl.isNotEmpty) {
-            // 1️⃣ لوکل mediaBox میں Base64 کو کلاؤڈ نری کے شارٹ URL سے اوور رائٹ کریں
-            mediaMap['mediaData'] = downloadUrl;
+          // 3️⃣ آڈیو نوٹس کے لیے (audioData)
+          if (mediaMap.containsKey('audioData') &&
+              mediaMap['audioData'] != null &&
+              !mediaMap['audioData'].toString().startsWith('http') &&
+              !mediaMap['audioData'].toString().startsWith('NO_')) {
+
+            String? url = await _uploadToCloudinary(
+              rawData: mediaMap['audioData'].toString(),
+              resourceType: 'video', // آڈیو کلاؤڈ نری پر 'video' کے تحت جاتی ہے
+              folder: 'nayab_qist_media/audio_notes',
+            );
+            if (url != null) {
+              mediaMap['audioData'] = url;
+              updated = true;
+            }
+          }
+
+          // 🎯 صرف اسی صورت میں سٹیٹس اپ ڈیٹ کریں اگر میڈیا اپ لوڈ ہوا ہو
+          if (updated) {
             mediaMap['mediaStatus'] = 'READY_FOR_SYNC';
-            mediaMap['isSynced'] = false; // 🟢 مرکزی پش سروس کے لیے سگنل (Ready to Push)
+            mediaMap['isSynced'] = false; // 🟢 پش سروس کے لیے فلیگ آن
 
             await mBox.put(key, mediaMap);
-
-            debugPrint("🎉 [Cloudinary Link Saved]: $downloadUrl for Key: $key");
+            debugPrint("🎉 [Media Uploaded & Saved] Key: $key");
           }
         }
       }

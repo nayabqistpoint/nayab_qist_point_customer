@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_controller.dart';
@@ -17,13 +19,24 @@ class PaymentSourceCard extends StatefulWidget {
 }
 
 class _PaymentSourceCardState extends State<PaymentSourceCard> {
-  String? _attachedImagePath;
+  bool _hasImagePicked = false;
 
+  /// 🎯 ویب اور موبائل دونوں کے لیے تصویر پک کرنے کا سمارٹ میتھڈ
   void _pickAttachment() async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() => _attachedImagePath = image.path);
-      widget.controller.attachmentPath = image.path;
+      if (kIsWeb) {
+        // 🟢 ویب کے لیے raw bytes پڑھ کر Base64 کیپچر کریں (blob کا علاج)
+        final bytes = await image.readAsBytes();
+        final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        
+        setState(() => _hasImagePicked = true);
+        widget.controller.attachmentPath = base64Image;
+      } else {
+        // 🟢 موبائل ڈیوائس کے لیے فائل کا پاتھ
+        setState(() => _hasImagePicked = true);
+        widget.controller.attachmentPath = image.path;
+      }
     }
   }
 
@@ -174,15 +187,15 @@ class _PaymentSourceCardState extends State<PaymentSourceCard> {
                 height: 60,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _attachedImagePath != null ? Colors.green : Colors.black26,
-                    width: _attachedImagePath != null ? 2 : 1,
+                    color: _hasImagePicked ? Colors.green : Colors.black26,
+                    width: _hasImagePicked ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(8),
-                  color: _attachedImagePath != null ? Colors.green.shade50 : null,
+                  color: _hasImagePicked ? Colors.green.shade50 : null,
                 ),
                 child: Icon(
-                  _attachedImagePath != null ? Icons.check_circle : Icons.image_outlined,
-                  color: _attachedImagePath != null ? Colors.green : Colors.black38,
+                  _hasImagePicked ? Icons.check_circle : Icons.image_outlined,
+                  color: _hasImagePicked ? Colors.green : Colors.black38,
                   size: 28,
                 ),
               ),

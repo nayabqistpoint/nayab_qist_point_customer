@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/ledger/purchase_now/item_package_ui.dart';
 import 'package:nayab_qist_point_customer/services/purchase_now_sync_service.dart';
+import 'package:nayab_qist_point_customer/services/pending_media_service.dart'; // 👈 پینڈنگ میڈیا سروس کا امپورٹ
 
 class PurchaseNowController {
   // پیکج یو آئی کی گلوبل کی (Key)
@@ -24,7 +25,7 @@ class PurchaseNowController {
       }
     }
 
-    // 🎯 پے لوڈ بنانے اور سیو کرنے کا تمام کام SyncService کے سپرد کر دیا گیا ہے
+    // 🎯 پے لوڈ بنانے اور سیو کرنے کا کام
     bool isSuccess = await PurchaseNowSyncService.processAndSavePurchaseRequest(
       customerMobileNumber: customerMobileNumber,
       rawPackageData: packageData,
@@ -32,6 +33,9 @@ class PurchaseNowController {
     );
 
     if (isSuccess) {
+      // 🎯 لوکل سیونگ کامیاب ہوتے ہی پینڈنگ میڈیا اپ لوڈ سروس کو ٹریگر کریں
+      PendingMediaService.processPendingMedia();
+
       onSuccess();
     }
   }

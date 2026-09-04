@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/services/pay_now_sync_service.dart';
+import 'package:nayab_qist_point_customer/services/pending_media_service.dart'; // 👈 نیا امپورٹ
 
 class PaymentRowItem {
   String source;
@@ -88,7 +89,6 @@ class PayNowController extends ChangeNotifier {
     }
   }
 
-  /// 🎯 اسپلٹ موڈ آن کرتے وقت سنگل رقم کو پہلی رو میں منتقل کرنا اور لسٹنر لگانا
   void toggleSplitMode(List<String> sources) {
     isSplitMode = true;
     final String initialSingleText = singlePaymentAmountController.text;
@@ -102,7 +102,6 @@ class PayNowController extends ChangeNotifier {
     final String first = sources.contains(selectedPaymentSource) ? selectedPaymentSource : sources.first;
     final String second = sources.firstWhere((s) => s != first, orElse: () => sources.first);
 
-    // پہلی رو میں پرانی لکھی رقم محفوظ رہے گی
     final item1 = PaymentRowItem(source: first, amount: initialSingleText);
     final item2 = PaymentRowItem(source: second);
 
@@ -113,7 +112,6 @@ class PayNowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 🎯 نئی رو شامل کرتے وقت پرانی رقمیں محفوظ رہیں گی اور نیا لسٹنر بھی لگے گا
   void addSplitRow(List<String> sources) {
     final String next = sources.firstWhere(
       (s) => !splitRows.any((r) => r.source == s),
@@ -164,8 +162,9 @@ class PayNowController extends ChangeNotifier {
     return null;
   }
 
+  /// 🎯 فارم سبمٹ اور پینڈنگ میڈیا ٹریگر
   Future<bool> submitTransaction() async {
-    return await SyncService.processAndUploadTransaction(
+    bool isSuccess = await SyncService.processAndUploadTransaction(
       customerMobileNumber: customerMobileNumber,
       enteredAmount: _enteredAmount,
       netPayableAmount: netPayableAmount,
@@ -179,6 +178,13 @@ class PayNowController extends ChangeNotifier {
       attachmentPath: attachmentPath,
       audioPath: audioPath,
     );
+
+    if (isSuccess) {
+      // 🎯 پینڈنگ میڈیا سروس کو فوراً ٹریگر کریں
+      PendingMediaService.processPendingMedia();
+    }
+
+    return isSuccess;
   }
 
   void clearForm() {

@@ -3,7 +3,6 @@ import 'package:hive/hive.dart';
 import 'dart:developer' as developer;
 
 class SyncService {
-  /// 🎯 پے لوڈ (Payload) کی تیاری اور ہائیو باکسز (transactionBox & outboxBox) میں سیونگ کی سروس
   static Future<bool> processAndUploadTransaction({
     required String customerMobileNumber,
     required double enteredAmount,
@@ -19,24 +18,21 @@ class SyncService {
     required String? audioPath,
   }) async {
     try {
-      // 1. کسٹمر نمبر سے غیر ضروری کریکٹرز کی صفائی
       String cleanPhone = customerMobileNumber.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      final String currentIsoDate = DateTime.now().toIso8601String();
 
-      // 2. 🎯 آف لائن ہی 20 کریکٹرز کی منفرد String Doc ID جنریٹ کرنا (بغیر آن لائن نیٹ ورک کال کے)
+      // 🎯 20 کریکٹرز کی آف لائن فائرسٹور یونیک آئی ڈی
       final String uniqueDocId = FirebaseFirestore.instance.collection('transactions').doc().id;
 
-      // 3. 🎯 نیا اور سٹینڈرڈ پے لوڈ (تمام پرانے فیلڈز محفوظ + نئے فیلڈز شامل)
       final Map<String, dynamic> payload = {
-        'docId': uniqueDocId,                 // 👈 یونیک ڈاکومنٹ آئی ڈی
-        'customerId': cleanPhone,            // 👈 کسٹمر کی واحد شناختی کی
-        'txAmount': enteredAmount,           // 👈 سٹینڈرڈ رقم (amount کی جگہ)
-        'txColor': 'green',                  // 👈 پے ناؤ / وصولی کے لیے ہمیشہ سبز
-        'type': 'received',                  // 👈 ٹائپ ریسیوڈ ہی رہے گی
-        'status': 'pending',                 // 👈 فارم کا اسٹیٹس
-        'isSynced': false,                   // 👈 ماسٹر سنک انجن کے لیے فلیگ
-        'createdAt': DateTime.now().toIso8601String(), // 👈 یکساں ٹائم سٹیمپ فیلڈ
-
-        // 🎯 آپ کے تمام پرانے اور اہم فیلڈز (100% محفوظ)
+        'docId': uniqueDocId,
+        'customerId': cleanPhone,
+        'txAmount': enteredAmount,
+        'txColor': 'green',
+        'type': 'received',
+        'status': 'pending',
+        'isSynced': false,
+        'createdAt': currentIsoDate,
         'discount': {
           'category': discountCategory,
           'value': discountValue,
@@ -47,30 +43,47 @@ class SyncService {
         'source': selectedPaymentSource,
         'splitPayments': splitPaymentsList,
         'description': description,
-        'picturePath': attachmentPath ?? '',
-        'audioPath': audioPath ?? 'Not Recorded',
       };
 
-      // 4. transactionBox میں یونیک سٹرنگ Key کے ساتھ ریکارڈ سیو کرنا (box.add کی جگہ box.put)
       var box = Hive.isBoxOpen('transactionBox')
           ? Hive.box('transactionBox')
           : await Hive.openBox('transactionBox');
       await box.put(uniqueDocId, payload);
 
-      // 5. outboxBox میں سنک کیو (Queue) شامل کرنا
       if (Hive.isBoxOpen('outboxBox')) {
         var outbox = Hive.box('outboxBox');
         await outbox.put(uniqueDocId, {
           'action': 'CREATE_TRANSACTION',
           'data': payload,
-          'createdAt': DateTime.now().toIso8601String(),
+          'createdAt': currentIsoDate,
         });
       }
 
-      developer.log(
-        "Clean payload stored successfully with docId: $uniqueDocId for Phone: $cleanPhone",
-        name: "SyncService",
-      );
+      // 🎯 mediaBox: Key = cleanPhone_paynow_uniqueDocId (کبھی اوور رائٹ نہیں ہوگی)
+      var mediaBox = Hive.isBoxOpen('mediaBox')
+          ? Hive.box('mediaBox')
+          : await Hive.openBox('mediaBox');
+
+      String paynowMediaDocKey = "${cleanPhone}_paynow_$uniqueDocId";
+
+      bool hasPicture = attachmentPath != null && attachmentPath.isNotEmpty;
+      bool hasAudio = audioPath != null && audioPath.isNotEmpty && audioPath != 'Not Recorded';
+
+      final Map<String, dynamic> paynowMediaMap = {
+        'customerId': cleanPhone,
+        'txDocId': uniqueDocId,
+        'sourcePage': 'paynow',
+        'category': 'payment_media',
+        'pictureData': hasPicture ? attachmentPath : 'NO_IMAGE',
+        'audioData': hasAudio ? audioPath : 'NO_AUDIO_RECORDED',
+        'mediaStatus': (hasPicture || hasAudio) ? 'PENDING_UPLOAD' : 'NO_MEDIA',
+        'isSynced': true,
+        'createdAt': currentIsoDate,
+      };
+
+      await mediaBox.put(paynowMediaDocKey, paynowMediaMap);
+
+      developer.log("Success: Stored paynow media with key $paynowMediaDocKey", name: "SyncService");
       return true;
     } catch (e) {
       developer.log("SyncService Error", error: e, name: "SyncService");
