@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nayab_qist_point_customer/signup_page/customer_info.dart';
 import 'package:nayab_qist_point_customer/signup_page/guarantor_info.dart';
 import 'package:nayab_qist_point_customer/services/signup_sync_service.dart';
+import 'package:nayab_qist_point_customer/services/pending_media_service.dart'; // 👈 نیا پینڈنگ میڈیا سروس امپورٹ
 
 class SignUpController extends ChangeNotifier {
   final GlobalKey<CustomerInfoWidgetState> customerKey = GlobalKey<CustomerInfoWidgetState>();
@@ -67,7 +68,7 @@ class SignUpController extends ChangeNotifier {
         }
       }();
 
-      // 🎯 ۲. لوکل باکسز اور آؤٹ باکس میں ڈیٹا پروسیسنگ کے لیے سروس کو کال
+      // 🎯 ۲. لوکل باکسز میں ڈیٹا پروسیسنگ کے لیے سروس کو کال
       bool isSavedLocally = false;
       try {
         isSavedLocally = await SignupRequestsService().processRegistration(
@@ -76,6 +77,11 @@ class SignUpController extends ChangeNotifier {
           guarantorData: guarantorData,
           isTermsAccepted: _isTermsAccepted,
         );
+
+        // 🎯 لوکل سیو کے بعد mediaBox کے Base64 کو کلاؤڈ نری لنک میں بدلنے کے لیے کال
+        if (isSavedLocally) {
+          PendingMediaService.processPendingMedia();
+        }
       } catch (e) {
         debugPrint('❌ [Controller Error] Registration Process Failed: $e');
       }
@@ -89,7 +95,7 @@ class SignUpController extends ChangeNotifier {
           SnackBar(
             content: Text(
               isSavedLocally 
-                ? 'درخواست کامیابی سے آؤٹ باکس میں محفوظ ہو گئی ہے!' 
+                ? 'درخواست کامیابی سے محفوظ ہو گئی ہے!' 
                 : 'درخواست محفوظ کرنے میں ناکامی ہوئی!',
             ),
             backgroundColor: isSavedLocally ? Colors.green : Colors.red,

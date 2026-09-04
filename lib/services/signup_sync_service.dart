@@ -11,7 +11,7 @@ class SignupRequestsService {
     try {
       final String customerKey = cleanPhone;
 
-      // 1️⃣ تینوں ہائیو باکسز حاصل کرنا
+      // 1️⃣ تمام ضروری ہائیو باکسز حاصل کرنا
       final Box customerBox = Hive.isBoxOpen('customerBox')
           ? Hive.box('customerBox')
           : await Hive.openBox('customerBox');
@@ -24,54 +24,101 @@ class SignupRequestsService {
           ? Hive.box('usersBox')
           : await Hive.openBox('usersBox');
 
+      final Box mediaBox = Hive.isBoxOpen('mediaBox')
+          ? Hive.box('mediaBox')
+          : await Hive.openBox('mediaBox');
+
       final String nowIso = DateTime.now().toIso8601String();
 
-      // 2️⃣ 🎯 کسٹمر کا پے لوڈ
+      // 2️⃣ 🎯 کسٹمر کا پے لوڈ (صرف ڈپلیکیٹ customerPhone، customerSelfie اور docId ہٹا کر)
+      Map<String, dynamic> cleanedCustomerData = Map<String, dynamic>.from(customerData);
+      String? customerSelfieData = cleanedCustomerData.remove('customerSelfie');
+      cleanedCustomerData.remove('customerPhone'); // 👈 صرف کسٹمر کا ڈپلیکیٹ نمبر ختم
+      cleanedCustomerData.remove('docId');
+
       final Map<String, dynamic> finalCustomerMap = {
-        'customerId': cleanPhone,
-        ...customerData,
-        'status': 'Pending',
+        'customerId': cleanPhone, // 👈 کسٹمر کی مین آئی ڈی
+        ...cleanedCustomerData,
+        'status': 'pending',
         'isSynced': false,
         'createdAt': nowIso,
       };
 
-      // 3️⃣ 🎯 ضامن (Guarantor) کا پے لوڈ
+      // 3️⃣ 🎯 ضامن (Guarantor) کا پے لوڈ (guarantorPhone بحال ہے)
       bool isGuarantorPresent = guarantorData['isGuarantorPresent'] ?? false;
+      Map<String, dynamic> cleanedGuarantorData = Map<String, dynamic>.from(guarantorData);
+      String? guarantorSelfieData = cleanedGuarantorData.remove('guarantorSelfie');
+      cleanedGuarantorData.remove('docId');
+
       final Map<String, dynamic> finalGuarantorMap = {
-        'customerId': cleanPhone,
-        ...guarantorData,
-        'status': 'Pending',
+        'customerId': cleanPhone, // 👈 کسٹمر کا فون نمبر بطور حوالہ
+        ...cleanedGuarantorData,  // 👈 اس کے اندر guarantorPhone موجود رہے گا
+        'status': 'pending',
         'isSynced': false,
         'createdAt': nowIso,
       };
 
-      // 4️⃣ 🎯 یوزرز (UsersBox) کا پے لوڈ (docId ہٹا کر customerId شامل کر دیا گیا ہے)
+      // 4️⃣ 🎯 یوزرز (UsersBox) کا پے لوڈ
       String generatedPin = cleanPhone.length >= 4 
           ? cleanPhone.substring(cleanPhone.length - 4) 
           : cleanPhone;
 
       final Map<String, dynamic> finalUserMap = {
-        'customerId': cleanPhone,       // 👈 docId کی جگہ یونیورسل customerId
-        'phone': cleanPhone,            // 👈 لاگ ان / یوزر نیم
+        'customerId': cleanPhone,
         'pin': generatedPin,
         'isAdmin': false,
-        'status': 'Pending',
+        'status': 'pending',
         'isSynced': false,
         'createdAt': nowIso,
       };
 
-      // 🎯 STEP 1: کسٹمر باکس میں ڈیٹا سیو کرنا
+      // 🎯 STEP 1: کسٹمر باکس میں سیو کرنا
       await customerBox.put(customerKey, finalCustomerMap);
 
-      // 🎯 STEP 2: ضامن باکس میں ڈیٹا سیو کرنا (اگر موجود ہو)
+      // 🎯 STEP 2: ضامن باکس میں سیو کرنا (اگر موجود ہو)
       if (isGuarantorPresent) {
         await guarantorBox.put(customerKey, finalGuarantorMap);
         debugPrint('✅ ضامن کا ڈیٹا guarantorBox میں محفوظ ہو گیا۔');
       }
 
-      // 🎯 STEP 3: یوزرز باکس میں پینڈنگ اتھینٹیکیشن ڈیٹا سیو کرنا
+      // 🎯 STEP 3: یوزرز باکس میں سیو کرنا
       await usersBox.put(customerKey, finalUserMap);
-      debugPrint('✅ یوزر کا محفوظ لاگ ان ڈیٹا (Status: Pending) usersBox میں محفوظ ہو گیا۔');
+
+      // 🎯 STEP 4: کسٹمر سیلفی کا mediaBox پے لوڈ (Key = mobile_customer)
+      if (customerSelfieData != null && customerSelfieData.isNotEmpty) {
+        String customerMediaDocKey = "${cleanPhone}_customer";
+
+        final Map<String, dynamic> customerMediaMap = {
+          'customerId': cleanPhone,
+          'sourcePage': 'signup',
+          'category': 'customer_selfie',
+          'mediaData': customerSelfieData,
+          'mediaStatus': 'PENDING_UPLOAD',
+          'isSynced': true,
+          'createdAt': nowIso,
+        };
+
+        await mediaBox.put(customerMediaDocKey, customerMediaMap);
+        debugPrint('📸 کسٹمر سیلفی mediaBox میں محفوظ ہو گئی ($customerMediaDocKey)');
+      }
+
+      // 🎯 STEP 5: گرینٹر سیلفی کا mediaBox پے لوڈ (Key = mobile_guarantor)
+      if (isGuarantorPresent && guarantorSelfieData != null && guarantorSelfieData.isNotEmpty) {
+        String guarantorMediaDocKey = "${cleanPhone}_guarantor";
+
+        final Map<String, dynamic> guarantorMediaMap = {
+          'customerId': cleanPhone,
+          'sourcePage': 'signup',
+          'category': 'guarantor_selfie',
+          'mediaData': guarantorSelfieData,
+          'mediaStatus': 'PENDING_UPLOAD',
+          'isSynced': true,
+          'createdAt': nowIso,
+        };
+
+        await mediaBox.put(guarantorMediaDocKey, guarantorMediaMap);
+        debugPrint('📸 گرینٹر سیلفی mediaBox میں محفوظ ہو گئی ($guarantorMediaDocKey)');
+      }
 
       return true;
     } catch (e) {

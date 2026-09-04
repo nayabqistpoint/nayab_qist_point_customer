@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -42,7 +44,6 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎯 مکمل اردو ڈائریکشن (RTL)
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
@@ -57,7 +58,6 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 🎯 صاف ستھرا ٹائٹل
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
               child: Text(
@@ -85,7 +85,6 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> {
             _buildTextField(controller: addressController, label: 'گھر کا پتہ', icon: Icons.home),
             const SizedBox(height: 16),
 
-            // 🎯 رسپانسو سیلفی ڈبہ (Wrap کے ساتھ)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(10),
@@ -127,8 +126,18 @@ class CustomerInfoWidgetState extends State<CustomerInfoWidget> {
                         imageQuality: 80,
                       );
                       if (photo != null) {
+                        String formattedData = '';
+                        if (kIsWeb) {
+                          // 🌐 blob: کی جگہ Base64
+                          final bytes = await photo.readAsBytes();
+                          formattedData = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                        } else {
+                          // 📱 اینڈرائیڈ ڈیوائس فائل پاتھ
+                          formattedData = photo.path;
+                        }
+
                         setState(() {
-                          customerSelfiePath = photo.path;
+                          customerSelfiePath = formattedData;
                         });
                       }
                     },

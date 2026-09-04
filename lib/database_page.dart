@@ -10,7 +10,7 @@ class DatabasePage extends StatefulWidget {
 }
 
 class _DatabasePageState extends State<DatabasePage> {
-  // 🎯 فعال باکسز کی فہرست (bankBox, expenseBox, outboxBox کی جگہ settingsBox شامل)
+  // 🎯 فعال باکسز کی فہرست (mediaBox کو انسپکٹر میں مانیٹر کرنے کے لیے شامل کر دیا گیا ہے)
   final List<String> _boxNames = [
     'customerBox',
     'guarantorBox',
@@ -18,7 +18,8 @@ class _DatabasePageState extends State<DatabasePage> {
     'stockBox',
     'transactionBox',
     'usersBox',
-    'settingsBox', // 👈 انسپکٹر میں لوکل سیٹنگز مانیٹر کرنے کے لیے
+    'settingsBox',
+    'mediaBox', // 👈 نیا میڈیا باکس یہاں دیکھ سکتے ہیں
   ];
 
   @override
