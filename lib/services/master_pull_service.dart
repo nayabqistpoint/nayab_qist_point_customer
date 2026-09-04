@@ -19,6 +19,7 @@ class MasterLiveSyncService {
     'usersBox',
     'transactionBox',
     'stockBox',
+    'mediaBox', // 👈 mediaBox شامل کر دیا گیا
   ];
 
   Future<void> initPullService() async => await _ensureBoxesOpened();
@@ -58,8 +59,8 @@ class MasterLiveSyncService {
           );
         });
         _firestoreSubscriptions.add(sub);
-      } else if (boxName == 'transactionBox') {
-        // ۲۔ transactionBox: customerId فیلڈ کے ساتھ ٹریکنگ
+      } else if (boxName == 'transactionBox' || boxName == 'mediaBox') {
+        // ۲۔ transactionBox اور mediaBox: customerId فیلڈ کے ساتھ فلٹرنگ
         final sub = _firestore
             .collection(boxName)
             .where('customerId', isEqualTo: cleanPhone)
@@ -76,19 +77,19 @@ class MasterLiveSyncService {
                 }
               }
 
-              // حذف شدہ ٹرانزیکشنز ہائیو سے صاف کرنا
+              // حذف شدہ ریکارڈز ہائیو سے صاف کرنا
               final localKeys = hiveBox.keys.toList();
               for (var key in localKeys) {
                 final item = hiveBox.get(key);
                 if (item is Map) {
-                  final p = (item['customerPhone'] ?? item['customerId'] ?? '').toString().trim();
+                  final p = (item['customerId'] ?? item['customerPhone'] ?? '').toString().trim();
                   if (p == cleanPhone && !firestoreDocIds.contains(key.toString())) {
                     await hiveBox.delete(key);
                   }
                 }
               }
             },
-            errorTag: 'Transaction Pull',
+            errorTag: '$boxName Pull',
           );
         });
         _firestoreSubscriptions.add(sub);

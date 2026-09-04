@@ -23,6 +23,7 @@ class MasterPushSyncService {
     'usersBox',
     'transactionBox',
     'stockBox',
+    'mediaBox', // 👈 mediaBox کو پش سروس کی ٹارگٹ لسٹ میں شامل کر دیا گیا
   ];
 
   bool get isPushing => _isPushing;
@@ -54,7 +55,6 @@ class MasterPushSyncService {
       if (!isPullingActive && !_isPushing) {
         pushUnsyncedData(_activeCustomerPhone);
       } else {
-        // اگر Pull جاری تھا، تو 1 سیکنڈ بعد دوبارہ کوشش کریں
         Timer(const Duration(seconds: 1), () => pushUnsyncedData(_activeCustomerPhone));
       }
     });
