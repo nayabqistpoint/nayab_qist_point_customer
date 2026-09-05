@@ -19,7 +19,8 @@ class MasterLiveSyncService {
     'usersBox',
     'transactionBox',
     'stockBox',
-    'mediaBox', // 👈 mediaBox شامل کر دیا گیا
+    'mediaBox',
+    'appConfigBox', // 👈 appConfigBox شامل کر دیا گیا
   ];
 
   Future<void> initPullService() async => await _ensureBoxesOpened();
@@ -35,8 +36,25 @@ class MasterLiveSyncService {
     for (String boxName in _targetBoxes) {
       final hiveBox = Hive.box(boxName);
 
-      if (boxName == 'stockBox') {
-        // ۱۔ stockBox: تمام ڈاکومنٹس
+      // 🟢 ۱۔ appConfigBox: گلوبل/اوپن لسنر (تمام ڈاکومنٹس بغیر فون نمبر کے)
+      if (boxName == 'appConfigBox') {
+        final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
+          await _processSnapshot(
+            onProcess: () async {
+              for (var doc in snap.docs) {
+                if (doc.exists) {
+                  final preparedData = _prepareData(doc.id, doc.data());
+                  await hiveBox.put(doc.id, preparedData);
+                }
+              }
+            },
+            errorTag: 'AppConfig Pull',
+          );
+        });
+        _firestoreSubscriptions.add(sub);
+      }
+      // ۲۔ stockBox: تمام ڈاکومنٹس
+      else if (boxName == 'stockBox') {
         final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
           await _processSnapshot(
             onProcess: () async {
@@ -49,7 +67,6 @@ class MasterLiveSyncService {
                 }
               }
 
-              // حذف شدہ اسٹاک ہائیو سے صاف کرنا
               final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
               for (var key in localKeys) {
                 if (!firestoreIds.contains(key)) await hiveBox.delete(key);
@@ -60,7 +77,6 @@ class MasterLiveSyncService {
         });
         _firestoreSubscriptions.add(sub);
       } else if (boxName == 'transactionBox' || boxName == 'mediaBox') {
-        // ۲۔ transactionBox اور mediaBox: customerId فیلڈ کے ساتھ فلٹرنگ
         final sub = _firestore
             .collection(boxName)
             .where('customerId', isEqualTo: cleanPhone)
@@ -77,7 +93,6 @@ class MasterLiveSyncService {
                 }
               }
 
-              // حذف شدہ ریکارڈز ہائیو سے صاف کرنا
               final localKeys = hiveBox.keys.toList();
               for (var key in localKeys) {
                 final item = hiveBox.get(key);
@@ -94,7 +109,6 @@ class MasterLiveSyncService {
         });
         _firestoreSubscriptions.add(sub);
       } else {
-        // ۳۔ باقی تمام باکسز: Document ID ہی کسٹمر فون نمبر ہے
         final sub = _firestore.collection(boxName).doc(cleanPhone).snapshots().listen((docSnap) async {
           await _processSnapshot(
             onProcess: () async {
@@ -114,7 +128,6 @@ class MasterLiveSyncService {
     debugPrint('🔥 [MasterPull] فائر اسٹور کا ریئل ٹائم لائیو لسنر چالو ہو گیا ہے۔');
   }
 
-  /// 🎯 Wrapper logic for Pull execution and Mutex Lock
   Future<void> _processSnapshot({required Future<void> Function() onProcess, required String errorTag}) async {
     if (MasterPushSyncService().isPushing) return;
     MasterPushSyncService().isPullingActive = true;
@@ -128,14 +141,10 @@ class MasterLiveSyncService {
     }
   }
 
-  /// 🎯 ڈیٹا کو سنبھالنے، صاف کرنے اور ترتیب دینے کا واحد ہلکا پھلکا فنکشن
   Map<String, dynamic> _prepareData(String docId, Map<String, dynamic> raw) {
     final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
-
-    // ۱۔ docId کی سیٹنگ
     data['docId'] = data['docId'] ?? docId;
 
-    // ۲۔ Timestamps کا علاج (ISO String conversion)
     if (data['createdAt'] is Timestamp) {
       data['createdAt'] = (data['createdAt'] as Timestamp).toDate().toIso8601String();
     } else if (data['createdAt'] == null) {
@@ -146,7 +155,6 @@ class MasterLiveSyncService {
       data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
     }
 
-    // ۳۔ فیلڈز کی درست ترتیب (Reordering Logic)
     final Map<String, dynamic> orderedMap = {};
     data.forEach((key, value) {
       if (key != 'status' && key != 'isSynced' && key != 'timestamp') {

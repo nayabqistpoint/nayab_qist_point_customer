@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// 🎯 تصویر کے سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
 import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart';
 
-class CalculaterList extends StatelessWidget {
+class CalculaterListUi extends StatelessWidget {
   final Function(Map<String, dynamic>)? onPackageSelected;
 
-  const CalculaterList({super.key, this.onPackageSelected});
+  const CalculaterListUi({super.key, this.onPackageSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +15,6 @@ class CalculaterList extends StatelessWidget {
 
         return Column(
           children: [
-            // ہیڈنگز: پیکج (ماہانہ) | ایڈوانس | قسط | ٹوٹل
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 5),
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -37,7 +34,6 @@ class CalculaterList extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             
-            // پیکجز کی لسٹ
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -69,7 +65,6 @@ class CalculaterList extends StatelessWidget {
                           child: Row(
                             textDirection: TextDirection.rtl,
                             children: [
-                              // پیکج (ماہانہ)
                               Expanded(
                                 flex: 2, 
                                 child: Text(
@@ -78,7 +73,6 @@ class CalculaterList extends StatelessWidget {
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE53935), fontSize: 13)
                                 ),
                               ),
-                              // ایڈوانس
                               Expanded(
                                 flex: 2, 
                                 child: Text(
@@ -87,7 +81,6 @@ class CalculaterList extends StatelessWidget {
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple, fontSize: 12.5)
                                 ),
                               ),
-                              // قسط
                               Expanded(
                                 flex: 2, 
                                 child: Text(
@@ -96,7 +89,6 @@ class CalculaterList extends StatelessWidget {
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12.5)
                                 ),
                               ),
-                              // ٹوٹل
                               Expanded(
                                 flex: 2, 
                                 child: Text(

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-// 🎯 سٹرکچر کے مطابق shared فولڈر کا درست امپورٹ پاتھ:
-import 'package:nayab_qist_point_customer/calculator/calculator_config.dart';
+import 'package:nayab_qist_point_customer/calculator/app_config_service.dart';
 
 class CalculaterController extends ChangeNotifier {
   double _totalAmount = 0.0;
@@ -28,13 +26,18 @@ class CalculaterController extends ChangeNotifier {
   }
 
   double getProfitPercentage(int months) {
+    // 🟢 AppConfigService سے بیس پرافٹ اور منتھلی انکریمنٹ حاصل کیا جا رہا ہے
     double baseProfit = _hasSecurityCheck 
-        ? CalculaterConfig.baseProfitSecurityCheck 
-        : CalculaterConfig.baseProfitNoSecurityCheck;
-    return baseProfit + ((months - 6) * CalculaterConfig.profitIncrementPerMonth);
+        ? AppConfigService.profitWithCheck 
+        : AppConfigService.profitWithoutCheck;
+    return baseProfit + ((months - 6) * AppConfigService.perMonthIncrement);
   }
 
-  double getTotalWithProfit(int months) => _totalAmount + (_totalAmount * getProfitPercentage(months));
+  // 🟢 کل رقم + پرافٹ + لائیو پروسیسنگ فیس
+  double getTotalWithProfit(int months) {
+    double totalWithProfit = _totalAmount + (_totalAmount * getProfitPercentage(months));
+    return totalWithProfit + AppConfigService.processingFee;
+  }
 
   double calculateInstallmentWithoutAdvance(int months) => getTotalWithProfit(months) / months;
 

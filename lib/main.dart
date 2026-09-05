@@ -24,7 +24,7 @@ void main() async {
   // 2️⃣ ہائیو لوکل ڈیٹا بیس انیشلائزیشن
   await Hive.initFlutter();
 
-  // 🎯 تمام ضروری باکسز بشمول mediaBox کو اوپن کرنا
+  // 🎯 تمام ضروری باکسز بشمول mediaBox اور appConfigBox کو اوپن کرنا
   await Hive.openBox('customerBox');
   await Hive.openBox('guarantorBox');
   await Hive.openBox('packageBox');
@@ -32,7 +32,8 @@ void main() async {
   await Hive.openBox('transactionBox');
   await Hive.openBox('usersBox');
   await Hive.openBox('settingsBox');
-  await Hive.openBox('mediaBox'); // 👈 میڈیا پروسیسنگ کے لیے نیا باکس
+  await Hive.openBox('mediaBox');
+  await Hive.openBox('appConfigBox'); // 👈 نیا ایپ کنفیگ باکس یہاں اوپن ہو گیا ہے
 
   // 3️⃣ بیک گراؤنڈ سنک سروسز کے لیے باکسز اور لسنرز ریڈی رکھنا
   await MasterLiveSyncService().initPullService();

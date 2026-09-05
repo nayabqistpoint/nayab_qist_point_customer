@@ -3,21 +3,20 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// 🎯 سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے درست امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart'; 
-import 'package:nayab_qist_point_customer/calculator/calculator_config.dart';
+import 'package:nayab_qist_point_customer/calculator/app_config_service.dart';
 
-class CalculaterHeader extends StatefulWidget {
+class CalculaterHeaderUi extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataChanged;
 
-  const CalculaterHeader({super.key, this.onDataChanged});
+  const CalculaterHeaderUi({super.key, this.onDataChanged});
 
   @override
-  State<CalculaterHeader> createState() => _CalculaterHeaderState();
+  State<CalculaterHeaderUi> createState() => _CalculaterHeaderUiState();
 }
 
-class _CalculaterHeaderState extends State<CalculaterHeader> {
-  int _selectedMode = 1; // 1: دستیاب سٹاک, 2: مینول
+class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
+  int _selectedMode = 1; 
   String? _selectedStockKey;
   String? _selectedStockMobileName;
 
@@ -82,7 +81,6 @@ class _CalculaterHeaderState extends State<CalculaterHeader> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               children: [
-                // موڈ سلیکشن
                 SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<int>(
@@ -109,7 +107,6 @@ class _CalculaterHeaderState extends State<CalculaterHeader> {
                 ),
                 const SizedBox(height: 10),
 
-                // موڈ 1: دستیاب سٹاک سے ڈراپ ڈاؤن
                 if (_selectedMode == 1) ...[
                   ValueListenableBuilder(
                     valueListenable: Hive.box('stockBox').listenable(),
@@ -199,7 +196,6 @@ class _CalculaterHeaderState extends State<CalculaterHeader> {
                   ],
                 ],
 
-                // موڈ 2: مینول انتخاب
                 if (_selectedMode == 2) ...[
                   _buildTextField(_manualModelController, "موبائل کا نام اور ماڈل لکھیں", TextInputType.text, (v) {
                     setState(() {});
@@ -237,7 +233,6 @@ class _CalculaterHeaderState extends State<CalculaterHeader> {
                 
                 const SizedBox(height: 12),
                 
-                // سیکیورٹی چیک سوئچ
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -266,15 +261,16 @@ class _CalculaterHeaderState extends State<CalculaterHeader> {
 
                 const SizedBox(height: 10),
 
+                // 🟢 AppConfigService سے رابطہ کی تفصیلات
                 InkWell(
                   onTap: () async {
-                    final Uri launchUri = Uri(scheme: 'tel', path: CalculaterConfig.contactNumber);
+                    final Uri launchUri = Uri(scheme: 'tel', path: AppConfigService.contactNumber);
                     await launchUrl(launchUri);
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      "رابطہ: ${CalculaterConfig.contactName} - ${CalculaterConfig.contactNumber}",
+                      "رابطہ: ${AppConfigService.contactName} - ${AppConfigService.contactNumber}",
                       style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16, decoration: TextDecoration.underline),
                     ),
                   ),

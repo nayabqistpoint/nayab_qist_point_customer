@@ -23,12 +23,12 @@ class MasterPushSyncService {
     'usersBox',
     'transactionBox',
     'stockBox',
-    'mediaBox', // 👈 mediaBox کو پش سروس کی ٹارگٹ لسٹ میں شامل کر دیا گیا
+    'mediaBox',
+    'appConfigBox', // 👈 پش لسنر میں بھی شامل کر دیا گیا
   ];
 
   bool get isPushing => _isPushing;
 
-  /// 🟢 main.dart / SyncManager کے لیے آٹو پش لسنر
   Future<void> initAutoPushListener([String? activePhone]) async {
     if (activePhone != null && activePhone.trim().isNotEmpty) {
       _activeCustomerPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
@@ -40,7 +40,6 @@ class MasterPushSyncService {
     for (String boxName in _targetBoxes) {
       final box = Hive.box(boxName);
       final sub = box.watch().listen((event) {
-        // 🎯 جب بھی Hive میں کوئی اینٹری آئے یا بدلے، پش کو فوری چیک کریں
         _schedulePush();
       });
       _hiveSubscriptions.add(sub);
@@ -48,7 +47,6 @@ class MasterPushSyncService {
     debugPrint('🚀 [MasterPush] ریئل ٹائم ہائیو لسنر ایکٹیو ہو گیا ہے۔');
   }
 
-  /// 🎯 چھوٹے وقفے (Debounce) کے ساتھ پش ٹرگر کرنا تاکہ Pull کا رکاوٹ نہ بنے
   void _schedulePush() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -68,7 +66,6 @@ class MasterPushSyncService {
     _hiveSubscriptions.clear();
   }
 
-  /// 🟢 لوکل ہائیو کی غیر سنک شدہ اینٹریز (isSynced == false) کو WriteBatch سے اپلوڈ کرنا
   Future<void> pushUnsyncedData([String? activePhone]) async {
     if (isPullingActive) return;
 
@@ -94,7 +91,6 @@ class MasterPushSyncService {
 
           final data = Map<String, dynamic>.from(rawData);
 
-          // 🎯 صرف وہی اینٹری اٹھائیں جس کا isSynced == false ہو
           if (data['isSynced'] == false) {
             final Map<String, dynamic> firestoreData = Map<String, dynamic>.from(data);
             firestoreData['isSynced'] = true;
@@ -115,11 +111,9 @@ class MasterPushSyncService {
         }
       }
 
-      // 🎯 Atomic WriteBatch Commitment
       if (totalCount > 0) {
         await batch.commit();
 
-        // کامیابی پر Hive میں isSynced = true اپڈیٹ کریں
         for (var update in pendingHiveUpdates) {
           final box = Hive.box(update['boxName'] as String);
           await box.put(update['key'], update['data']);

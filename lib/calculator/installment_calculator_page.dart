@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// 🎯 سٹرکچر کے مطابق ڈائریکٹ shared فولڈر کے امپورٹ پاتھس:
+// 🎯 نئے ماڈیولر سٹرکچر کے امپورٹ پاتھس:
 import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart'; 
-import 'package:nayab_qist_point_customer/calculator/calculator_header.dart';
-import 'package:nayab_qist_point_customer/calculator/calculator_list.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_header_ui.dart';
+import 'package:nayab_qist_point_customer/calculator/calculator_list_ui.dart';
 
 class InstallmentCalculaterPage extends StatefulWidget {
   const InstallmentCalculaterPage({super.key});
@@ -19,24 +19,26 @@ class _InstallmentCalculaterPageState extends State<InstallmentCalculaterPage> {
 
   @override
   Widget build(BuildContext context) {
-    // یہاں Provider کو لپیٹنا (Wrap) ضروری ہے تاکہ ڈیٹا کنٹرولر تک پہنچے
+    // 🎯 Provider یہاں کنٹرولر کی اسٹیٹ سنبھالے گا
     return ChangeNotifierProvider(
       create: (context) => CalculaterController(),
       child: Scaffold(
         body: SafeArea(
           child: Column(
             children: [
-              CalculaterHeader(
+              // 🟢 ہیڈر UI
+              CalculaterHeaderUi(
                 onDataChanged: (data) {
                   setState(() {
                     _headerData = data;
                   });
                 },
               ), 
+              // 🟢 اقساط کی لسٹ UI
               Expanded(
-                child: CalculaterList(
+                child: CalculaterListUi(
                   onPackageSelected: (selectedItem) {
-                    // اب ہیڈر اور لسٹ دونوں کا ڈیٹا مل کر واپس جائے گا
+                    // ہیڈر اور لسٹ دونوں کا مشترکہ ڈیٹا تیار کر کے واپس بھیجنا
                     final Map<String, dynamic> finalPackageData = {
                       ..._headerData,
                       'packageName': selectedItem['packageName'],
