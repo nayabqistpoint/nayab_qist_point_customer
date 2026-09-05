@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:nayab_qist_point_customer/calculator/calculator_controller.dart'; 
 import 'package:nayab_qist_point_customer/calculator/app_config_service.dart';
+import 'package:nayab_qist_point_customer/calculator/available_stock_selector.dart';
 
 class CalculaterHeaderUi extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataChanged;
@@ -16,8 +16,7 @@ class CalculaterHeaderUi extends StatefulWidget {
 }
 
 class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
-  int _selectedMode = 1; 
-  String? _selectedStockKey;
+  int _selectedMode = 2; // 🟢 بائی ڈیفالٹ: اپنی مرضی (مینول)
   String? _selectedStockMobileName;
 
   final TextEditingController _manualModelController = TextEditingController();
@@ -42,6 +41,25 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
         'checkNumber': _checkNumberController.text,
         'bankName': _bankNameController.text,
         'isBuyStockMode': _selectedMode == 1,
+      });
+    }
+  }
+
+  /// 🟢 باٹم شیٹ شو کرنے کا فنکشن
+  Future<void> _openStockSelector(CalculaterController controller) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AvailableStockSelectorWidget(),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedStockMobileName = result['mobileName'] ?? '';
+        _imeiController.text = result['imeiNo'] ?? '';
+        controller.setTotalAmount(result['salePrice'] ?? '0');
+        _notifyDataChanged(controller);
       });
     }
   }
@@ -92,7 +110,6 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
                     onSelectionChanged: (Set<int> newSelection) {
                       setState(() {
                         _selectedMode = newSelection.first;
-                        _selectedStockKey = null;
                         _selectedStockMobileName = null;
                         _manualModelController.clear();
                         _manualTotalController.clear();
@@ -107,78 +124,31 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
                 ),
                 const SizedBox(height: 10),
 
+                // موڈ ۱: دستیاب اسٹاک باٹم شیٹ کلک فیلڈ
                 if (_selectedMode == 1) ...[
-                  ValueListenableBuilder(
-                    valueListenable: Hive.box('stockBox').listenable(),
-                    builder: (context, Box box, _) {
-                      final availableItems = box.keys.map((key) {
-                        final val = box.get(key);
-                        if (val is Map) {
-                          final data = Map<String, dynamic>.from(val);
-                          data['hiveKey'] = key.toString();
-                          return data;
-                        }
-                        return null;
-                      }).where((element) {
-                        if (element == null) return false;
-                        return (element['status']?.toString() ?? 'available') == 'available';
-                      }).toList();
-
-                      if (availableItems.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(4),
+                  InkWell(
+                    onTap: () => _openStockSelector(controller),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _selectedStockMobileName ?? "دستیاب سٹاک سے منتخب کریں...",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: _selectedStockMobileName != null ? FontWeight.bold : FontWeight.normal,
+                              color: _selectedStockMobileName != null ? Colors.black87 : Colors.grey.shade600,
+                            ),
                           ),
-                          child: const Center(
-                            child: Text("اسٹاک میں کوئی موبائل دستیاب نہیں ہے", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ),
-                        );
-                      }
-
-                      return DropdownButtonFormField<String>(
-                        initialValue: _selectedStockKey,
-                        isExpanded: true,
-                        itemHeight: 60,
-                        decoration: InputDecoration(
-                          hintText: "دستیاب سٹاک سے موبائل منتخب کریں",
-                          hintStyle: const TextStyle(fontSize: 12),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        selectedItemBuilder: (context) {
-                          return availableItems.map((item) {
-                            final name = item!['itemName']?.toString() ?? '';
-                            final imei = item['imeiNo']?.toString() ?? '';
-                            return Align(
-                              alignment: Alignment.centerRight,
-                              child: Text('$name ${imei.isNotEmpty ? "($imei)" : ""}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList();
-                        },
-                        items: availableItems.map((item) {
-                          final key = item!['hiveKey'].toString();
-                          return DropdownMenuItem<String>(
-                            value: key,
-                            child: _buildDropdownCardItem(item),
-                          );
-                        }).toList(),
-                        onChanged: (String? selectedKey) {
-                          if (selectedKey == null) return;
-                          final selectedData = availableItems.firstWhere((e) => e!['hiveKey'] == selectedKey);
-                          if (selectedData != null) {
-                            setState(() {
-                              _selectedStockKey = selectedKey;
-                              _selectedStockMobileName = selectedData['itemName']?.toString() ?? '';
-                              _imeiController.text = selectedData['imeiNo']?.toString() ?? '';
-                              controller.setTotalAmount(selectedData['salePrice']?.toString() ?? '0');
-                              _notifyDataChanged(controller);
-                            });
-                          }
-                        },
-                      );
-                    },
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                        ],
+                      ),
+                    ),
                   ),
                   
                   if (_selectedStockMobileName != null) ...[
@@ -196,6 +166,7 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
                   ],
                 ],
 
+                // موڈ ۲: اپنی مرضی (مینول) ان پٹ (بائی ڈیفالٹ)
                 if (_selectedMode == 2) ...[
                   _buildTextField(_manualModelController, "موبائل کا نام اور ماڈل لکھیں", TextInputType.text, (v) {
                     setState(() {});
@@ -231,21 +202,38 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
                   },
                 ),
                 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(child: Text("کیا آپ نے رعایت کے لیے سیکیورٹی چیک مہیا کیا ہے؟", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
-                    Switch(
-                      value: controller.hasSecurityCheck,
-                      onChanged: (bool value) {
-                        controller.toggleSecurityCheck(value);
-                        _notifyDataChanged(controller);
-                      },
-                      activeThumbColor: Colors.blue,
+                Padding(
+                  padding: const EdgeInsets.only(right: 20.0),
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: controller.hasSecurityCheck,
+                            activeColor: Colors.blue,
+                            onChanged: (bool? value) {
+                              controller.toggleSecurityCheck(value ?? false);
+                              _notifyDataChanged(controller);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            "رعایت حاصل کرنے کے لیے سیکیورٹی چیک مہیا کریں",
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
                 
                 if (controller.hasSecurityCheck) ...[
@@ -261,7 +249,6 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
 
                 const SizedBox(height: 10),
 
-                // 🟢 AppConfigService سے رابطہ کی تفصیلات
                 InkWell(
                   onTap: () async {
                     final Uri launchUri = Uri(scheme: 'tel', path: AppConfigService.contactNumber);
@@ -297,65 +284,6 @@ class _CalculaterHeaderUiState extends State<CalculaterHeaderUi> {
           contentPadding: const EdgeInsets.symmetric(vertical: 0),
           border: const OutlineInputBorder(),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownCardItem(Map<String, dynamic> item) {
-    final name = item['itemName']?.toString() ?? 'نامعلوم';
-    final imei = item['imeiNo']?.toString() ?? 'N/A';
-    final ram = item['ram']?.toString() ?? '';
-    final rom = item['rom']?.toString() ?? '';
-    final cond = item['condition']?.toString() == 'new' ? 'نیا' : 'پرانا';
-    final war = '${item['warranty'] ?? 0} ماہ';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                Text('IMEI: $imei', style: TextStyle(fontSize: 10, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                  child: Text(ram.isNotEmpty ? '$ram / $rom' : 'N/A', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
-                ),
-                const SizedBox(height: 1),
-                Text('$cond | $war', style: TextStyle(fontSize: 9, color: Colors.grey.shade700)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

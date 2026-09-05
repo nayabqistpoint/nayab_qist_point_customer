@@ -29,7 +29,7 @@ class _AvailableStockSelectorWidgetState extends State<AvailableStockSelectorWid
             children: [
               const Text(
                 'دستیاب اسٹاک سے منتخب کریں',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
@@ -39,20 +39,25 @@ class _AvailableStockSelectorWidgetState extends State<AvailableStockSelectorWid
           ),
           const Divider(),
 
-          // 2. تلاش (Search Bar)
-          TextField(
-            textAlign: TextAlign.right,
-            decoration: InputDecoration(
-              hintText: 'نام یا IMEI سے تلاش کریں...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          // 2. تلاش (Search Bar - درست اردو RTL ترتیب)
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: TextField(
+              textAlign: TextAlign.right,
+              decoration: InputDecoration(
+                hintText: 'نام یا آئی ایم ای آئی سے تلاش کریں...',
+                hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (val) {
+                setState(() {
+                  searchQuery = val.trim().toLowerCase();
+                });
+              },
             ),
-            onChanged: (val) {
-              setState(() {
-                searchQuery = val.trim().toLowerCase();
-              });
-            },
           ),
           const SizedBox(height: 12),
 
@@ -61,7 +66,6 @@ class _AvailableStockSelectorWidgetState extends State<AvailableStockSelectorWid
             child: ValueListenableBuilder(
               valueListenable: Hive.box('stockBox').listenable(),
               builder: (context, Box box, _) {
-                // صرف 'available' سٹیٹس والے آئٹمز نکالنا
                 final availableItems = box.values.where((element) {
                   if (element is! Map) return false;
                   final status = element['status']?.toString() ?? 'available';
@@ -82,43 +86,81 @@ class _AvailableStockSelectorWidgetState extends State<AvailableStockSelectorWid
 
                 return ListView.separated(
                   itemCount: availableItems.length,
-                  // اصلاح: '(__)' کی جگہ '(_)' یا '(context, index)' استعمال کیا ہے تاکہ وارننگ ختم ہو جائے
                   separatorBuilder: (context, index) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = Map<String, dynamic>.from(availableItems[index] as Map);
 
                     final String name = item['itemName'] ?? 'نامعلوم';
                     final String imei = item['imeiNo'] ?? 'کوئی IMEI نہیں';
-                    final String ram = item['ram'] ?? '';
-                    final String rom = item['rom'] ?? '';
+                    final String ram = item['ram']?.toString() ?? '';
+                    final String rom = item['rom']?.toString() ?? '';
+                    final String cond = item['condition']?.toString() == 'new' ? 'نیا' : 'پرانا';
+                    final String war = '${item['warranty'] ?? 0} ماہ وارنٹی';
                     final String price = item['salePrice']?.toString() ?? '0';
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.red,
-                        radius: 18,
-                        child: Icon(Icons.phone_android, color: Colors.white, size: 18),
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.red,
+                          radius: 18,
+                          child: Icon(Icons.phone_android, color: Colors.white, size: 18),
+                        ),
+                        // نام اور بائیں جانب مدہم IMEI
+                        title: Text(
+                          name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Colors.black87),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 2.0),
+                          child: Text(
+                            'IMEI: $imei',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                          ),
+                        ),
+                        // 🟢 دائیں جانب: مکمل سینٹر الائنڈ RAM/ROM کیپسول اور وارنٹی
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center, // 👈 مکمل طور پر سینٹر الائن کر دیا گیا ہے
+                          children: [
+                            // 1. RAM / ROM کیپسول
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.shade200, width: 0.8),
+                              ),
+                              child: Text(
+                                ram.isNotEmpty ? '$ram / $rom' : 'N/A',
+                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            // 2. باریک لکیر (Divider)
+                            SizedBox(
+                              width: 70,
+                              child: Divider(height: 1, thickness: 0.6, color: Colors.grey.shade300),
+                            ),
+                            const SizedBox(height: 3),
+                            // 3. نیا/پرانا اور وارنٹی (کیپسول کے بالکل سینٹر میں)
+                            Text(
+                              '$cond | $war',
+                              style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.7)),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.pop(context, {
+                            'mobileName': name,
+                            'imeiNo': imei,
+                            'salePrice': price,
+                          });
+                        },
                       ),
-                      title: Text(
-                        name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        'IMEI: $imei ${ram.isNotEmpty ? '| $ram/$rom' : ''}',
-                        style: const TextStyle(fontSize: 11, color: Colors.black54),
-                      ),
-                      trailing: Text(
-                        'Rs. $price',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12),
-                      ),
-                      onTap: () {
-                        // کلک ہونے پر صرف نام اور IMEI کی فلٹرڈ ڈکشنری واپس پاس ہوگی
-                        Navigator.pop(context, {
-                          'mobileName': name,
-                          'imeiNo': imei,
-                        });
-                      },
                     );
                   },
                 );
