@@ -61,11 +61,10 @@ class LedgerTopWidget extends StatelessWidget {
                 icon: const Icon(Icons.sync, color: Colors.white),
                 onPressed: () => LedgerTopHelper.triggerSync(context, phone),
               ),
-              const CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, size: 20, color: Colors.white),
-              ),
+              
+              // 🟢 کسٹمر لائیو پروفائل اوتار (mediaBox سے)
+              LedgerTopHelper.buildCustomerAvatar(phone, radius: 16),
+
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (v) => v == 'logout' ? Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false) : null,

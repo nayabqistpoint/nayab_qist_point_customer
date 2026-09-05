@@ -5,8 +5,43 @@ import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog
 import 'package:nayab_qist_point_customer/shared_widgets/installment_plan_dialog_logic.dart';
 import 'package:nayab_qist_point_customer/ledger/customer_ledger/ledger_listener_service.dart';
 import 'package:nayab_qist_point_customer/services/master_sync_manager.dart';
+import 'package:nayab_qist_point_customer/services/customer_profile_image_service.dart'; // 👈 اپنی امیج سروس کا پاتھ امپورٹ کریں
 
 class LedgerTopHelper {
+  /// 🎯 mediaBox سے لائیو پروفائل تصویر/اوتار حاصل کرنے کا میتھڈ
+  static Widget buildCustomerAvatar(String customerPhone, {double radius = 16}) {
+    String phone = customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (phone.isEmpty) {
+      return CustomerProfileImageService.buildProfileImage(null, radius: radius);
+    }
+
+    final String docId = "${phone}_customer";
+
+    return ValueListenableBuilder<Box>(
+      valueListenable: Hive.isBoxOpen('mediaBox')
+          ? Hive.box('mediaBox').listenable()
+          : ValueNotifier(Hive.box('mediaBox')),
+      builder: (context, box, child) {
+        final rawData = box.get(docId);
+        String? imageSource;
+
+        if (rawData != null) {
+          if (rawData is Map) {
+            imageSource = rawData['mediaData']?.toString();
+          } else if (rawData is String) {
+            imageSource = rawData;
+          }
+        }
+
+        return CustomerProfileImageService.buildProfileImage(
+          imageSource,
+          radius: radius,
+        );
+      },
+    );
+  }
+
   /// 🎯 سنک پروسیس چلانا اور SnackBar دکھانا
   static Future<void> triggerSync(BuildContext context, String phone) async {
     await MasterSyncManager().runFullSync(phone);
