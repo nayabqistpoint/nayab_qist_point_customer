@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_controller.dart';
 import 'package:nayab_qist_point_customer/shared_widgets/payment_source_card.dart';
 import 'package:nayab_qist_point_customer/shared_widgets/discount_widget.dart';
-import 'package:nayab_qist_point_customer/shared_widgets/audio_record_player_widget.dart'; // 🎯 پاتھ کو بالکل درست کر دیا گیا ہے
+import 'package:nayab_qist_point_customer/shared_widgets/audio_record_player_widget.dart';
 
 class PayNowWidget extends StatefulWidget {
   final String customerMobileNumber;
@@ -88,78 +87,60 @@ class _PayNowWidgetState extends State<PayNowWidget> {
         ),
         elevation: 0,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('settings').doc('app_config').snapshots(),
-        builder: (context, snapshot) {
-          final data = snapshot.data?.data() as Map<String, dynamic>?;
-          final availableBanks = _extractList(data, 'availableBanks', 'Cash');
-          final discountCategories = _extractList(data, 'discountCategories', 'Discounts');
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(15.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAmountInputField(),
+                  const SizedBox(height: 12),
+                  ListenableBuilder(
+                    listenable: _controller,
+                    builder: (context, child) {
+                      if (_controller.enteredAmount <= 0) return const SizedBox.shrink();
 
-          return Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAmountInputField(),
-                      const SizedBox(height: 12),
-                      ListenableBuilder(
-                        listenable: _controller,
-                        builder: (context, child) {
-                          if (_controller.enteredAmount <= 0) return const SizedBox.shrink();
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Directionality(
-                                textDirection: TextDirection.rtl,
-                                child: AudioRecordPlayerWidget(
-                                  onAudioChanged: (audioPath) {
-                                    _controller.audioPath = audioPath;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              DiscountWidget(
-                                categories: discountCategories,
-                                onDiscountChanged: (categoryName, discountValue, isPercentage) {
-                                  _controller.updateDiscount(
-                                    category: categoryName,
-                                    value: discountValue,
-                                    isPercentage: isPercentage,
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              PaymentSourceCard(
-                                controller: _controller,
-                                availableBanks: availableBanks,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: AudioRecordPlayerWidget(
+                              onAudioChanged: (audioPath) {
+                                _controller.audioPath = audioPath;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // 🟢 DiscountWidget اب خود اندرونی طور پر Hive باکس سے ڈیٹا اٹھائے گا
+                          DiscountWidget(
+                            onDiscountChanged: (categoryName, discountValue, isPercentage) {
+                              _controller.updateDiscount(
+                                category: categoryName,
+                                value: discountValue,
+                                isPercentage: isPercentage,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          // 🟢 PaymentSourceCard اب خود اندرونی طور پر Hive باکس سے بینکس اٹھائے گا
+                          PaymentSourceCard(
+                            controller: _controller,
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ),
+                ],
               ),
-              _buildSaveButton(),
-            ],
-          );
-        },
+            ),
+          ),
+          _buildSaveButton(),
+        ],
       ),
     );
-  }
-
-  List<String> _extractList(Map<String, dynamic>? data, String key, String defaultItem) {
-    List<String> list = [defaultItem];
-    if (data != null && data[key] is List) {
-      list = (data[key] as List).map((e) => e.toString()).toList();
-      if (!list.contains(defaultItem)) list.insert(0, defaultItem);
-    }
-    return list;
   }
 
   Widget _buildAmountInputField() {

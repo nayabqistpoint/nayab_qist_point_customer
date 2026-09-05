@@ -2,16 +2,15 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/ledger/pay_now/pay_now_controller.dart';
 
 class PaymentSourceCard extends StatefulWidget {
   final PayNowController controller;
-  final List<String> availableBanks;
 
   const PaymentSourceCard({
     super.key,
     required this.controller,
-    required this.availableBanks,
   });
 
   @override
@@ -21,110 +20,80 @@ class PaymentSourceCard extends StatefulWidget {
 class _PaymentSourceCardState extends State<PaymentSourceCard> {
   bool _hasImagePicked = false;
 
-  /// 🎯 ویب اور موبائل دونوں کے لیے تصویر پک کرنے کا سمارٹ میتھڈ
   void _pickAttachment() async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
       if (kIsWeb) {
-        // 🟢 ویب کے لیے raw bytes پڑھ کر Base64 کیپچر کریں (blob کا علاج)
         final bytes = await image.readAsBytes();
         final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
         
         setState(() => _hasImagePicked = true);
         widget.controller.attachmentPath = base64Image;
       } else {
-        // 🟢 موبائل ڈیوائس کے لیے فائل کا پاتھ
         setState(() => _hasImagePicked = true);
         widget.controller.attachmentPath = image.path;
       }
     }
   }
 
+  /// 🟢 Hive Box سے بینکس کی لسٹ ایکسٹریکٹ کرنے کا فنکشن
+  List<String> _getAvailableBanks(Box box) {
+    List<String> banks = ['Cash'];
+    final docData = box.get('banks_config');
+    if (docData is Map) {
+      final mapData = Map<String, dynamic>.from(docData);
+      if (mapData['availableBanks'] is Map) {
+        final innerMap = Map<String, dynamic>.from(mapData['availableBanks'] as Map);
+        final extractedKeys = innerMap.keys.map((e) => e.toString()).toList();
+        if (extractedKeys.isNotEmpty) {
+          banks = extractedKeys;
+        }
+      }
+    }
+    if (!banks.contains('Cash')) {
+      banks.insert(0, 'Cash');
+    }
+    return banks;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final List<String> banks = widget.availableBanks.isEmpty ? ['Cash'] : widget.availableBanks;
-    final String current = banks.contains(widget.controller.selectedPaymentSource)
-        ? widget.controller.selectedPaymentSource
-        : banks.first;
+    return ValueListenableBuilder(
+      valueListenable: Hive.box('appConfigBox').listenable(),
+      builder: (context, Box box, _) {
+        final List<String> banks = _getAvailableBanks(box);
+        final String current = banks.contains(widget.controller.selectedPaymentSource)
+            ? widget.controller.selectedPaymentSource
+            : banks.first;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!widget.controller.isSplitMode) ...[
-          Row(
-            children: [
-              const Text("Payment Type", style: TextStyle(fontSize: 15, color: Colors.black54)),
-              const Spacer(),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: current,
-                  icon: const Icon(Icons.arrow_drop_down),
-                  items: banks.map((s) => _buildDropdownItem(s)).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        widget.controller.selectedPaymentSource = val;
-                      });
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text("Rs ", style: TextStyle(fontSize: 14, color: Colors.black87)),
-              SizedBox(
-                width: 85,
-                child: TextField(
-                  controller: widget.controller.singlePaymentAmountController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    hintText: '0',
-                    hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: () => widget.controller.toggleSplitMode(banks),
-            child: const Text("+ Add Payment Type",
-                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-          ),
-        ] else ...[
-          ...widget.controller.splitRows.asMap().entries.map((entry) {
-            final int idx = entry.key;
-            final item = entry.value;
-            final String rowCurrent = banks.contains(item.source) ? item.source : banks.first;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!widget.controller.isSplitMode) ...[
+              Row(
                 children: [
+                  const Text("Payment Type", style: TextStyle(fontSize: 15, color: Colors.black54)),
+                  const Spacer(),
                   DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: rowCurrent,
-                      isDense: true,
+                      value: current,
+                      icon: const Icon(Icons.arrow_drop_down),
                       items: banks.map((s) => _buildDropdownItem(s)).toList(),
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => item.source = val);
+                          setState(() {
+                            widget.controller.selectedPaymentSource = val;
+                          });
                         }
                       },
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black45),
-                    onPressed: () => widget.controller.removeSplitRow(idx),
-                  ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   const Text("Rs ", style: TextStyle(fontSize: 14, color: Colors.black87)),
                   SizedBox(
                     width: 85,
                     child: TextField(
-                      controller: item.amountController,
+                      controller: widget.controller.singlePaymentAmountController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       decoration: const InputDecoration(
@@ -137,72 +106,124 @@ class _PaymentSourceCardState extends State<PaymentSourceCard> {
                   ),
                 ],
               ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+              const SizedBox(height: 4),
               InkWell(
-                onTap: () => widget.controller.addSplitRow(banks),
+                onTap: () => widget.controller.toggleSplitMode(banks),
                 child: const Text("+ Add Payment Type",
                     style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
               ),
-              Text("Received Rs ${widget.controller.totalReceivedAmount.toStringAsFixed(0)}",
-                  style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+            ] else ...[
+              ...widget.controller.splitRows.asMap().entries.map((entry) {
+                final int idx = entry.key;
+                final item = entry.value;
+                final String rowCurrent = banks.contains(item.source) ? item.source : banks.first;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    children: [
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: rowCurrent,
+                          isDense: true,
+                          items: banks.map((s) => _buildDropdownItem(s)).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => item.source = val);
+                            }
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black45),
+                        onPressed: () => widget.controller.removeSplitRow(idx),
+                      ),
+                      const Spacer(),
+                      const Text("Rs ", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                      SizedBox(
+                        width: 85,
+                        child: TextField(
+                          controller: item.amountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            hintText: '0',
+                            hintStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.normal),
+                            isDense: true,
+                          ),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  InkWell(
+                    onTap: () => widget.controller.addSplitRow(banks),
+                    child: const Text("+ Add Payment Type",
+                        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                  ),
+                  Text("Received Rs ${widget.controller.totalReceivedAmount.toStringAsFixed(0)}",
+                      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ],
-          ),
-        ],
-        const SizedBox(height: 16),
-        const Divider(color: Colors.black12, height: 1),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 60,
-                child: TextField(
-                  controller: widget.controller.descriptionController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: "Description",
-                    hintText: "Add Note",
-                    alignLabelWithHint: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.black26),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.black12, height: 1),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 60,
+                    child: TextField(
+                      controller: widget.controller.descriptionController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: "Description",
+                        hintText: "Add Note",
+                        alignLabelWithHint: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.black26),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            InkWell(
-              onTap: _pickAttachment,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: _hasImagePicked ? Colors.green : Colors.black26,
-                    width: _hasImagePicked ? 2 : 1,
-                  ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _pickAttachment,
                   borderRadius: BorderRadius.circular(8),
-                  color: _hasImagePicked ? Colors.green.shade50 : null,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _hasImagePicked ? Colors.green : Colors.black26,
+                        width: _hasImagePicked ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: _hasImagePicked ? Colors.green.shade50 : null,
+                    ),
+                    child: Icon(
+                      _hasImagePicked ? Icons.check_circle : Icons.image_outlined,
+                      color: _hasImagePicked ? Colors.green : Colors.black38,
+                      size: 28,
+                    ),
+                  ),
                 ),
-                child: Icon(
-                  _hasImagePicked ? Icons.check_circle : Icons.image_outlined,
-                  color: _hasImagePicked ? Colors.green : Colors.black38,
-                  size: 28,
-                ),
-              ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
