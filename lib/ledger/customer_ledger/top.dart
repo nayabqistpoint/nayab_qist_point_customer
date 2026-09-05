@@ -62,8 +62,8 @@ class LedgerTopWidget extends StatelessWidget {
                 onPressed: () => LedgerTopHelper.triggerSync(context, phone),
               ),
               
-              // 🟢 کسٹمر لائیو پروفائل اوتار (mediaBox سے)
-              LedgerTopHelper.buildCustomerAvatar(phone, radius: 16),
+              // 🟢 کسٹمر لائیو پروفائل اوتار (پہلا پیرامیٹر context اور دوسرا phone ہے)
+              LedgerTopHelper.buildCustomerAvatar(context, phone, radius: 16),
 
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
