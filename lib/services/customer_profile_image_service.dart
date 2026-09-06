@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomerProfileImageService {
   /// Base64 یا Cloudinary URL کو کلک ایبل اوتار کے ساتھ دکھاتا ہے
@@ -57,7 +58,7 @@ class CustomerProfileImageService {
     );
   }
 
-  /// اوتار وزٹ (چھوٹا سائز)
+  /// 🟢 اوتار وزٹ (آف لائن کیشنگ کے ساتھ)
   static Widget _buildAvatarWidget(String? imageSource, double radius) {
     if (imageSource == null || imageSource.trim().isEmpty) {
       return _buildDefaultAvatar(radius);
@@ -73,14 +74,30 @@ class CustomerProfileImageService {
       }
 
       if (cleanSource.startsWith('http://') || cleanSource.startsWith('https://')) {
-        return CircleAvatar(radius: radius, backgroundImage: NetworkImage(cleanSource));
+        return CachedNetworkImage(
+          imageUrl: cleanSource,
+          imageBuilder: (context, imageProvider) => CircleAvatar(
+            radius: radius,
+            backgroundImage: imageProvider,
+          ),
+          placeholder: (context, url) => CircleAvatar(
+            radius: radius,
+            backgroundColor: Colors.white24,
+            child: SizedBox(
+              width: radius,
+              height: radius,
+              child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+          ),
+          errorWidget: (context, url, error) => _buildDefaultAvatar(radius),
+        );
       }
     } catch (_) {}
 
     return _buildDefaultAvatar(radius);
   }
 
-  /// فل اسکرین وزٹ (بڑا سائز)
+  /// 🟢 فل اسکرین وزٹ (آف لائن کیشنگ کے ساتھ)
   static Widget _buildFullImageWidget(String cleanSource) {
     try {
       if (_isBase64(cleanSource)) {
@@ -90,14 +107,17 @@ class CustomerProfileImageService {
       }
 
       if (cleanSource.startsWith('http://') || cleanSource.startsWith('https://')) {
-        return Image.network(
-          cleanSource,
+        return CachedNetworkImage(
+          imageUrl: cleanSource,
           fit: BoxFit.contain,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
-          },
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 60),
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+          errorWidget: (context, url, error) => const Icon(
+            Icons.broken_image,
+            color: Colors.white,
+            size: 60,
+          ),
         );
       }
     } catch (_) {}
