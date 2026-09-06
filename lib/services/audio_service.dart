@@ -48,9 +48,9 @@ class AudioService extends ChangeNotifier {
     });
   }
 
-  /// 🎯 اینڈرائیڈ اور iOS کے لیے حقیقی اور محفوظ پرمیشن ہینڈلنگ
+  /// 🎯 اینڈرائیڈ اور iOS کے لیے حقیقی اور سیف پرمیشن ہینڈلنگ
   Future<bool> requestPermissions() async {
-    if (kIsWeb) return true; // ویب کے لیے ریکارڈ پیکیج بذاتِ خود پرمیشن سنبھالتا ہے
+    if (kIsWeb) return true;
 
     Map<Permission, PermissionStatus> statuses = await [
       Permission.microphone,
@@ -60,7 +60,7 @@ class AudioService extends ChangeNotifier {
 
     if (!micGranted) {
       if (await Permission.microphone.isPermanentlyDenied) {
-        await openAppSettings(); // اگر پرمیشن مستقل بند ہو تو سیٹنگز کھولے گا
+        await openAppSettings();
       }
       return false;
     }
@@ -68,7 +68,7 @@ class AudioService extends ChangeNotifier {
     return true;
   }
 
-  /// 🎯 کریش فری اور سیف ریکارڈنگ کی شروعات
+  /// 🎯 کریش فری ریکارڈنگ اسٹارٹ
   Future<bool> startRecording() async {
     try {
       bool hasPermission = await requestPermissions();
@@ -80,7 +80,7 @@ class AudioService extends ChangeNotifier {
       if (await _audioRecorder.hasPermission()) {
         String path = '';
         if (kIsWeb) {
-          path = ''; // ویب کے لیے پاتھ خالی رکھا جاتا ہے
+          path = '';
         } else {
           final dir = await getApplicationDocumentsDirectory();
           path = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';

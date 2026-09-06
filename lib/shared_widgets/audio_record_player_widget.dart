@@ -14,11 +14,12 @@ class AudioRecordPlayerWidget extends StatefulWidget {
 }
 
 class _AudioRecordPlayerWidgetState extends State<AudioRecordPlayerWidget> {
-  final AudioService _audioService = AudioService();
+  late final AudioService _audioService;
 
   @override
   void initState() {
     super.initState();
+    _audioService = AudioService();
     _audioService.addListener(_onServiceUpdate);
   }
 
@@ -32,7 +33,7 @@ class _AudioRecordPlayerWidgetState extends State<AudioRecordPlayerWidget> {
   @override
   void dispose() {
     _audioService.removeListener(_onServiceUpdate);
-    _audioService.dispose();
+    _audioService.reset(); // 🟢 dispose کی جگہ reset کا محفوظ استعمال
     super.dispose();
   }
 
