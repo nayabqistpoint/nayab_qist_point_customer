@@ -16,11 +16,14 @@ class CustomerFormLogic {
     TextEditingController passwordController, {
     bool rememberMe = false,
   }) async {
-    String phone = phoneController.text.trim();
+    String rawPhone = phoneController.text.trim();
     String password = passwordController.text.trim();
 
-    if (phone.isEmpty || password.isEmpty) {
-      _showSnackBar(context, 'براہ کرم موبائل نمبر اور پاسورڈ درج کریں', isError: true);
+    // 🟢 فون نمبر کو بالکل صاف کریں (تمام سپیس یا ڈیش ہٹا دیں)
+    String cleanPhone = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (cleanPhone.isEmpty || password.isEmpty) {
+      _showSnackBar(context, 'براہ کرم صحیح موبائل نمبر اور پاسورڈ درج کریں', isError: true);
       return;
     }
 
@@ -37,19 +40,19 @@ class CustomerFormLogic {
       Map<String, dynamic>? userData;
 
       // 🟢 ۱۔ پہلی ترجیح (First Preference): لوکل usersBox سے ڈیٹا پڑھنا (100% آف لائن)
-      if (usersBox.containsKey(phone)) {
-        final localData = usersBox.get(phone);
+      if (usersBox.containsKey(cleanPhone)) {
+        final localData = usersBox.get(cleanPhone);
         if (localData != null) {
           userData = Map<String, dynamic>.from(localData as Map);
         }
       }
 
-      // 🟢 ۲۔ دوسری ترجیح (Second Preference): اگر لوکل پر نہ ملے (مثلاً ایپ ری انسٹال ہوئی ہو)، تو فائرسٹور دیکھیں
+      // 🟢 ۲۔ دوسری ترجیح (Second Preference): اگر لوکل پر نہ ملے (مثلاً پہلی بار انسٹال ہوئی ہو)، تو فائرسٹور دیکھیں
       if (userData == null) {
         try {
           final docSnap = await _firestore
               .collection('usersBox')
-              .doc(phone)
+              .doc(cleanPhone)
               .get()
               .timeout(const Duration(seconds: 3));
 
@@ -57,7 +60,7 @@ class CustomerFormLogic {
             userData = Map<String, dynamic>.from(docSnap.data()!);
             userData['isSynced'] = true;
             // لوکل usersBox میں محفوظ کریں تاکہ آئندہ آف لائن لاگ ان ہو سکے
-            await usersBox.put(phone, userData);
+            await usersBox.put(cleanPhone, userData);
           }
         } catch (_) {
           // نیٹ نہ ہونے یا ٹائم آؤٹ کی صورت میں خاموشی سے اگلی لائن پر منتقل ہو جائے گا
@@ -77,28 +80,28 @@ class CustomerFormLogic {
 
         // سیٹنگز اپڈیٹ کریں
         if (rememberMe) {
-          await settingsBox.put('remembered_phone', phone);
+          await settingsBox.put('remembered_phone', cleanPhone);
           await settingsBox.put('remembered_pin', password);
           await settingsBox.put('is_remember_me', true);
         } else {
           await settingsBox.deleteAll(['remembered_phone', 'remembered_pin']);
           await settingsBox.put('is_remember_me', false);
         }
-        await settingsBox.put('last_logged_phone', phone);
+        await settingsBox.put('last_logged_phone', cleanPhone);
 
-        // 🎯 ۴۔ لاگ ان کامیاب ہوتے ہی کسٹمر کے تمام ٹارگٹڈ باکسز (بشمول mediaBox) اوپن کریں
+        // 🎯 ۴۔ لاگ ان کامیاب ہوتے ہی کسٹمر کے تمام ٹارگٹڈ باکسز اوپن کریں
         await _openTargetedCustomerBoxes();
 
-        // 🎯 ۵۔ بیک گراؤنڈ سنک (اگر انٹرنیٹ موجود ہو)
+        // 🎯 ۵۔ بیک گراؤنڈ سنک (فائر اسٹور سے سچ مچ کا سنک)
         Future.microtask(() {
-          MasterSyncManager().startAutoSync(phone);
+          MasterSyncManager().startAutoSync(cleanPhone);
         });
 
         if (context.mounted) {
           _showSnackBar(context, 'لاگ ان کامیاب!');
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CustomerLedgerPage(customerPhone: phone)),
+            MaterialPageRoute(builder: (_) => CustomerLedgerPage(customerPhone: cleanPhone)),
           );
         }
       } else {
@@ -115,7 +118,7 @@ class CustomerFormLogic {
   /// 🟢 صرف لاگ ان کے بعد ٹارگٹڈ کسٹمر باکسز اوپن کرنے کا میتھڈ
   Future<void> _openTargetedCustomerBoxes() async {
     List<String> targetedBoxes = [
-      'mediaBox', // 👈 mediaBox صرف لاگ ان کے بعد اوپن ہوگا
+      'mediaBox',
       'customerBox',
       'guarantorBox',
       'packageBox',
