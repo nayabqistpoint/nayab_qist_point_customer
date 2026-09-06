@@ -48,27 +48,43 @@ class AudioService extends ChangeNotifier {
     });
   }
 
-  // 🎯 اینڈرائیڈ پرمیشنز کو خودکار اور محفوظ طریقے سے چیک کرنا
+  /// 🎯 اینڈرائیڈ اور iOS کے لیے حقیقی اور محفوظ پرمیشن ہینڈلنگ
   Future<bool> requestPermissions() async {
-    var status = await Permission.microphone.status;
-    if (!status.isGranted) {
-      status = await Permission.microphone.request();
+    if (kIsWeb) return true; // ویب کے لیے ریکارڈ پیکیج بذاتِ خود پرمیشن سنبھالتا ہے
+
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.microphone,
+    ].request();
+
+    bool micGranted = statuses[Permission.microphone]?.isGranted ?? false;
+
+    if (!micGranted) {
+      if (await Permission.microphone.isPermanentlyDenied) {
+        await openAppSettings(); // اگر پرمیشن مستقل بند ہو تو سیٹنگز کھولے گا
+      }
+      return false;
     }
-    return status.isGranted;
+
+    return true;
   }
 
-  // 🎯 کریش فری ریکارڈنگ اسٹارٹ
+  /// 🎯 کریش فری اور سیف ریکارڈنگ کی شروعات
   Future<bool> startRecording() async {
     try {
       bool hasPermission = await requestPermissions();
       if (!hasPermission) {
-        debugPrint("Microphone permission denied.");
+        debugPrint("Microphone permission was not granted.");
         return false;
       }
 
       if (await _audioRecorder.hasPermission()) {
-        final dir = await getApplicationDocumentsDirectory();
-        final path = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        String path = '';
+        if (kIsWeb) {
+          path = ''; // ویب کے لیے پاتھ خالی رکھا جاتا ہے
+        } else {
+          final dir = await getApplicationDocumentsDirectory();
+          path = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        }
 
         await _audioRecorder.start(
           const RecordConfig(encoder: AudioEncoder.aacLc),
@@ -83,7 +99,7 @@ class AudioService extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      debugPrint("Safe Audio Recording Error: $e");
+      debugPrint("Audio Recording Error: $e");
     }
     return false;
   }
@@ -110,7 +126,11 @@ class AudioService extends ChangeNotifier {
         await _audioPlayer.pause();
         _isPlaying = false;
       } else {
-        await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
+        if (kIsWeb) {
+          await _audioPlayer.play(UrlSource(_recordedFilePath!));
+        } else {
+          await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
+        }
         _isPlaying = true;
       }
       notifyListeners();

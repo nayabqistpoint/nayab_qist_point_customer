@@ -18,7 +18,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.nayab_qist_point_customer"
-        minSdk = flutter.minSdkVersion
+        // 🟢 local_auth اور Biometrics کے لیے کم از کم SDK 21 ہونا ضروری ہے
+        minSdk = 21 
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

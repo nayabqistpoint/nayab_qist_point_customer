@@ -19,14 +19,19 @@ class _AudioRecordPlayerWidgetState extends State<AudioRecordPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _audioService.addListener(() {
+    _audioService.addListener(_onServiceUpdate);
+  }
+
+  void _onServiceUpdate() {
+    if (mounted) {
       widget.onAudioChanged(_audioService.recordedFilePath);
       setState(() {});
-    });
+    }
   }
 
   @override
   void dispose() {
+    _audioService.removeListener(_onServiceUpdate);
     _audioService.dispose();
     super.dispose();
   }
