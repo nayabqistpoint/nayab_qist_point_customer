@@ -12,71 +12,64 @@ class MasterLiveSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final List<StreamSubscription> _firestoreSubscriptions = [];
 
-  static const List<String> _targetBoxes = [
-    'customerBox',
-    'guarantorBox',
-    'packageBox',
-    'usersBox',
-    'transactionBox',
-    'stockBox',
-    'mediaBox',
-    'appConfigBox', // 👈 appConfigBox شامل کر دیا گیا
-  ];
+  /// 🟢 ۱۔ main.dart میں آن ہوتے ہی گلوبل باکسز (appConfig, stock, users) کا لائیو سنک شروع کرنا
+  Future<void> initPullService() async {
+    await _ensureGlobalBoxesOpened();
+    _startGlobalLiveSync();
+  }
 
-  Future<void> initPullService() async => await _ensureBoxesOpened();
+  /// 🎯 گلوبل باکسز - (StockBox اور UsersBox اب آف لائن پر ڈیلیٹ نہیں ہوں گے)
+  void _startGlobalLiveSync() {
+    List<String> globalBoxes = ['appConfigBox', 'stockBox', 'usersBox'];
 
-  /// 🟢 فائر اسٹور سے لائیو لسنرز (Snapshots) ایکٹیو کرنا
+    for (String boxName in globalBoxes) {
+      if (!Hive.isBoxOpen(boxName)) continue;
+      final hiveBox = Hive.box(boxName);
+
+      final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
+        await _processSnapshot(
+          onProcess: () async {
+            // 🛑 اہم سیکیورٹی: اگر نیٹ ورک بند ہے یا میٹا ڈیٹا آف لائن ہے تو لوکل ہائیو کا ڈیٹا ڈیلیٹ نہ کریں!
+            if (snap.metadata.isFromCache) {
+              debugPrint('🌐 [$boxName] کیشے ڈیٹا سے پڑھا جا رہا ہے، لوکل ڈسک محفوظ رہے گی۔');
+            }
+
+            for (var doc in snap.docs) {
+              if (doc.exists) {
+                final preparedData = _prepareData(doc.id, doc.data());
+                // آٹو جنریٹڈ یا فون نمبر والی تمام ڈاکومنٹ آئی ڈیز لوکل ہائیو میں سیو ہوں گی
+                await hiveBox.put(doc.id, preparedData);
+              }
+            }
+          },
+          errorTag: '$boxName Global Pull',
+        );
+      });
+      _firestoreSubscriptions.add(sub);
+    }
+    debugPrint('🌐 [MasterPull] گلوبل باکسز (appConfig, stock, users) کا محفوظ سنک ایکٹیو ہو گیا۔');
+  }
+
+  /// 🟢 ۲۔ لاگ ان ہونے کے بعد ٹارگٹڈ کسٹمر باکسز کا لائیو سنک شروع کرنا
   Future<void> startMasterLiveSync(String activePhone) async {
     final cleanPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanPhone.isEmpty) return;
 
-    await _ensureBoxesOpened();
-    await stopLiveSync();
+    await _ensureTargetedBoxesOpened();
 
-    for (String boxName in _targetBoxes) {
+    List<String> targetedBoxes = [
+      'customerBox',
+      'guarantorBox',
+      'packageBox',
+      'transactionBox',
+      'mediaBox'
+    ];
+
+    for (String boxName in targetedBoxes) {
+      if (!Hive.isBoxOpen(boxName)) continue;
       final hiveBox = Hive.box(boxName);
 
-      // 🟢 ۱۔ appConfigBox: گلوبل/اوپن لسنر (تمام ڈاکومنٹس بغیر فون نمبر کے)
-      if (boxName == 'appConfigBox') {
-        final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
-          await _processSnapshot(
-            onProcess: () async {
-              for (var doc in snap.docs) {
-                if (doc.exists) {
-                  final preparedData = _prepareData(doc.id, doc.data());
-                  await hiveBox.put(doc.id, preparedData);
-                }
-              }
-            },
-            errorTag: 'AppConfig Pull',
-          );
-        });
-        _firestoreSubscriptions.add(sub);
-      }
-      // ۲۔ stockBox: تمام ڈاکومنٹس
-      else if (boxName == 'stockBox') {
-        final sub = _firestore.collection(boxName).snapshots().listen((snap) async {
-          await _processSnapshot(
-            onProcess: () async {
-              final firestoreIds = snap.docs.map((doc) => doc.id).toSet();
-
-              for (var doc in snap.docs) {
-                if (doc.exists) {
-                  final preparedData = _prepareData(doc.id, doc.data());
-                  await hiveBox.put(doc.id, preparedData);
-                }
-              }
-
-              final localKeys = hiveBox.keys.map((k) => k.toString()).toList();
-              for (var key in localKeys) {
-                if (!firestoreIds.contains(key)) await hiveBox.delete(key);
-              }
-            },
-            errorTag: 'Stock Pull',
-          );
-        });
-        _firestoreSubscriptions.add(sub);
-      } else if (boxName == 'transactionBox' || boxName == 'mediaBox') {
+      if (boxName == 'transactionBox' || boxName == 'mediaBox') {
         final sub = _firestore
             .collection(boxName)
             .where('customerId', isEqualTo: cleanPhone)
@@ -84,23 +77,10 @@ class MasterLiveSyncService {
             .listen((snap) async {
           await _processSnapshot(
             onProcess: () async {
-              final firestoreDocIds = snap.docs.map((doc) => doc.id).toSet();
-
               for (var doc in snap.docs) {
                 if (doc.exists) {
                   final preparedData = _prepareData(doc.id, doc.data());
                   await hiveBox.put(doc.id, preparedData);
-                }
-              }
-
-              final localKeys = hiveBox.keys.toList();
-              for (var key in localKeys) {
-                final item = hiveBox.get(key);
-                if (item is Map) {
-                  final p = (item['customerId'] ?? item['customerPhone'] ?? '').toString().trim();
-                  if (p == cleanPhone && !firestoreDocIds.contains(key.toString())) {
-                    await hiveBox.delete(key);
-                  }
                 }
               }
             },
@@ -112,11 +92,11 @@ class MasterLiveSyncService {
         final sub = _firestore.collection(boxName).doc(cleanPhone).snapshots().listen((docSnap) async {
           await _processSnapshot(
             onProcess: () async {
-              if (docSnap.exists && docSnap.data() != null) {
-                final preparedData = _prepareData(docSnap.id, docSnap.data()!);
+              final data = docSnap.data();
+              // 🛑 صرف اس وقت لوکل سیو کریں جب ڈیٹا موجود ہو، آف لائن پر delete() ہرگز نہ کریں!
+              if (docSnap.exists && data != null) {
+                final preparedData = _prepareData(docSnap.id, data);
                 await hiveBox.put(cleanPhone, preparedData);
-              } else {
-                await hiveBox.delete(cleanPhone);
               }
             },
             errorTag: '$boxName Pull',
@@ -125,7 +105,7 @@ class MasterLiveSyncService {
         _firestoreSubscriptions.add(sub);
       }
     }
-    debugPrint('🔥 [MasterPull] فائر اسٹور کا ریئل ٹائم لائیو لسنر چالو ہو گیا ہے۔');
+    debugPrint('🔥 [MasterPull] ٹارگٹڈ کسٹمر باکسز کا لائیو لسنر ایکٹیو ہو گیا۔');
   }
 
   Future<void> _processSnapshot({required Future<void> Function() onProcess, required String errorTag}) async {
@@ -162,7 +142,7 @@ class MasterLiveSyncService {
       }
     });
 
-    orderedMap['status'] = data['status'] ?? 'pending';
+    orderedMap['status'] = data['status'] ?? 'approved';
     orderedMap['isSynced'] = data['isSynced'] ?? true;
     if (data.containsKey('timestamp')) orderedMap['timestamp'] = data['timestamp'];
 
@@ -176,10 +156,17 @@ class MasterLiveSyncService {
     _firestoreSubscriptions.clear();
   }
 
-  Future<void> _ensureBoxesOpened() async {
-    for (final name in _targetBoxes) {
+  Future<void> _ensureGlobalBoxesOpened() async {
+    List<String> globals = ['appConfigBox', 'stockBox', 'usersBox', 'settingsBox'];
+    for (final name in globals) {
       if (!Hive.isBoxOpen(name)) await Hive.openBox(name);
     }
-    if (!Hive.isBoxOpen('settingsBox')) await Hive.openBox('settingsBox');
+  }
+
+  Future<void> _ensureTargetedBoxesOpened() async {
+    List<String> targeted = ['customerBox', 'guarantorBox', 'packageBox', 'transactionBox', 'mediaBox'];
+    for (final name in targeted) {
+      if (!Hive.isBoxOpen(name)) await Hive.openBox(name);
+    }
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-// 🎯 کنفیگریشن اور سروس امپورٹس
 import 'firebase_options.dart';
 import 'services/master_pull_service.dart';
 import 'services/master_push_sync_service.dart';
@@ -16,28 +15,29 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    debugPrint('✅ [Firebase] فائر بیس کامیابی سے انیشلائز ہو گیا۔');
+    debugPrint('✅ [Firebase] فائر بیس انیشلائز ہو گیا۔');
   } catch (e) {
-    debugPrint('❌ [Firebase Error] فائر بیس انیشلائزیشن میں مسئلہ: $e');
+    debugPrint('❌ [Firebase Error] $e');
   }
 
-  // 2️⃣ ہائیو لوکل ڈیٹا بیس انیشلائزیشن
+  // 2️⃣ ہائیو انیشلائزیشن
   await Hive.initFlutter();
 
-  // 🎯 تمام ضروری باکسز بشمول mediaBox اور appConfigBox کو اوپن کرنا
-  await Hive.openBox('customerBox');
-  await Hive.openBox('guarantorBox');
-  await Hive.openBox('packageBox');
-  await Hive.openBox('stockBox');
-  await Hive.openBox('transactionBox');
-  await Hive.openBox('usersBox');
-  await Hive.openBox('settingsBox');
-  await Hive.openBox('mediaBox');
-  await Hive.openBox('appConfigBox'); // 👈 نیا ایپ کنفیگ باکس یہاں اوپن ہو گیا ہے
+  // 🎯 صرف ۴ گلوبل اور غیر مشروط (Unconditional) باکسز یہاں اوپن ہوں گے
+  await Future.wait([
+    Hive.openBox('appConfigBox'),
+    Hive.openBox('stockBox'),
+    Hive.openBox('usersBox'),      // آف لائن لاگ ان کے لیے
+    Hive.openBox('settingsBox'),   // پرسنل سیٹنگز کے لیے
+  ]);
 
-  // 3️⃣ بیک گراؤنڈ سنک سروسز کے لیے باکسز اور لسنرز ریڈی رکھنا
-  await MasterLiveSyncService().initPullService();
-  await MasterPushSyncService().initAutoPushListener();
+  // 3️⃣ بیک گراؤنڈ سنک لسنرز
+  try {
+    await MasterLiveSyncService().initPullService();
+    await MasterPushSyncService().initAutoPushListener();
+  } catch (e) {
+    debugPrint('⚠️ [Sync Init Warning] $e');
+  }
 
   runApp(const CustomerApp());
 }

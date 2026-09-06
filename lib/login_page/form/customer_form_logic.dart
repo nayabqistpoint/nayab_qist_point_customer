@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -24,38 +25,57 @@ class CustomerFormLogic {
     }
 
     try {
-      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
 
-      final usersBox = Hive.isBoxOpen('usersBox') ? Hive.box('usersBox') : await Hive.openBox('usersBox');
-      final settingsBox = Hive.isBoxOpen('settingsBox') ? Hive.box('settingsBox') : await Hive.openBox('settingsBox');
+      final usersBox = Hive.box('usersBox');
+      final settingsBox = Hive.box('settingsBox');
+
       Map<String, dynamic>? userData;
 
-      try {
-        final docSnap = await _firestore.collection('usersBox').doc(phone).get();
-        if (docSnap.exists && docSnap.data() != null) {
-          userData = Map<String, dynamic>.from(docSnap.data()!);
-          userData['isSynced'] = true;
-          await usersBox.put(phone, userData);
-        }
-      } catch (_) {}
-
-      if (userData == null && usersBox.containsKey(phone)) {
+      // 🟢 ۱۔ پہلی ترجیح (First Preference): لوکل usersBox سے ڈیٹا پڑھنا (100% آف لائن)
+      if (usersBox.containsKey(phone)) {
         final localData = usersBox.get(phone);
         if (localData != null) {
           userData = Map<String, dynamic>.from(localData as Map);
-          userData['isSynced'] = true;
+        }
+      }
+
+      // 🟢 ۲۔ دوسری ترجیح (Second Preference): اگر لوکل پر نہ ملے (مثلاً ایپ ری انسٹال ہوئی ہو)، تو فائرسٹور دیکھیں
+      if (userData == null) {
+        try {
+          final docSnap = await _firestore
+              .collection('usersBox')
+              .doc(phone)
+              .get()
+              .timeout(const Duration(seconds: 3));
+
+          if (docSnap.exists && docSnap.data() != null) {
+            userData = Map<String, dynamic>.from(docSnap.data()!);
+            userData['isSynced'] = true;
+            // لوکل usersBox میں محفوظ کریں تاکہ آئندہ آف لائن لاگ ان ہو سکے
+            await usersBox.put(phone, userData);
+          }
+        } catch (_) {
+          // نیٹ نہ ہونے یا ٹائم آؤٹ کی صورت میں خاموشی سے اگلی لائن پر منتقل ہو جائے گا
         }
       }
 
       if (!context.mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context); // ڈائیلاگ بند کریں
 
+      // 🟢 ۳۔ پاسورڈ اور سٹیٹس کی تصدیق
       if (userData != null && userData['pin'].toString() == password) {
+        // زیرِ التوا (Pending) کا چیک
         if ((userData['status'] ?? '').toString().trim().toLowerCase() == 'pending') {
           _showSnackBar(context, 'محترم صارف! آپ کی درخواست ابھی زیرِ التوا (Pending) ہے۔', isError: true);
           return;
         }
 
+        // سیٹنگز اپڈیٹ کریں
         if (rememberMe) {
           await settingsBox.put('remembered_phone', phone);
           await settingsBox.put('remembered_pin', password);
@@ -66,12 +86,14 @@ class CustomerFormLogic {
         }
         await settingsBox.put('last_logged_phone', phone);
 
-        // 🎯 ۱۔ بیک گراؤنڈ میں سنک مینیجر کو شروع کر دیں (UI کو await کیے بغیر)
+        // 🎯 ۴۔ لاگ ان کامیاب ہوتے ہی کسٹمر کے تمام ٹارگٹڈ باکسز (بشمول mediaBox) اوپن کریں
+        await _openTargetedCustomerBoxes();
+
+        // 🎯 ۵۔ بیک گراؤنڈ سنک (اگر انٹرنیٹ موجود ہو)
         Future.microtask(() {
           MasterSyncManager().startAutoSync(phone);
         });
 
-        // 🎯 ۲۔ فوری اور بغیر کسی جھٹکے کے دوسرے پیج پر نیویگیٹ کریں
         if (context.mounted) {
           _showSnackBar(context, 'لاگ ان کامیاب!');
           Navigator.push(
@@ -90,6 +112,24 @@ class CustomerFormLogic {
     }
   }
 
+  /// 🟢 صرف لاگ ان کے بعد ٹارگٹڈ کسٹمر باکسز اوپن کرنے کا میتھڈ
+  Future<void> _openTargetedCustomerBoxes() async {
+    List<String> targetedBoxes = [
+      'mediaBox', // 👈 mediaBox صرف لاگ ان کے بعد اوپن ہوگا
+      'customerBox',
+      'guarantorBox',
+      'packageBox',
+      'transactionBox',
+    ];
+
+    for (String boxName in targetedBoxes) {
+      if (!Hive.isBoxOpen(boxName)) {
+        await Hive.openBox(boxName);
+      }
+    }
+  }
+
+  /// 🟢 سیو شدہ کریڈینشلز لوڈ کرنا
   Future<Map<String, String>?> loadRememberedCredentials() async {
     final box = Hive.isBoxOpen('settingsBox') ? Hive.box('settingsBox') : await Hive.openBox('settingsBox');
     if (box.get('is_remember_me', defaultValue: false)) {
@@ -100,7 +140,13 @@ class CustomerFormLogic {
     return null;
   }
 
+  /// 🟢 کروم (Web) اور نان بائیومیٹرک پر سیف فنگر پرنٹ ہینڈلنگ
   Future<void> handleFingerprintAuthentication(BuildContext context) async {
+    if (kIsWeb) {
+      _showSnackBar(context, 'فنگر پرنٹ تصدیق صرف اینڈرائیڈ / موبائل پر دستیاب ہے!', isError: true);
+      return;
+    }
+
     try {
       if (!await _auth.canCheckBiometrics && !await _auth.isDeviceSupported()) {
         if (context.mounted) _showSnackBar(context, 'اس ڈیوائس پر فنگر پرنٹ سنسر دستیاب نہیں ہے!', isError: true);
@@ -117,7 +163,12 @@ class CustomerFormLogic {
       }
 
       if (await _auth.authenticate(localizedReason: 'لاگ ان کرنے کے لیے فنگر پرنٹ سکین کریں') && context.mounted) {
-        await handleLoginSubmission(context, TextEditingController(text: phone), TextEditingController(text: pin), rememberMe: true);
+        await handleLoginSubmission(
+          context,
+          TextEditingController(text: phone),
+          TextEditingController(text: pin),
+          rememberMe: true,
+        );
       }
     } catch (e) {
       if (context.mounted) _showSnackBar(context, 'فنگر پرنٹ تصدیق ناکام: $e', isError: true);
@@ -129,7 +180,13 @@ class CustomerFormLogic {
       SnackBar(
         backgroundColor: isError ? Colors.red[800] : Colors.green[800],
         behavior: SnackBarBehavior.floating,
-        content: Directionality(textDirection: TextDirection.rtl, child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold))),
+        content: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            message,
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
     );
   }

@@ -13,22 +13,28 @@ class MasterSyncManager {
 
   bool _isSyncing = false;
 
-  /// 🚀 لاگ ان ہوتے ہی یا ایپ کھلنے پر ریئل ٹائم آٹو سنک شروع کرنے کے لیے
+  /// 🚀 ایپ کے آن ہوتے ہی گلوبل باکسز (stockBox, usersBox, appConfigBox) کو سنک کرنا
+  Future<void> initGlobalSync() async {
+    // یہ صرف گلوبل باکسز کو انیشلائز کرے گا
+    await _pullService.initPullService();
+  }
+
+  /// 🚀 لاگ ان ہوتے ہی کسٹمر کے ٹارگٹڈ باکسز کے لیے آٹو سنک شروع کرنا
   Future<void> startAutoSync(String activePhone) async {
     final cleanPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanPhone.isEmpty) return;
 
-    // ۱۔ پہلے فائر اسٹور کے لائیو لسنرز (Pull) چالو کریں
+    // ۱۔ لائیو لسنرز (Pull) چالو کریں
     await _pullService.startMasterLiveSync(cleanPhone);
 
     // ۲۔ ہائیو باکس کے لسنرز (Push) چالو کریں
     await _pushService.initAutoPushListener(cleanPhone);
 
-    // ۳۔ ایک بار غیر سنک شدہ تمام اینٹریز فائر اسٹور پر پش کر دیں
+    // ۳۔ غیر سنک شدہ اینٹریز پش کریں
     await _pushService.pushUnsyncedData(cleanPhone);
   }
 
-  /// 🔘 دستی (Manual) سنک کا بٹن دبانے پر
+  /// 🔘 دستی سنک بٹن
   Future<void> runFullSync(String activePhone) async {
     if (_isSyncing) return;
     _isSyncing = true;
@@ -48,7 +54,7 @@ class MasterSyncManager {
     }
   }
 
-  /// 🛑 لاگ آؤٹ پر تمام لسنرز کو محفوظ طریقے سے بند کرنے کے لیے
+  /// 🛑 لاگ آؤٹ پر تمام لسنرز بند کرنا
   Future<void> stopAllSync() async {
     await _pushService.stopAutoPushListener();
     await _pullService.stopLiveSync();
