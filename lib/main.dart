@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/master_pull_service.dart';
 import 'services/master_push_sync_service.dart';
-import 'package:nayab_qist_point_customer/customer_login_page.dart';
+import 'customer_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

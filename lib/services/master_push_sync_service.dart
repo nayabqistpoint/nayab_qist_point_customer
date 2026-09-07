@@ -13,19 +13,11 @@ class MasterPushSyncService {
   bool isPullingActive = false;
 
   String _activeCustomerPhone = '';
-  final List<StreamSubscription> _hiveSubscriptions = [];
+  final List<StreamSubscription> _hiveSubs = [];
   Timer? _debounceTimer;
 
-  static const List<String> _targetBoxes = [
-    'customerBox',
-    'guarantorBox',
-    'packageBox',
-    'usersBox',
-    'transactionBox',
-    'stockBox',
-    'mediaBox',
-    'appConfigBox', // 👈 پش لسنر میں بھی شامل کر دیا گیا
-  ];
+  static const List<String> _globalBoxes = ['appConfigBox', 'stockBox', 'usersBox'];
+  static const List<String> _targetedBoxes = ['customerBox', 'guarantorBox', 'packageBox', 'transactionBox', 'mediaBox'];
 
   bool get isPushing => _isPushing;
 
@@ -34,104 +26,127 @@ class MasterPushSyncService {
       _activeCustomerPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
     }
 
-    await _ensureBoxesOpened();
     await stopAutoPushListener();
 
-    for (String boxName in _targetBoxes) {
-      final box = Hive.box(boxName);
-      final sub = box.watch().listen((event) {
-        _schedulePush();
-      });
-      _hiveSubscriptions.add(sub);
+    final List<String> boxesToWatch = [
+      ..._globalBoxes,
+      if (_activeCustomerPhone.isNotEmpty) ..._targetedBoxes,
+    ];
+
+    for (String boxName in boxesToWatch) {
+      if (Hive.isBoxOpen(boxName)) {
+        final sub = Hive.box(boxName).watch().listen((_) => _schedulePush());
+        _hiveSubs.add(sub);
+      }
     }
-    debugPrint('🚀 [MasterPush] ریئل ٹائم ہائیو لسنر ایکٹیو ہو گیا ہے۔');
+    debugPrint('🚀 [MasterPush] پش لسنرز فعال ہو گئے۔');
   }
 
   void _schedulePush() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
       if (!isPullingActive && !_isPushing) {
         pushUnsyncedData(_activeCustomerPhone);
-      } else {
-        Timer(const Duration(seconds: 1), () => pushUnsyncedData(_activeCustomerPhone));
       }
     });
   }
 
   Future<void> stopAutoPushListener() async {
     _debounceTimer?.cancel();
-    for (var sub in _hiveSubscriptions) {
+    for (var sub in _hiveSubs) {
       await sub.cancel();
     }
-    _hiveSubscriptions.clear();
+    _hiveSubs.clear();
   }
 
-  Future<void> pushUnsyncedData([String? activePhone]) async {
-    if (isPullingActive) return;
-
-    if (activePhone != null && activePhone.trim().isNotEmpty) {
-      _activeCustomerPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
+  /// 📤 صرف ان اینٹریز کو پش کرنا جن کی `isSynced == false` ہے (Write Batching کے ساتھ)
+  Future<bool> pushUnsyncedData([String? activePhone]) async {
+    if (_isPushing) {
+      debugPrint('⏳ [MasterPush] پش پہلے سے جاری ہے۔');
+      return false;
     }
-
-    if (_isPushing) return;
     _isPushing = true;
 
     try {
-      await _ensureBoxesOpened();
-      final WriteBatch batch = _firestore.batch();
-      final List<Map<String, dynamic>> pendingHiveUpdates = [];
-      int totalCount = 0;
+      if (activePhone != null && activePhone.trim().isNotEmpty) {
+        _activeCustomerPhone = activePhone.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      }
 
-      for (String boxName in _targetBoxes) {
+      final List<String> activeBoxesToPush = [
+        ..._globalBoxes,
+        if (_activeCustomerPhone.isNotEmpty) ..._targetedBoxes,
+      ];
+
+      final List<Map<String, dynamic>> itemsToPush = [];
+
+      for (String boxName in activeBoxesToPush) {
+        if (!Hive.isBoxOpen(boxName)) continue;
+
         final box = Hive.box(boxName);
-
         for (var key in box.keys) {
           final rawData = box.get(key);
-          if (rawData is! Map) continue;
+          if (rawData is Map) {
+            final mapData = Map<String, dynamic>.from(rawData);
+            
+            // 🎯 صرف اور صرف وہ اینٹری پش ہوگی جس کی isSynced == false ہو
+            if (mapData['isSynced'] == false) {
+              final resolvedDocId = (mapData['docId'] ?? mapData['id'] ?? mapData['transactionId'] ?? key).toString();
 
-          final data = Map<String, dynamic>.from(rawData);
-
-          if (data['isSynced'] == false) {
-            final Map<String, dynamic> firestoreData = Map<String, dynamic>.from(data);
-            firestoreData['isSynced'] = true;
-
-            final String docId = key.toString();
-            final DocumentReference docRef = _firestore.collection(boxName).doc(docId);
-
-            batch.set(docRef, firestoreData, SetOptions(merge: true));
-
-            pendingHiveUpdates.add({
-              'boxName': boxName,
-              'key': key,
-              'data': firestoreData,
-            });
-
-            totalCount++;
+              itemsToPush.add({
+                'boxName': boxName,
+                'key': key,
+                'docId': resolvedDocId,
+                'data': mapData,
+              });
+            }
           }
         }
       }
 
-      if (totalCount > 0) {
-        await batch.commit();
+      if (itemsToPush.isEmpty) {
+        debugPrint('✅ [MasterPush] تمام ڈیٹا (isSynced == false) پہلے سے اپ ٹو ڈیٹ ہے۔');
+        return true;
+      }
 
-        for (var update in pendingHiveUpdates) {
-          final box = Hive.box(update['boxName'] as String);
-          await box.put(update['key'], update['data']);
+      debugPrint('📤 [MasterPush] ${itemsToPush.length} اینٹریز فائر اسٹور پر بھیجی جا رہی ہیں...');
+
+      // 💥 Write Batching: ۳۰۰ اینٹریز فی بیچ
+      const chunkSize = 300;
+      for (var i = 0; i < itemsToPush.length; i += chunkSize) {
+        final chunk = itemsToPush.sublist(
+          i, i + chunkSize > itemsToPush.length ? itemsToPush.length : i + chunkSize,
+        );
+
+        final batch = _firestore.batch();
+        for (var item in chunk) {
+          final data = Map<String, dynamic>.from(item['data']);
+          data['isSynced'] = true; // فائر اسٹور پر جانے والے ڈیٹا میں isSynced = true ہوگا
+          data['docId'] = item['docId'];
+
+          final docRef = _firestore.collection(item['boxName']).doc(item['docId']);
+          batch.set(docRef, data, SetOptions(merge: true));
         }
 
-        debugPrint('🎉 [MasterPush] $totalCount اینٹریز WriteBatch کے ذریعے فائر اسٹور پر پش ہو گئیں۔');
+        // ۶ سیکنڈ ٹائم آؤٹ تا کہ ہینگ یا بلاک نہ ہو
+        await batch.commit().timeout(const Duration(seconds: 6));
+
+        // لوکل ہائیو میں isSynced = true اپ ڈیٹ کریں
+        for (var item in chunk) {
+          final box = Hive.box(item['boxName']);
+          final updatedData = Map<String, dynamic>.from(item['data']);
+          updatedData['isSynced'] = true;
+          updatedData['docId'] = item['docId'];
+          await box.put(item['key'], updatedData);
+        }
       }
+
+      debugPrint('🎉 [MasterPush] تمام غیر سنک شدہ اینٹریز فائر اسٹور پر کامیابی سے پش ہو گئیں۔');
+      return true;
     } catch (e) {
       debugPrint('❌ [MasterPush Error]: $e');
+      return false;
     } finally {
       _isPushing = false;
     }
-  }
-
-  Future<void> _ensureBoxesOpened() async {
-    for (final name in _targetBoxes) {
-      if (!Hive.isBoxOpen(name)) await Hive.openBox(name);
-    }
-    if (!Hive.isBoxOpen('settingsBox')) await Hive.openBox('settingsBox');
   }
 }

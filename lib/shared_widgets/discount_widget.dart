@@ -60,7 +60,7 @@ class _DiscountWidgetState extends State<DiscountWidget> {
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
@@ -74,114 +74,128 @@ class _DiscountWidgetState extends State<DiscountWidget> {
             ],
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(
-                Icons.local_offer_outlined,
-                size: 18,
-                color: Color(0xFFE53935),
-              ),
-              const SizedBox(width: 4),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCategory,
-                  isDense: true,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black54, size: 20),
-                  items: catList.map((String category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(
-                        category,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedCategory = newValue;
-                        _updateDiscount();
-                      });
-                    }
-                  },
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: Text('Rs', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                      ),
+              // 🎯 ۱۔ ڈراپ ڈاؤن پورشن (جو اب فالتو فاصلہ نہیں چھوڑے گا)
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.local_offer_outlined,
+                      size: 18,
+                      color: Color(0xFFE53935),
                     ),
-                    ButtonSegment<bool>(
-                      value: true,
-                      label: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: Text('%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCategory,
+                          isDense: true,
+                          isExpanded: false, // پورے اسکرین پر پھیلنے سے روکا گیا
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFE53935),
+                          ),
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.black54, size: 20),
+                          items: catList.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(
+                                category,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFE53935),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedCategory = newValue;
+                                _updateDiscount();
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
-                  selected: {_isPercentage},
-                  onSelectionChanged: (Set<bool> newSelection) {
-                    setState(() {
-                      _isPercentage = newSelection.first;
-                      _updateDiscount();
-                    });
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return const Color(0xFFE53935);
-                      }
-                      return Colors.transparent;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                      if (states.contains(WidgetState.selected)) return Colors.white;
-                      return Colors.black87;
-                    }),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
                 ),
               ),
+
               const SizedBox(width: 8),
+
+              // 🎯 ۲۔ متوازن، واضع اور خوبصورت (Rs / %) کیپسول
+              Container(
+                height: 34,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildCapsuleOption(
+                      label: 'Rs',
+                      isSelected: !_isPercentage,
+                      onTap: () {
+                        if (_isPercentage) {
+                          setState(() {
+                            _isPercentage = false;
+                            _updateDiscount();
+                          });
+                        }
+                      },
+                    ),
+                    _buildCapsuleOption(
+                      label: '%',
+                      isSelected: _isPercentage,
+                      onTap: () {
+                        if (!_isPercentage) {
+                          setState(() {
+                            _isPercentage = true;
+                            _updateDiscount();
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 🎯 ۳۔ رقم کا ٹیکسٹ فیلڈ (مناسب سائز)
               SizedBox(
-                width: 90,
-                height: 38,
+                width: 70,
+                height: 34,
                 child: TextField(
                   controller: _discountController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.center,
                   onChanged: (value) => _updateDiscount(),
                   decoration: InputDecoration(
                     hintText: '0',
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      borderSide: BorderSide(
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: const BorderSide(
                         color: Color(0xFFE53935),
                         width: 1.5,
                       ),
@@ -194,6 +208,43 @@ class _DiscountWidgetState extends State<DiscountWidget> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCapsuleOption({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE53935) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFE53935).withValues(alpha: 0.25),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : [],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
     );
   }
 }
