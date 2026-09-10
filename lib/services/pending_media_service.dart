@@ -28,8 +28,11 @@ class PendingMediaService {
         Map<String, dynamic> mediaMap = Map<String, dynamic>.from(rawData as Map);
         String? currentStatus = mediaMap['mediaStatus'];
 
-        if (currentStatus == 'PENDING_UPLOAD') {
-          bool updated = false;
+        // صرف زیرِ التواء یا ناکام اپ لوڈز کو ہی پروسیس کریں
+        if (currentStatus == 'PENDING_UPLOAD' || currentStatus == 'UPLOAD_FAILED') {
+          
+          bool hasAnyFailure = false;
+          bool hasAnySuccess = false;
 
           // 1️⃣ سائن اپ اور پرچیز سروسز کے لیے (mediaData)
           if (mediaMap.containsKey('mediaData') &&
@@ -44,7 +47,9 @@ class PendingMediaService {
             );
             if (url != null) {
               mediaMap['mediaData'] = url;
-              updated = true;
+              hasAnySuccess = true;
+            } else {
+              hasAnyFailure = true;
             }
           }
 
@@ -61,7 +66,9 @@ class PendingMediaService {
             );
             if (url != null) {
               mediaMap['pictureData'] = url;
-              updated = true;
+              hasAnySuccess = true;
+            } else {
+              hasAnyFailure = true;
             }
           }
 
@@ -73,22 +80,29 @@ class PendingMediaService {
 
             String? url = await _uploadToCloudinary(
               rawData: mediaMap['audioData'].toString(),
-              resourceType: 'video', // آڈیو کلاؤڈ نری پر 'video' کے تحت جاتی ہے
+              resourceType: 'video', // کلاؤڈ نری آڈیو کے لیے video ٹائپ کا استعمال کرتا ہے
               folder: 'nayab_qist_media/audio_notes',
             );
             if (url != null) {
               mediaMap['audioData'] = url;
-              updated = true;
+              hasAnySuccess = true;
+            } else {
+              hasAnyFailure = true;
             }
           }
 
-          // 🎯 صرف اسی صورت میں سٹیٹس اپ ڈیٹ کریں اگر میڈیا اپ لوڈ ہوا ہو
-          if (updated) {
+          // 🎯 صرف اس وقت READY_FOR_SYNC کریں جب تمام درکار میڈیا کامیابی سے اپ لوڈ ہو چکے ہوں!
+          if (!hasAnyFailure && hasAnySuccess) {
             mediaMap['mediaStatus'] = 'READY_FOR_SYNC';
-            mediaMap['isSynced'] = false; // 🟢 پش سروس کے لیے فلیگ آن
+            mediaMap['isSynced'] = false; // 🟢 اب پش سروس اسے فائر اسٹور پر محفوظ طریقے سے لے جائے گی
 
             await mBox.put(key, mediaMap);
-            debugPrint("🎉 [Media Uploaded & Saved] Key: $key");
+            debugPrint("🎉 [Media Uploaded & Ready for Push] Key: $key");
+          } else if (hasAnyFailure) {
+            mediaMap['mediaStatus'] = 'UPLOAD_FAILED';
+            mediaMap['isSynced'] = true; // 🔴 جب تک اپ لوڈ مکمل نہ ہو پش سروس کو روک کر رکھیں
+            await mBox.put(key, mediaMap);
+            debugPrint("⚠️ [Media Upload Failed/Incomplete] Key: $key - Next sync try again.");
           }
         }
       }
@@ -113,16 +127,22 @@ class PendingMediaService {
       if (kIsWeb) {
         request.fields['file'] = rawData;
       } else {
+        // اگر بیس 64 سٹرنگ ہے
         if (rawData.startsWith('data:') || rawData.length > 500) {
           request.fields['file'] = rawData;
         } else {
+          // اگر لوکل فائل پاتھ ہے
           io.File file = io.File(rawData);
-          if (!await file.exists()) return null;
+          if (!await file.exists()) {
+            debugPrint("❌ File does not exist at path: $rawData");
+            return null;
+          }
           request.files.add(await http.MultipartFile.fromPath('file', rawData));
         }
       }
 
-      var streamedResponse = await request.send();
+      // 🎯 30 سیکنڈز کا ٹائم آؤٹ تاکہ انٹرنیٹ معطل ہونے پر پروسیس ہینگ نہ ہو
+      var streamedResponse = await request.send().timeout(const Duration(seconds: 30));
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {

@@ -24,6 +24,7 @@ class SyncService {
       // 🎯 20 کریکٹرز کی آف لائن فائرسٹور یونیک آئی ڈی
       final String uniqueDocId = FirebaseFirestore.instance.collection('transactions').doc().id;
 
+      // ۱۔ ٹرانزیکشن کا اصل پی لوڈ
       final Map<String, dynamic> payload = {
         'docId': uniqueDocId,
         'customerId': cleanPhone,
@@ -59,31 +60,36 @@ class SyncService {
         });
       }
 
-      // 🎯 mediaBox: Key = cleanPhone_paynow_uniqueDocId (کبھی اوور رائٹ نہیں ہوگی)
-      var mediaBox = Hive.isBoxOpen('mediaBox')
-          ? Hive.box('mediaBox')
-          : await Hive.openBox('mediaBox');
-
-      String paynowMediaDocKey = "${cleanPhone}_paynow_$uniqueDocId";
-
+      // 🎯 ۲۔ میڈیا چیک: اگر تصویر یا آڈیو موجود ہے صرف تب mediaBox میں اینٹری بنے گی
       bool hasPicture = attachmentPath != null && attachmentPath.isNotEmpty;
       bool hasAudio = audioPath != null && audioPath.isNotEmpty && audioPath != 'Not Recorded';
 
-      final Map<String, dynamic> paynowMediaMap = {
-        'customerId': cleanPhone,
-        'txDocId': uniqueDocId,
-        'sourcePage': 'paynow',
-        'category': 'payment_media',
-        'pictureData': hasPicture ? attachmentPath : 'NO_IMAGE',
-        'audioData': hasAudio ? audioPath : 'NO_AUDIO_RECORDED',
-        'mediaStatus': (hasPicture || hasAudio) ? 'PENDING_UPLOAD' : 'NO_MEDIA',
-        'isSynced': true,
-        'createdAt': currentIsoDate,
-      };
+      if (hasPicture || hasAudio) {
+        var mediaBox = Hive.isBoxOpen('mediaBox')
+            ? Hive.box('mediaBox')
+            : await Hive.openBox('mediaBox');
 
-      await mediaBox.put(paynowMediaDocKey, paynowMediaMap);
+        String paynowMediaDocKey = "${cleanPhone}_paynow_$uniqueDocId";
 
-      developer.log("Success: Stored paynow media with key $paynowMediaDocKey", name: "SyncService");
+        final Map<String, dynamic> paynowMediaMap = {
+          'docId': paynowMediaDocKey,
+          'customerId': cleanPhone,
+          'txDocId': uniqueDocId,
+          'sourcePage': 'paynow',
+          'category': 'payment_media',
+          'pictureData': hasPicture ? attachmentPath : 'NO_IMAGE',
+          'audioData': hasAudio ? audioPath : 'NO_AUDIO_RECORDED',
+          'mediaStatus': 'PENDING_UPLOAD',
+          'isSynced': true, // PendingMediaService اسے اپ لوڈ کر کے URL ڈالے گی اور isSynced: false کرے گی
+          'createdAt': currentIsoDate,
+        };
+
+        await mediaBox.put(paynowMediaDocKey, paynowMediaMap);
+        developer.log("Success: Stored paynow media with key $paynowMediaDocKey", name: "SyncService");
+      } else {
+        developer.log("No media present. Skipped creating mediaBox entry.", name: "SyncService");
+      }
+
       return true;
     } catch (e) {
       developer.log("SyncService Error", error: e, name: "SyncService");
