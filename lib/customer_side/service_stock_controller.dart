@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
+import 'grocery_expense_service.dart';
+import 'mobile_stock_service.dart';
 
 class ServiceStockController extends ChangeNotifier {
   final List<String> targetAccounts;
+
+  // 🎯 سروسز کی انیشیلائزیشن
+  final groceryService = GroceryExpenseService();
+  final mobileService = MobileStockService();
+
+  // 🎯 گلوبل فیلڈز
+  final titleCtrl = TextEditingController();
+  final noteCtrl = TextEditingController();
+  bool hasPhoto = false;
+  bool hasAudio = false;
+  int selectedNatureIndex = 0; // 0 = راشن، 1 = موبائل اسٹاک
+  late String target;
 
   ServiceStockController({required this.targetAccounts}) {
     target = targetAccounts.isNotEmpty
@@ -9,79 +23,29 @@ class ServiceStockController extends ChangeNotifier {
         : 'نیا / آزاد کسٹمر کریڈٹ کھاتہ';
   }
 
-  // 🎯 ٹیکسٹ کنٹرولرز
-  final titleCtrl = TextEditingController();
-  final noteCtrl = TextEditingController();
-  final itemNameCtrl = TextEditingController();
-  final itemAmountCtrl = TextEditingController();
-  final mobileModelCtrl = TextEditingController();
-  final mobilePriceCtrl = TextEditingController();
-  final imeiCtrl = TextEditingController();
+  // 🎯 UI کمپوننٹس کے لیے فارورڈرز (تاکہ کوئی کمپوننٹ کوڈ تبدیل نہ کرنا پڑے)
+  TextEditingController get itemNameCtrl => groceryService.itemNameCtrl;
+  TextEditingController get itemAmountCtrl => groceryService.itemAmountCtrl;
+  List<Map<String, dynamic>> get groceryList => groceryService.groceryList;
+  List<String> get configExpenseCategories => groceryService.configExpenseCategories;
+  List<Map<String, dynamic>> get expenseAllocations => groceryService.expenseAllocations;
 
-  // 🎯 اسمارٹ ڈراپ ڈاؤن ڈیفالٹس
-  String selectedRamRom = '4GB / 64GB';
-  String selectedWarranty = '3 دن چیکنگ وارنٹی';
-  String mobileCondition = 'استعمال شدہ (Used)';
+  TextEditingController get mobileModelCtrl => mobileService.mobileModelCtrl;
+  TextEditingController get mobilePriceCtrl => mobileService.mobilePriceCtrl;
+  TextEditingController get imeiCtrl => mobileService.imeiCtrl;
+  String get selectedRamRom => mobileService.selectedRamRom;
+  String get selectedWarranty => mobileService.selectedWarranty;
+  String get mobileCondition => mobileService.mobileCondition;
+  List<String> get ramRomOptions => mobileService.ramRomOptions;
+  List<String> get warrantyOptions => mobileService.warrantyOptions;
+  List<Map<String, dynamic>> get mobileStockList => mobileService.mobileStockList;
 
-  final List<String> ramRomOptions = [
-    '2GB / 32GB',
-    '3GB / 32GB',
-    '4GB / 64GB',
-    '4GB / 128GB',
-    '6GB / 128GB',
-    '8GB / 128GB',
-    '8GB / 256GB',
-    '12GB / 256GB',
-  ];
-
-  final List<String> warrantyOptions = [
-    'وارنٹی ختم (0 ماہ)',
-    '3 دن چیکنگ وارنٹی',
-    '1 ماہ دکان وارنٹی',
-    '3 ماہ وارنٹی',
-    '6 ماہ وارنٹی',
-    '12 ماہ کمپنی وارنٹی',
-  ];
-
-  bool hasPhoto = false;
-  bool hasAudio = false;
-
-  int selectedNatureIndex = 0; // 0 = راشن، 1 = موبائل اسٹاک
-  late String target;
-
-  List<Map<String, dynamic>> groceryList = [
-    {'name': 'چینی (5 کلو)', 'amount': 750},
-  ];
-  List<Map<String, dynamic>> mobileStockList = [];
-
-  final List<String> configExpenseCategories = [
-    'گھریلو راشن و گروسری (ڈائریکٹ ایکسپنس)',
-    'دکان چائے پانی / اخراجات (ان ڈائریکٹ ایکسپنس)',
-    'رعایت / خصوصی ڈسکاؤنٹ (ڈائریکٹ ایکسپنس)',
-    'دکان مرمت و سروس ورکشاپ (ان ڈائریکٹ ایکسپنس)',
-    'دیگر متفرق اخراجات (General Expense)',
-  ];
-
-  List<Map<String, dynamic>> expenseAllocations = [
-    {'category': 'گھریلو راشن و گروسری (ڈائریکٹ ایکسپنس)', 'amount': 750},
-  ];
-
-  // 🎯 کیلکولیشنز
+  // 🎯 مجموعی کیلکولیشنز
   bool get isStockBarter => selectedNatureIndex == 1;
-
-  int get totalBill {
-    return isStockBarter
-        ? mobileStockList.fold(0, (sum, i) => sum + (i['amount'] as int))
-        : groceryList.fold(0, (sum, i) => sum + (i['amount'] as int));
-  }
-
-  int get expenseSum =>
-      expenseAllocations.fold(0, (sum, e) => sum + ((e['amount'] as int?) ?? 0));
-
-  int get expenseDifference => expenseSum - totalBill;
-
-  bool get isExpenseReconciled =>
-      isStockBarter || (expenseDifference == 0 && totalBill > 0);
+  int get totalBill => isStockBarter ? mobileService.totalBill : groceryService.totalBill;
+  int get expenseSum => groceryService.expenseSum;
+  int get expenseDifference => isStockBarter ? 0 : (groceryService.expenseSum - groceryService.totalBill);
+  bool get isExpenseReconciled => isStockBarter || groceryService.isExpenseReconciled;
 
   String formatAmount(int amount) {
     return amount.toString().replaceAllMapped(
@@ -90,15 +54,10 @@ class ServiceStockController extends ChangeNotifier {
     );
   }
 
-  // 🎯 اسٹیٹ تبدیل کرنے والے طریقے
+  // 🎯 ٹوگل اور فیلڈ ہینڈلرز
   void setNatureIndex(int index) {
     selectedNatureIndex = index;
-    if (index == 0) {
-      int tBill = groceryList.fold(0, (sum, i) => sum + (i['amount'] as int));
-      if (expenseAllocations.isNotEmpty) {
-        expenseAllocations[0]['amount'] = tBill;
-      }
-    }
+    if (index == 0) groceryService.syncExpenseWithTotal();
     notifyListeners();
   }
 
@@ -118,99 +77,68 @@ class ServiceStockController extends ChangeNotifier {
   }
 
   void setRamRom(String val) {
-    selectedRamRom = val;
+    mobileService.selectedRamRom = val;
     notifyListeners();
   }
 
   void setCondition(String val) {
-    mobileCondition = val;
+    mobileService.mobileCondition = val;
     notifyListeners();
   }
 
   void setWarranty(String val) {
-    selectedWarranty = val;
+    mobileService.selectedWarranty = val;
     notifyListeners();
   }
 
-  // 🎯 گروسری ہینڈلنگ
+  // 🎯 گروسری ہینڈلرز
   void addGroceryItem() {
-    if (itemNameCtrl.text.isNotEmpty && itemAmountCtrl.text.isNotEmpty) {
-      groceryList.add({
-        'name': itemNameCtrl.text.trim(),
-        'amount': int.tryParse(itemAmountCtrl.text.trim().replaceAll(',', '')) ?? 0,
-      });
-      itemNameCtrl.clear();
-      itemAmountCtrl.clear();
-      int newT = groceryList.fold(0, (s, i) => s + (i['amount'] as int));
-      if (expenseAllocations.isNotEmpty) {
-        expenseAllocations[0]['amount'] = newT;
-      }
-      notifyListeners();
-    }
+    groceryService.addGroceryItem();
+    notifyListeners();
   }
 
   void removeGroceryItem(int index) {
-    groceryList.removeAt(index);
-    int newT = groceryList.fold(0, (s, i) => s + (i['amount'] as int));
-    if (expenseAllocations.isNotEmpty) {
-      expenseAllocations[0]['amount'] = newT;
-    }
+    groceryService.removeGroceryItem(index);
     notifyListeners();
   }
 
-  // 🎯 ایکسپنس ہینڈلنگ
+  // 🎯 ایکسپنس ہینڈلرز
   void addExpenseAllocation() {
-    expenseAllocations.add({
-      'category': configExpenseCategories[1],
-      'amount': 0,
-    });
+    groceryService.addExpenseAllocation();
     notifyListeners();
   }
 
   void updateExpenseCategory(int index, String category) {
-    expenseAllocations[index]['category'] = category;
+    groceryService.updateExpenseCategory(index, category);
     notifyListeners();
   }
 
   void updateExpenseAmount(int index, String amountStr) {
-    expenseAllocations[index]['amount'] = int.tryParse(amountStr) ?? 0;
+    groceryService.updateExpenseAmount(index, amountStr);
     notifyListeners();
   }
 
   void removeExpenseAllocation(int index) {
-    expenseAllocations.removeAt(index);
+    groceryService.removeExpenseAllocation(index);
     notifyListeners();
   }
 
-  // 🎯 موبائل اسٹاک ہینڈلنگ
+  // 🎯 موبائل ہینڈلرز
   bool addMobileStock() {
-    if (mobileModelCtrl.text.trim().isNotEmpty &&
-        mobilePriceCtrl.text.trim().isNotEmpty) {
-      mobileStockList.add({
-        'name': mobileModelCtrl.text.trim(),
-        'amount': int.tryParse(mobilePriceCtrl.text.trim().replaceAll(',', '')) ?? 0,
-        'ramRom': selectedRamRom,
-        'condition': mobileCondition,
-        'imei': imeiCtrl.text.trim(),
-        'warranty': selectedWarranty,
-      });
-      mobileModelCtrl.clear();
-      mobilePriceCtrl.clear();
-      imeiCtrl.clear();
-      notifyListeners();
-      return true;
-    }
-    return false;
+    final ok = mobileService.addMobileStock();
+    if (ok) notifyListeners();
+    return ok;
   }
 
   void removeMobileStock(int index) {
-    mobileStockList.removeAt(index);
+    mobileService.removeMobileStock(index);
     notifyListeners();
   }
 
+  // 🎯 حتمی سبمٹ پیلوڈ
   Map<String, dynamic>? getSubmitPayload() {
     final List<Map<String, dynamic>> finalItems =
-        isStockBarter ? List.from(mobileStockList) : List.from(groceryList);
+        isStockBarter ? List.from(mobileService.mobileStockList) : List.from(groceryService.groceryList);
 
     if (finalItems.isEmpty) return null;
 
@@ -223,7 +151,7 @@ class ServiceStockController extends ChangeNotifier {
       'isExpanded': false,
       'syncStatus': 'FIRESTORE_PUSHED',
       'items': finalItems,
-      'expenseAllocations': isStockBarter ? [] : List.from(expenseAllocations),
+      'expenseAllocations': isStockBarter ? [] : List.from(groceryService.expenseAllocations),
       'totalAmount': totalBill,
       'target': target,
       'hasAudio': hasAudio,
@@ -236,11 +164,8 @@ class ServiceStockController extends ChangeNotifier {
   void dispose() {
     titleCtrl.dispose();
     noteCtrl.dispose();
-    itemNameCtrl.dispose();
-    itemAmountCtrl.dispose();
-    mobileModelCtrl.dispose();
-    mobilePriceCtrl.dispose();
-    imeiCtrl.dispose();
+    groceryService.dispose();
+    mobileService.dispose();
     super.dispose();
   }
 }
