@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/master_pull_service.dart';
 import 'services/master_push_sync_service.dart';
-import 'customer_login_page.dart';
+import 'routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,12 +23,12 @@ void main() async {
   // 2️⃣ ہائیو انیشلائزیشن
   await Hive.initFlutter();
 
-  // 🎯 صرف ۴ گلوبل اور غیر مشروط (Unconditional) باکسز یہاں اوپن ہوں گے
+  // 🎯 صرف ۴ گلوبل اور غیر مشروط باکسز
   await Future.wait([
     Hive.openBox('appConfigBox'),
     Hive.openBox('stockBox'),
-    Hive.openBox('usersBox'),      // آف لائن لاگ ان کے لیے
-    Hive.openBox('settingsBox'),   // پرسنل سیٹنگز کے لیے
+    Hive.openBox('usersBox'),
+    Hive.openBox('settingsBox'),
   ]);
 
   // 3️⃣ بیک گراؤنڈ سنک لسنرز
@@ -59,7 +59,10 @@ class CustomerApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
-      home: const CustomerLoginPage(),
+      // 👈 ابتدائی صفحہ لاگ ان اسکرین ہوگی
+      initialRoute: AppRoutes.login,
+      // 👈 تمام اسکرینز کا مرکزی گیٹ وے
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }
