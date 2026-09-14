@@ -1,4 +1,9 @@
-class CustomerLedgerController {
+import 'package:flutter/material.dart';
+import 'universal_payment_page.dart';
+import 'service_stock_entry_page.dart';
+import 'purchase_page.dart';
+
+class CustomerLedgerController extends ChangeNotifier {
   int selectedTabIndex = 0;
   int selectedProductIndex = 0;
 
@@ -59,7 +64,8 @@ class CustomerLedgerController {
     },
   ];
 
-  int get totalInstallmentDue => customerProducts.fold(0, (sum, p) => sum + ((p['total'] as int) - (p['paid'] as int)));
+  int get totalInstallmentDue => customerProducts.fold(
+      0, (sum, p) => sum + ((p['total'] as int) - (p['paid'] as int)));
 
   int get approvedServiceCredit => serviceTransactions
       .where((t) => t['syncStatus'] == 'ADMIN_APPROVED')
@@ -72,5 +78,128 @@ class CustomerLedgerController {
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
+  }
+
+  void setTabIndex(int index) {
+    selectedTabIndex = index;
+    notifyListeners();
+  }
+
+  void setProductIndex(int index) {
+    selectedProductIndex = index;
+    notifyListeners();
+  }
+
+  void toggleTransactionExpand(Map<String, dynamic> item) {
+    item['isExpanded'] = !(item['isExpanded'] ?? false);
+    notifyListeners();
+  }
+
+  // 🎯 نیویگیشنز اور ادائیگی لاجک
+  void openPurchasePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PurchasePage()),
+    );
+  }
+
+  Future<void> handleInstallmentPayment(BuildContext context, Map<String, dynamic> schedItem) async {
+    final remaining = (schedItem['amount'] as int) - ((schedItem['paidAmount'] as int?) ?? 0);
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UniversalPaymentPage(
+          title: 'قسط نمبر ${schedItem['no']} کی ادائیگی',
+          baseAmount: remaining,
+          isInstallment: true,
+        ),
+      ),
+    );
+
+    if (result != null && context.mounted) {
+      final int newlyPaid = result['paid'] as int;
+      final int totalAmt = schedItem['amount'] as int;
+      final int currentPaid = (schedItem['paidAmount'] as int?) ?? 0;
+      final int updatedPaid = currentPaid + newlyPaid;
+
+      schedItem['paidAmount'] = updatedPaid;
+      if (updatedPaid >= totalAmt) {
+        schedItem['status'] = 'PAID';
+      }
+
+      customerProducts[selectedProductIndex]['paid'] =
+          (customerProducts[selectedProductIndex]['paid'] as int) + (result['resolved'] as int);
+
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('قسط ادا! وصولی: Rs. ${formatAmount(result['paid'])}'),
+          backgroundColor: const Color(0xFF059669),
+        ),
+      );
+    }
+  }
+
+  Future<void> handleCashLoanRepayment(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UniversalPaymentPage(
+          title: 'نقد دستی ادھار کی واپسی',
+          baseAmount: cashLoanBalance,
+          isInstallment: false,
+        ),
+      ),
+    );
+
+    if (result != null && context.mounted) {
+      final int paid = result['paid'] as int;
+      final int discount = (result['discount'] as int?) ?? 0;
+
+      cashLoanBalance -= (paid + discount);
+      cashLoanEntries.insert(0, {
+        'title': 'دستی قرض واپسی ادا کی',
+        'date': 'آج',
+        'amount': paid,
+        'type': 'CREDIT',
+      });
+
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('قرض واپسی جمع! رقم: Rs. ${formatAmount(result['paid'])}'),
+          backgroundColor: const Color(0xFF059669),
+        ),
+      );
+    }
+  }
+
+  Future<void> handleNewServiceTransaction(BuildContext context) async {
+    final newTransaction = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ServiceStockEntryPage(
+          targetAccounts: [
+            ...customerProducts.map((p) => 'قسط کھاتہ: ${p['name']}'),
+            'نقد دستی ادھار کھاتہ',
+            'نیا / آزاد کسٹمر کریڈٹ کھاتہ',
+          ],
+        ),
+      ),
+    );
+
+    if (newTransaction != null && context.mounted) {
+      serviceTransactions.insert(0, newTransaction);
+      notifyListeners();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Rs. ${formatAmount(newTransaction['totalAmount'])} کا بل ایڈمن منظوری کے لیے ارسال ہو گیا!'),
+          backgroundColor: const Color(0xFF059669),
+        ),
+      );
+    }
   }
 }
