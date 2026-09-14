@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-// 🎯 آپ کی ڈائریکٹری سٹرکچر کے مطابق بالکل ایکوریٹ پاتھس:
-import 'package:nayab_qist_point_customer/calculator/installment_calculator_page.dart';
+// 🎯 سینٹرلائزڈ روٹس فائل کی امپورٹ
+import 'package:nayab_qist_point_customer/routes/app_routes.dart';
 import 'package:nayab_qist_point_customer/signup_page/signup_page.dart';
 
 class CustomerFooterLogic {
@@ -15,13 +15,12 @@ class CustomerFooterLogic {
     );
   }
 
-  // 🎯 آن لائن قسط کیلکولیٹر پیج پر جانے کی لاجک
+  // 🎯 آن لائن قسط کیلکولیٹر اور پبلک شو روم پیج پر جانے کی لاجک
   void handleCalculatorNavigation(BuildContext context) {
-    Navigator.push(
+    // بغیر کسی موبائل نمبر کے پبلک شو روم کھولنا
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) => const InstallmentCalculaterPage(),
-      ),
+      AppRoutes.purchaseMarket,
     );
   }
 }
