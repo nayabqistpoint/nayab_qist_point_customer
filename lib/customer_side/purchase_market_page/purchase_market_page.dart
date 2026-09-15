@@ -5,7 +5,7 @@ import 'components/luminous_calculator_banner_ui.dart';
 import 'components/market_stock_list_header_ui.dart';
 import 'components/stock_phone_card_ui.dart';
 import 'components/custom_estimate_sheet_ui.dart';
-import 'package:nayab_qist_point_customer/routes/app_routes.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
 
 class PurchaseMarketPage extends StatefulWidget {
   final String? customerPhone;

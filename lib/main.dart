@@ -1,67 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+// 🎯 فائر بیس ویب/اینڈرائیڈ آپشنز اور روٹس امپورٹ
 import 'firebase_options.dart';
-import 'services/master_pull_service.dart';
-import 'services/master_push_sync_service.dart';
-import 'routes/app_routes.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1️⃣ فائر بیس انیشلائزیشن
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('✅ [Firebase] فائر بیس انیشلائز ہو گیا۔');
-  } catch (e) {
-    debugPrint('❌ [Firebase Error] $e');
-  }
+  // 1. فائر بیس انیشلائزیشن مع پلیٹ فارم آپشنز
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  // 2️⃣ ہائیو انیشلائزیشن
+  // 2. Hive ڈیٹا بیس انیشلائزیشن مع بنیادی باکسز
   await Hive.initFlutter();
+  await Hive.openBox('settingsBox');
+  await Hive.openBox('usersBox');
 
-  // 🎯 صرف ۴ گلوبل اور غیر مشروط باکسز
-  await Future.wait([
-    Hive.openBox('appConfigBox'),
-    Hive.openBox('stockBox'),
-    Hive.openBox('usersBox'),
-    Hive.openBox('settingsBox'),
-  ]);
-
-  // 3️⃣ بیک گراؤنڈ سنک لسنرز
-  try {
-    await MasterLiveSyncService().initPullService();
-    await MasterPushSyncService().initAutoPushListener();
-  } catch (e) {
-    debugPrint('⚠️ [Sync Init Warning] $e');
-  }
-
-  runApp(const CustomerApp());
+  runApp(const NayabQistPointCustomerApp());
 }
 
-class CustomerApp extends StatelessWidget {
-  const CustomerApp({super.key});
+class NayabQistPointCustomerApp extends StatelessWidget {
+  const NayabQistPointCustomerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'نایاب قسط پوائنٹ کسٹمر',
       debugShowCheckedModeBanner: false,
-      title: 'نایاب قسط پوائنٹ',
       theme: ThemeData(
-        primaryColor: Colors.red[800],
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.red[800]!,
-          primary: Colors.red[800],
-        ),
-        scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
+        fontFamily: 'Jameel Noori Nastaleeq',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF059669),
+          brightness: Brightness.light,
+        ),
       ),
-      // 👈 ابتدائی صفحہ لاگ ان اسکرین ہوگی
       initialRoute: AppRoutes.login,
-      // 👈 تمام اسکرینز کا مرکزی گیٹ وے
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }

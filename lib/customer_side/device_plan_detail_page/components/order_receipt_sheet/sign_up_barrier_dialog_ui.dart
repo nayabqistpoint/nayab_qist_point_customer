@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/signup_page/signup_page.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
 import 'signup_instruction_card_ui.dart';
 
 class SignUpBarrierDialogUi extends StatelessWidget {
@@ -84,7 +84,7 @@ class SignUpBarrierDialogUi extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupPage()));
+                          Navigator.pushNamed(context, AppRoutes.customerSignup);
                         },
                         icon: const Icon(Icons.app_registration_rounded, size: 16),
                         label: const Text('ابھی سائن اپ کریں (نیا کھاتہ)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
