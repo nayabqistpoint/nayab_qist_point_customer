@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:nayab_qist_point_customer/ledger/customer_ledger_page.dart';
+
+// 🎯 پرانے پیج کی جگہ سینٹرلائزڈ روٹس امپورٹ
+import 'package:nayab_qist_point_customer/routes/app_routes.dart';
 import '../../services/master_sync_manager.dart';
 
 class CustomerFormLogic {
@@ -99,9 +101,14 @@ class CustomerFormLogic {
 
         if (context.mounted) {
           _showSnackBar(context, 'لاگ ان کامیاب!');
-          Navigator.push(
+
+          // 🚀 پرانے ڈائریکٹ پیج کی جگہ نئے کسٹمر لیجر پر فون نمبر پاس کر دیا گیا ہے
+          Navigator.pushReplacementNamed(
             context,
-            MaterialPageRoute(builder: (_) => CustomerLedgerPage(customerPhone: cleanPhone)),
+            AppRoutes.ledger,
+            arguments: {
+              'customerPhone': cleanPhone,
+            },
           );
         }
       } else {

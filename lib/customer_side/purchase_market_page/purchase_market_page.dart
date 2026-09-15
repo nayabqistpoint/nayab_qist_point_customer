@@ -36,20 +36,27 @@ class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CustomEstimateSheetUi(
+      builder: (sheetContext) => CustomEstimateSheetUi(
         onSubmit: (name, price, adv) {
+          // 1. پہلے کھلی ہوئی باٹم شیٹ کو بند کریں
+          Navigator.pop(sheetContext);
+
+          // 2. کسٹم ڈیوائس ڈیٹا بنائیں
           final device = {
-            'name': name.isEmpty ? 'کسٹم ڈیوائس' : name,
+            'name': name.isEmpty ? 'کسٹم ڈیوائس تخمینہ' : name,
             'baseValue': price,
             'ramRom': 'کسٹمر ڈیمانڈ',
             'condition': 'نئی یا طلب کے مطابق',
             'warranty': '12 ماہ وارنٹی',
             'minAdvanceRequired': adv > 0 ? adv : 5000,
             'userCustomAdvance': adv,
+            'isCustomEstimate': true,
             'images': [
               'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800',
             ],
           };
+
+          // 3. 28 اقساط والے پیج پر نیویگیٹ کریں
           Navigator.pushNamed(
             context,
             AppRoutes.planDetail,
@@ -85,7 +92,6 @@ class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
             backgroundColor: const Color(0xFFF1F5F9),
             appBar: MarketAppBarUi(
               customerPhone: widget.customerPhone,
-              onCalculatorTap: _openCustomEstimateSheet,
             ),
             body: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),

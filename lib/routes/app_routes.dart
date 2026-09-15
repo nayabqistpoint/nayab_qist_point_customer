@@ -12,8 +12,8 @@ import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/
 class AppRoutes {
   static const String login = '/';
   static const String ledger = '/ledger';
-  static const String purchaseMarket = '/purchase-market'; // 👈 پہلا صفحہ (مارکیٹ شو روم)
-  static const String planDetail = '/plan-detail';         // 👈 دوسرا صفحہ (28 اقساط شیڈول)
+  static const String purchaseMarket = '/purchase-market'; // 👈 شو روم پیج
+  static const String planDetail = '/plan-detail';         // 👈 28 اقساط پیج
   static const String payment = '/payment';
   static const String serviceStock = '/service-stock';
 
@@ -24,12 +24,16 @@ class AppRoutes {
           builder: (_) => const CustomerLoginPage(),
         );
 
+      // 👤 1. کسٹمر لیجر پیج (لاگ ان کے فوراً بعد)
       case ledger:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(
-          builder: (_) => const CustomerLedgerView(),
+          builder: (_) => CustomerLedgerView(
+            customerPhone: args['customerPhone'],
+          ),
         );
 
-      // 🛒 1. مارکیٹ شو روم روٹ
+      // 🛒 2. نیا موبائل خریدیں شو روم پیج
       case purchaseMarket:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(
@@ -38,7 +42,7 @@ class AppRoutes {
           ),
         );
 
-      // 📑 2. تفصیلی 28 پلانز روٹ
+      // 📑 3. تفصیلی 28 پلانز پیج
       case planDetail:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/routes/app_routes.dart';
 import 'customer_ledger_controller.dart';
 import 'customer_ledger_components_ui/ledger_app_bar_ui.dart';
 import 'customer_ledger_components_ui/wallet_master_card_ui.dart';
@@ -10,7 +11,12 @@ import 'customer_ledger_components_ui/cash_loan_section_ui.dart';
 import 'customer_ledger_components_ui/service_transactions_section_ui.dart';
 
 class CustomerLedgerView extends StatefulWidget {
-  const CustomerLedgerView({super.key});
+  final String? customerPhone;
+
+  const CustomerLedgerView({
+    super.key,
+    this.customerPhone,
+  });
 
   @override
   State<CustomerLedgerView> createState() => _CustomerLedgerViewState();
@@ -38,7 +44,15 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
           child: Scaffold(
             backgroundColor: const Color(0xFFF8FAFC),
             appBar: LedgerAppBarUi(
-              onPurchasePressed: () => controller.openPurchasePage(context),
+              onPurchasePressed: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.purchaseMarket,
+                  arguments: {
+                    'customerPhone': widget.customerPhone,
+                  },
+                );
+              },
             ),
             body: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),

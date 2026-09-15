@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 
 class MarketAppBarUi extends StatelessWidget implements PreferredSizeWidget {
   final String? customerPhone;
-  final VoidCallback onCalculatorTap;
+  final VoidCallback? onCalculatorTap;
 
   const MarketAppBarUi({
     super.key,
     this.customerPhone,
-    required this.onCalculatorTap,
+    this.onCalculatorTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isPublic = customerPhone == null || customerPhone!.isEmpty;
+
     return AppBar(
       elevation: 0,
       backgroundColor: const Color(0xFF0F172A),
@@ -21,26 +23,35 @@ class MarketAppBarUi extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'موبائل اقساط مارکیٹ',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+            'نایاب قسط پوائنٹ (قائم پور)',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
-            customerPhone == null
+            isPublic
                 ? 'پبلک شو روم • 28 سمارٹ اقساطی پلانز'
                 : 'کھاتہ: $customerPhone • تصدیق شدہ کسٹمر',
-            style: const TextStyle(fontSize: 10.5, color: Color(0xFFFDE68A), fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isPublic ? const Color(0xFF94A3B8) : const Color(0xFF34D399),
+            ),
           ),
         ],
       ),
       actions: [
-        IconButton(
-          tooltip: 'دستی تخمینہ',
-          icon: const Icon(Icons.calculate_outlined, color: Color(0xFF34D399)),
-          onPressed: onCalculatorTap,
-        ),
+        if (onCalculatorTap != null)
+          IconButton(
+            icon: const Icon(Icons.calculate_outlined, color: Color(0xFFFDE68A)),
+            onPressed: onCalculatorTap,
+          ),
       ],
     );
   }

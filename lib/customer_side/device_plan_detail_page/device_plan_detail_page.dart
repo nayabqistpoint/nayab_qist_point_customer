@@ -54,6 +54,9 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
         (widget.device['minAdvance'] as int?) ??
         5000;
     final List<String> images = (widget.device['images'] as List?)?.cast<String>() ?? [];
+    
+    // 🎯 چیک کریں کہ کیا یہ کسٹمر کا دستی تخمینہ ہے
+    final bool isCustomEstimate = widget.device['isCustomEstimate'] == true || images.isEmpty;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -74,68 +77,155 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: Column(
-                      children: [
-                        HeroImageSwiperUi(images: images),
-                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  // 🌟 1. ٹاپ کارڈ: لائیو ڈیوائس بمقابلہ کسٹم تخمینہ
+                  if (!isCustomEstimate)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: Column(
+                        children: [
+                          HeroImageSwiperUi(images: images),
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        widget.device['name'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFECFDF5),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'صرف آسان اقساط پر دستیاب',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF059669),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                DeviceSpecPillsUi(
+                                  ramRom: widget.device['ramRom'] ?? '',
+                                  condition: widget.device['condition'] ?? '',
+                                  warranty: widget.device['warranty'] ?? '12 ماہ آفیشل وارنٹی',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    // 🌟 دستی تخمینہ کے لیے کسٹم برانڈڈ ہیڈر کارڈ
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF334155), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      widget.device['name'] ?? '',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF059669).withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.calculate_rounded, color: Color(0xFF34D399), size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
                                       style: const TextStyle(
                                         fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFECFDF5),
-                                      borderRadius: BorderRadius.circular(6),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'نایاب قسط پوائنٹ • کسٹم ریٹ کیلکولیٹر',
+                                      style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
                                     ),
-                                    child: const Text(
-                                      'صرف آسان اقساط پر دستیاب',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF059669),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              DeviceSpecPillsUi(
-                                ramRom: widget.device['ramRom'] ?? '',
-                                condition: widget.device['condition'] ?? '',
-                                warranty: widget.device['warranty'] ?? '12 ماہ آفیشل وارنٹی',
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const Divider(height: 18, color: Color(0xFF334155)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'تخمینہ رقم: Rs. $baseValue',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFFDE68A),
+                                ),
+                              ),
+                              Text(
+                                minAdvReq > 0 ? 'ایڈوانس: Rs. $minAdvReq' : 'بغیر ایڈوانس پلان',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF34D399),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+
                   const SizedBox(height: 14),
                   const Vip28PromotionalBannerUi(),
                   const SizedBox(height: 10),
+
+                  // 🌟 2. فلٹرز اور 28 پلانز کا مکمل نظام (بالکل پہلے کی طرح برقرار)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
