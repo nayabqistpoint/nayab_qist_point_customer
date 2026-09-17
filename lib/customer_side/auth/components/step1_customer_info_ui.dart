@@ -62,7 +62,17 @@ class Step1CustomerInfoUi extends StatelessWidget {
           label: 'موبائل نمبر (یہی یوزر نیم ہوگا)*',
           hint: '03001234567',
           type: TextInputType.phone,
-          helper: '💡 یاد رکھیں: نایاب قسط پورٹل میں مستقبل کے لاگ ان کیلئے یہ نمبر استعمال ہوگا',
+          helper: '💡 یاد رکھیں: پورٹل میں لاگ ان کیلئے یہ نمبر استعمال ہوگا',
+        ),
+        const SizedBox(height: 11),
+        // 🎯 صرف ایک سیدھی سادی فیلڈ کا اضافہ (بغیر کسی اضافی بوجھ کے)
+        _buildField(
+          controller: controller.pinCtrl,
+          label: 'خفیہ لاگ ان پن کوڈ (4 ہندسے)*',
+          hint: 'مثلاً 7860 یا 1234',
+          type: TextInputType.number,
+          obscureText: true,
+          helper: '🔒 یہ پن کوڈ مستقبل میں لاگ ان ہونے کیلئے استعمال ہوگا',
         ),
         const SizedBox(height: 11),
         _buildField(
@@ -83,6 +93,7 @@ class Step1CustomerInfoUi extends StatelessWidget {
     required TextInputType type,
     String? helper,
     int maxLines = 1,
+    bool obscureText = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,6 +102,7 @@ class Step1CustomerInfoUi extends StatelessWidget {
           controller: controller,
           keyboardType: type,
           maxLines: maxLines,
+          obscureText: obscureText,
           decoration: InputDecoration(
             labelText: label,
             labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.bold),

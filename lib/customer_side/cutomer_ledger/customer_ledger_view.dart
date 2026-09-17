@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
+import '../../app_routes.dart';
 import 'customer_ledger_controller.dart';
 import 'customer_ledger_components_ui/ledger_app_bar_ui.dart';
 import 'customer_ledger_components_ui/wallet_master_card_ui.dart';
@@ -9,6 +9,9 @@ import 'customer_ledger_components_ui/installment_table_header_ui.dart';
 import 'customer_ledger_components_ui/installment_table_row_ui.dart';
 import 'customer_ledger_components_ui/cash_loan_section_ui.dart';
 import 'customer_ledger_components_ui/service_transactions_section_ui.dart';
+
+// 🎯 فلوٹنگ انسپکٹر کا امپورٹ
+import '../inspector/floating_inspector_ui.dart';
 
 class CustomerLedgerView extends StatefulWidget {
   final String? customerPhone;
@@ -53,6 +56,21 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                   },
                 );
               },
+            ),
+            // 🎯 لائیو پے لوڈ اور ہائیو مانیٹر کا تیرتا ہوا ایکشن بٹن
+            floatingActionButton: FloatingActionButton.extended(
+              backgroundColor: const Color(0xFF059669),
+              elevation: 4,
+              icon: const Icon(Icons.bug_report_rounded, color: Colors.white, size: 22),
+              label: const Text(
+                'انسپکٹر',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              onPressed: () => FloatingInspectorUi.show(context),
             ),
             body: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),

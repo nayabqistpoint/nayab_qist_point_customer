@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../inspector/floating_inspector_ui.dart';
 import 'customer_signup_controller.dart';
 import 'components/signup_app_bar_ui.dart';
 import 'components/signup_step_tracker_ui.dart';
@@ -33,22 +34,19 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
     if (_controller.currentStep < 2) {
       _controller.nextStep();
     } else {
-      if (!_controller.agreementAccepted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Color(0xFFDC2626),
-            content: Text('برائے مہربانی قانونی اقرار نامہ چیک کریں'),
-          ),
-        );
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF059669),
-          content: Text('مبارک ہو! آپ کی رجسٹریشن درخواست وصول ہو گئی ہے'),
-        ),
+      // 🎯 کنٹرولر کا مرکزی ہینڈلر کال ہوگا جو ویلیڈیشن، رسید شیٹ، ہائیو سروس اور انسپکٹر لاگ سب ایک فلو میں چلائے گا
+      _controller.handleFinalSubmit(
+        context,
+        onSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Color(0xFF059669),
+              content: Text('مبارک ہو! رجسٹریشن کامیابی سے مکمل ہو گئی ہے'),
+            ),
+          );
+          Navigator.pop(context);
+        },
       );
-      Navigator.pop(context);
     }
   }
 
@@ -81,6 +79,13 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
                   onNextOrSubmit: _handleNextOrSubmit,
                 ),
               ],
+            ),
+            // 🐛 لائیو پے لوڈ انسپکٹر فلوٹنگ بٹن
+            floatingActionButton: FloatingActionButton(
+              backgroundColor: const Color(0xFF0F172A),
+              mini: true,
+              child: const Icon(Icons.bug_report, color: Color(0xFF10B981), size: 20),
+              onPressed: () => FloatingInspectorUi.show(context),
             ),
           );
         },

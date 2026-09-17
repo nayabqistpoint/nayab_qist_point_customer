@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'logout_confirm_dialog_ui.dart';
 
 class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onPurchasePressed;
@@ -23,19 +24,20 @@ class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
+              // 🔴 لاگ آؤٹ بٹن (اب نئے الگ ڈائیلاگ کو کال کر رہا ہے)
               InkWell(
-                onTap: () => Navigator.pop(context),
+                onTap: () => LogoutConfirmDialogUi.show(context),
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 16,
+                    Icons.power_settings_new_rounded,
+                    color: Color(0xFFFCA5A5),
+                    size: 18,
                   ),
                 ),
               ),

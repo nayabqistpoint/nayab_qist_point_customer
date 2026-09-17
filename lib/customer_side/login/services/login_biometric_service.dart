@@ -1,36 +1,36 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
-import 'login_auth_service.dart';
+import '../../hive_services/hive_box_manager.dart';
+import '../customer_login_controller.dart';
 
 class LoginBiometricService {
   final LocalAuthentication _auth = LocalAuthentication();
 
   Future<void> authenticateAndLogin({
     required BuildContext context,
-    required LoginAuthService authService,
+    required CustomerLoginController controller,
   }) async {
     if (kIsWeb) {
-      authService.showToast(context, 'فنگر پرنٹ تصدیق صرف اینڈرائیڈ / موبائل پر دستیاب ہے!', isError: true);
+      _toast(context, 'فنگر پرنٹ تصدیق صرف اینڈرائیڈ / موبائل پر دستیاب ہے!', true);
       return;
     }
 
     try {
       if (!await _auth.canCheckBiometrics && !await _auth.isDeviceSupported()) {
         if (context.mounted) {
-          authService.showToast(context, 'اس ڈیوائس پر فنگر پرنٹ سنسر دستیاب نہیں ہے!', isError: true);
+          _toast(context, 'اس ڈیوائس پر فنگر پرنٹ سنسر دستیاب نہیں ہے!', true);
         }
         return;
       }
 
-      final box = Hive.isBoxOpen('settingsBox') ? Hive.box('settingsBox') : await Hive.openBox('settingsBox');
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
       final String? phone = box.get('remembered_phone') ?? box.get('last_logged_phone');
       final String? pin = box.get('remembered_pin');
 
-      if (phone == null || pin == null) {
+      if (phone == null || pin == null || phone.isEmpty || pin.isEmpty) {
         if (context.mounted) {
-          authService.showToast(context, 'پہلے ایک بار پاسورڈ سے لاگ ان کریں!', isError: true);
+          _toast(context, 'پہلے ایک بار پاسورڈ سے لاگ ان کریں!', true);
         }
         return;
       }
@@ -40,17 +40,23 @@ class LoginBiometricService {
       );
 
       if (didAuth && context.mounted) {
-        await authService.performLogin(
-          context: context,
-          phone: phone,
-          password: pin,
-          rememberMe: true,
-        );
+        controller.phoneController.text = phone;
+        controller.passwordController.text = pin;
+        await controller.submitLogin(context);
       }
     } catch (e) {
       if (context.mounted) {
-        authService.showToast(context, 'فنگر پرنٹ تصدیق ناکام: $e', isError: true);
+        _toast(context, 'فنگر پرنٹ تصدیق ناکام: $e', true);
       }
     }
+  }
+
+  void _toast(BuildContext context, String msg, bool isError) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: isError ? Colors.red[800] : Colors.green[800],
+        content: Text(msg, textDirection: TextDirection.rtl),
+      ),
+    );
   }
 }
