@@ -1,4 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import '../inspector/inspector_store.dart';
 
 class HiveBoxManager {
   // ۱. پبلک گلوبل باکسز (ایپ اسٹارٹ اپ - main.dart)
@@ -58,6 +59,33 @@ class HiveBoxManager {
   static Future<void> _closeSafeBox(String boxName) async {
     if (Hive.isBoxOpen(boxName)) {
       await Hive.box(boxName).close();
+    }
+  }
+
+  /// 💾 جنرل رائٹ فنکشن: کسی بھی پیج کے تمام باکسز کا ڈیٹا محفوظ اور انسپکٹر میں لاگ کرنا
+  static Future<bool> writeBatchPayloads({
+    required String docId,
+    required Map<String, Map<String, dynamic>> payloads,
+    String logTitle = 'ڈیٹا لوکل محفوظ ہوا',
+  }) async {
+    try {
+      for (final entry in payloads.entries) {
+        final boxName = entry.key;
+        final data = entry.value;
+        final box = await openSafeBox(boxName);
+        await box.put(docId, data);
+      }
+
+      // انسپکٹر سٹور میں شفاف اندراج
+      InspectorStore.instance.logPayload(
+        title: '$logTitle (ID: $docId)',
+        direction: PayloadDirection.localHiveWrite,
+        data: payloads,
+      );
+
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../payload_services/signup_payload_service.dart';
-import '../hive_services/customer_registration_service.dart';
+import '../hive_services/hive_box_manager.dart';
 import '../inspector/submission_receipt_sheet_ui.dart';
 
 class CustomerSignupController extends ChangeNotifier {
@@ -8,7 +8,7 @@ class CustomerSignupController extends ChangeNotifier {
   bool isSubmitting = false;
   bool agreementAccepted = false;
 
-  // مرحلہ 1: بنیادی کوائف کنٹرولرز
+  // مرحله 1: بنیادی کنٹرولرز
   final nameCtrl = TextEditingController();
   final fatherCtrl = TextEditingController();
   final casteCtrl = TextEditingController();
@@ -17,13 +17,13 @@ class CustomerSignupController extends ChangeNotifier {
   final pinCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
 
-  // مرحلہ 2: میڈیا اسٹیٹس
+  // مرحله 2: میڈیا ٹوگلز
   bool isCnicFrontUploaded = false;
   bool isCnicBackUploaded = false;
   bool isSelfieUploaded = false;
   bool isAudioRecorded = false;
 
-  // مرحلہ 3: ضامن کنٹرولرز
+  // مرحله 3: ضامن کنٹرولرز
   final gNameCtrl = TextEditingController();
   final gFatherCtrl = TextEditingController();
   final gCasteCtrl = TextEditingController();
@@ -34,21 +34,50 @@ class CustomerSignupController extends ChangeNotifier {
   bool isGuarantorCnicFrontUploaded = false;
   bool isGuarantorCnicBackUploaded = false;
 
-  // نیویگیشن طریقے
+  // نیویگیشن
   void setStep(int step) { currentStep = step; notifyListeners(); }
   void nextStep() { if (currentStep < 2) { currentStep++; notifyListeners(); } }
   void previousStep() { if (currentStep > 0) { currentStep--; notifyListeners(); } }
 
-  // مرحلہ 2 ٹوگلز
+  // میڈیا ٹوگل میتھڈز (UI مطابقت کے لیے)
   void toggleCnicFront() { isCnicFrontUploaded = !isCnicFrontUploaded; notifyListeners(); }
   void toggleCnicBack() { isCnicBackUploaded = !isCnicBackUploaded; notifyListeners(); }
   void toggleSelfie() { isSelfieUploaded = !isSelfieUploaded; notifyListeners(); }
   void toggleAudio() { isAudioRecorded = !isAudioRecorded; notifyListeners(); }
   void toggleAgreement(bool? val) { agreementAccepted = val ?? false; notifyListeners(); }
 
+  /// تمام فیلڈز کو ایک منظم میپ میں جمع کرنا
+  Map<String, dynamic> _collectFormData() {
+    return {
+      'phone': phoneCtrl.text,
+      'name': nameCtrl.text,
+      'fatherName': fatherCtrl.text,
+      'caste': casteCtrl.text,
+      'cnic': cnicCtrl.text,
+      'pin': pinCtrl.text,
+      'address': addressCtrl.text,
+      'agreementAccepted': agreementAccepted,
+      'isCnicFrontUploaded': isCnicFrontUploaded,
+      'isCnicBackUploaded': isCnicBackUploaded,
+      'isSelfieUploaded': isSelfieUploaded,
+      'isAudioRecorded': isAudioRecorded,
+      'gName': gNameCtrl.text,
+      'gFather': gFatherCtrl.text,
+      'gCaste': gCasteCtrl.text,
+      'gPhone': gPhoneCtrl.text,
+      'gCnic': gCnicCtrl.text,
+      'gRelation': gRelationCtrl.text,
+      'gAddress': gAddressCtrl.text,
+      'isGuarantorCnicFrontUploaded': isGuarantorCnicFrontUploaded,
+      'isGuarantorCnicBackUploaded': isGuarantorCnicBackUploaded,
+    };
+  }
+
   // فائنل سبمٹ ہینڈلر
   Future<void> handleFinalSubmit(BuildContext context, {required VoidCallback onSuccess}) async {
-    final error = SignupPayloadService.validate(this);
+    final formData = _collectFormData();
+    final error = SignupPayloadService.validate(formData);
+
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,36 +88,31 @@ class CustomerSignupController extends ChangeNotifier {
       return;
     }
 
-    final phone = phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
-
-    // 🎯 1. چاروں آزاد پے لوڈز کی پے لوڈ سروس سے تیاری
-    final customerPayload = SignupPayloadService.buildCustomerBoxPayload(controller: this);
-    final guarantorPayload = SignupPayloadService.buildGuarantorBoxPayload(controller: this);
-    final mediaPayload = SignupPayloadService.buildMediaBoxPayload(controller: this);
-    final usersPayload = SignupPayloadService.buildUsersBoxPayload(controller: this);
+    final phone = (formData['phone'] as String).trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final allPayloads = SignupPayloadService.buildAllPayloads(formData);
 
     SubmissionReceiptSheetUi.show(
       context,
       title: 'کسٹمر رجسٹریشن تصدیق',
       subtitle: 'تمام معلومات کی جانچ کے بعد کنفرم کریں',
-      rawPayload: {
-        'customerBox': customerPayload,
-        'guarantorBox': guarantorPayload,
-        'mediaBox': mediaPayload,
-        'usersBox': usersPayload,
-      },
+      rawPayload: allPayloads,
       onConfirm: () async {
         isSubmitting = true;
         notifyListeners();
 
-        // 🎯 2. رجسٹریشن سروس کو چاروں خانے سپرد کرنا
-        final isSaved = await CustomerRegistrationService.executeRegistration(
-          phone: phone,
-          customerPayload: customerPayload,
-          guarantorPayload: guarantorPayload,
-          mediaPayload: mediaPayload,
-          usersPayload: usersPayload,
+        // سیشن باکسز اوپن کرنا اور بیچ رائٹ چلانا
+        await HiveBoxManager.openSessionBoxes();
+        final isSaved = await HiveBoxManager.writeBatchPayloads(
+          docId: phone,
+          payloads: allPayloads,
+          logTitle: 'کسٹمر رجسٹریشن مکمل',
         );
+
+        if (isSaved) {
+          final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+          await settingsBox.put('isLoggedIn', true);
+          await settingsBox.put('activePhone', phone);
+        }
 
         isSubmitting = false;
         notifyListeners();
