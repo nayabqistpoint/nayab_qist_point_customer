@@ -66,15 +66,13 @@ class SignupPayloadService {
         'updatedAt': DateTime.now().toIso8601String(),
       },
 
-      // 4. usersBox
+      // 4. usersBox (🎯 صرف 5 حتمی فیلڈز)
       HiveBoxManager.usersBoxName: {
-        'customerPhone': phone,
-        'userName': phone,
-        'pinCode': d?['pin'] ?? '7860',
+        'phone': phone,
+        'pin': (d?['pin'] ?? '7860').toString().trim(),
         'status': 'pending',
-        'fullName': d?['name'] ?? 'محمد محیب',
         'isSynced': false,
-        'registeredAt': DateTime.now().toIso8601String(),
+        'createdAt': DateTime.now().toIso8601String(),
       },
     };
   }

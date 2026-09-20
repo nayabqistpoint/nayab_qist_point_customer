@@ -2,7 +2,7 @@ import 'hive_box_manager.dart';
 import '../inspector/inspector_store.dart';
 
 class LoginHiveService {
-  /// محفوظ اسناد چیک کر کے لاگ ان پروسیس کرنا (کنٹرولر کے تیار کردہ پے لوڈ کے ساتھ)
+  /// محفوظ اسناد چیک کر کے لاگ ان پروسیس کرنا
   static Future<Map<String, dynamic>> verifyAndExecuteLogin({
     required String phone,
     required String enteredPin,
@@ -15,27 +15,31 @@ class LoginHiveService {
       return {'success': false, 'message': 'یہ موبائل نمبر رجسٹرڈ نہیں ہے'};
     }
 
-    final storedPin = (userCredentials['pinCode'] ?? userCredentials['pin'])?.toString();
-    final status = userCredentials['status']?.toString();
+    // ۱. پن کوڈ کی تصدیق
+    final storedPin = (userCredentials['pin'] ?? userCredentials['pinCode'])?.toString().trim();
+    final cleanEnteredPin = enteredPin.trim();
 
-    if (storedPin != enteredPin) {
+    if (storedPin != cleanEnteredPin) {
       return {'success': false, 'message': 'درج کردہ پن کوڈ غلط ہے'};
     }
 
-    if (status != 'APPROVED') {
-      return {'success': false, 'message': 'آپ کا اکاؤنٹ ابھی ایڈمن کی تصدیق کا منتظر ہے'};
+    // ۲. اسٹیٹس کی سخت تصدیق (صرف approved صارفین کو اجازت ہے)
+    final status = (userCredentials['status'] ?? '').toString().trim().toLowerCase();
+    
+    if (status != 'approved') {
+      return {'success': false, 'message': 'آپ کا اکاؤنٹ ابھی ایڈمن کی منظوری کا منتظر ہے'};
     }
 
-    // ۱. سیشن باکسز کھولنا
+    // ۳. سیشن باکسز کھولنا
     await HiveBoxManager.openSessionBoxes();
 
-    // ۲. سیٹنگز باکس میں سیشن کا ڈیٹا درج کرنا
+    // ۴. سیٹنگز باکس میں سیشن کا ڈیٹا درج کرنا
     final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
     for (final entry in sessionPayload.entries) {
       await settingsBox.put(entry.key, entry.value);
     }
 
-    // ۳. انسپکٹر اسٹور میں لاگ بنانا
+    // ۵. انسپکٹر اسٹور میں لاگ بنانا
     InspectorStore.instance.logPayload(
       title: 'کسٹمر لاگ ان کامیاب ($phone)',
       direction: PayloadDirection.localHiveWrite,
@@ -60,12 +64,11 @@ class LoginHiveService {
     return null;
   }
 
-  /// 🎯 باقاعدہ لاگ آؤٹ اور سیشن کلیئرنس
+  /// باقاعدہ لاگ آؤٹ اور سیشن کلیئرنس
   static Future<void> executeLogout() async {
     final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
     await settingsBox.put('isLoggedIn', false);
 
-    // اگر یاد دہانی فعال نہیں ہے تو محفوظ نمبر اور پن ہٹا دیں
     final isRemembered = settingsBox.get('is_remember_me', defaultValue: false) as bool;
     if (!isRemembered) {
       await settingsBox.delete('activePhone');
@@ -73,7 +76,7 @@ class LoginHiveService {
       await settingsBox.delete('remembered_pin');
     }
 
-    // تمام پرائیویٹ سیشن باکسز بحفاظت بند کریں
+    // تمام پرائیویٹ سیشن باکسز بند کرنا
     await HiveBoxManager.closeSessionBoxes();
 
     InspectorStore.instance.logPayload(

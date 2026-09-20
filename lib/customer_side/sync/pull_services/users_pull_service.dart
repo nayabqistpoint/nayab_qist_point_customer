@@ -8,7 +8,8 @@ class UsersPullService {
   static StreamSubscription? _subscription;
 
   static void startLiveSync(String phone) {
-    _subscription?.cancel();
+    if (phone.isEmpty) return;
+    stopLiveSync();
 
     _subscription = FirebaseFirestore.instance
         .collection(collectionName)
@@ -23,8 +24,11 @@ class UsersPullService {
       if (doc.exists && doc.data() != null) {
         final data = Map<String, dynamic>.from(doc.data()!);
         data['isSynced'] = true;
+
+        // 🎯 باکس کو پرانے یوزرز سے صاف کر کے صرف موجودہ صارف کا ریکارڈ رکھنا
+        await box.clear();
         await box.put(phone, data);
-        debugPrint('⚡ [usersBox] لائیو یوزر اپڈیٹ');
+        debugPrint('⚡ [usersBox] لائیو یوزر اپڈیٹ برائے: $phone');
       } else if (!doc.exists) {
         await box.delete(phone);
       }

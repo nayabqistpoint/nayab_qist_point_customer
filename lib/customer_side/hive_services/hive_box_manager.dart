@@ -1,21 +1,21 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import '../inspector/inspector_store.dart';
+import '../sync/master_sync_hub.dart';
 
 class HiveBoxManager {
-  // ۱. پبلک گلوبل باکسز (ایپ اسٹارٹ اپ - main.dart)
+  // ۱. پبلک گلوبل باکسز
   static const String settingsBoxName = 'settingsBox';
   static const String usersBoxName = 'usersBox';
   static const String stockBoxName = 'stockBox';
   static const String appConfigBoxName = 'appConfigBox';
 
-  // ۲. یوزر سیشن باکسز (لاگ ان / رجسٹریشن کے بعد)
+  // ۲. یوزر سیشن باکسز
   static const String customerBoxName = 'customerBox';
   static const String guarantorBoxName = 'guarantorBox';
   static const String mediaBoxName = 'mediaBox';
   static const String installmentsBoxName = 'installmentsBox';
   static const String transactionBoxName = 'transactionBox';
 
-  /// 🚀 ایپ بوٹ اپ پر صرف گلوبل باکسز کھولنا
   static Future<void> initGlobalBoxes() async {
     await Hive.initFlutter();
     await Future.wait([
@@ -26,7 +26,6 @@ class HiveBoxManager {
     ]);
   }
 
-  /// 🔓 لاگ ان کامیاب ہونے پر صارف کے مخصوص سیشن باکسز کھولنا
   static Future<void> openSessionBoxes() async {
     await Future.wait([
       openSafeBox(customerBoxName),
@@ -37,7 +36,6 @@ class HiveBoxManager {
     ]);
   }
 
-  /// 🔒 لاگ آؤٹ پر تمام سیشن باکسز کو بحفاظت بند کرنا
   static Future<void> closeSessionBoxes() async {
     await Future.wait([
       _closeSafeBox(customerBoxName),
@@ -48,7 +46,6 @@ class HiveBoxManager {
     ]);
   }
 
-  /// باکس کو بغیر کریش (Safe Mode) میں کھولنا
   static Future<Box> openSafeBox(String boxName) async {
     if (Hive.isBoxOpen(boxName)) {
       return Hive.box(boxName);
@@ -62,9 +59,9 @@ class HiveBoxManager {
     }
   }
 
-  /// 💾 جنرل رائٹ فنکشن: کسی بھی پیج کے تمام باکسز کا ڈیٹا محفوظ اور انسپکٹر میں لاگ کرنا
+  /// 💾 سنگل کلائنٹ پرائیویٹ سیشن رائٹ
   static Future<bool> writeBatchPayloads({
-    required String docId,
+    required String docId, // 🎯 یہ صارف کا موبائل نمبر ہی ہے
     required Map<String, Map<String, dynamic>> payloads,
     String logTitle = 'ڈیٹا لوکل محفوظ ہوا',
   }) async {
@@ -73,15 +70,24 @@ class HiveBoxManager {
         final boxName = entry.key;
         final data = entry.value;
         final box = await openSafeBox(boxName);
+
+        // اگر پروفائل باکس ہے تو پرانا ڈیٹا ہٹا کر صرف ایکٹو یوزر کی سنگل کی رکھنا
+        if (boxName == customerBoxName || boxName == guarantorBoxName || boxName == mediaBoxName) {
+          await box.clear();
+        }
+
+        // کی ہمیشہ صارف کا موبائل نمبر رہے گی
         await box.put(docId, data);
       }
 
-      // انسپکٹر سٹور میں شفاف اندراج
       InspectorStore.instance.logPayload(
-        title: '$logTitle (ID: $docId)',
+        title: '$logTitle (Phone: $docId)',
         direction: PayloadDirection.localHiveWrite,
         data: payloads,
       );
+
+      // بیک گراؤنڈ میں فوری پش
+      MasterSyncHub.pushAllPendingRecords().catchError((_) {});
 
       return true;
     } catch (e) {
@@ -89,7 +95,6 @@ class HiveBoxManager {
     }
   }
 
-  /// 🔍 انسپکٹر UI کے لیے تمام فعال باکسز کی فہرست
   static List<String> getAllActiveBoxNames() {
     return [
       settingsBoxName,

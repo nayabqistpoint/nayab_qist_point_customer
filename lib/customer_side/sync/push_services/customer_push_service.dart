@@ -8,31 +8,36 @@ class CustomerPushService {
 
   static Future<SyncResult> pushPending() async {
     try {
+      final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+      final activePhone = settingsBox.get('activePhone', defaultValue: '') as String;
+
+      if (activePhone.isEmpty) {
+        return SyncResult.success(0);
+      }
+
       final box = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
-      int count = 0;
+      final raw = box.get(activePhone);
 
-      for (var key in box.keys) {
-        final raw = box.get(key);
-        if (raw is Map) {
-          final data = Map<String, dynamic>.from(raw);
-          // 🎯 شرط درست کر دی گئی:
-          if (data['isSynced'] != true) {
-            final docId = key.toString();
-            final payload = Map<String, dynamic>.from(data);
-            payload['isSynced'] = true;
+      // صرف فعال لاگ ان شدہ کسٹمر کو پش کرنا
+      if (raw is Map) {
+        final data = Map<String, dynamic>.from(raw);
+        if (data['isSynced'] != true) {
+          final payload = Map<String, dynamic>.from(data);
+          payload['isSynced'] = true;
 
-            await FirebaseFirestore.instance
-                .collection(collectionName)
-                .doc(docId)
-                .set(payload, SetOptions(merge: true));
+          // 🎯 کلید ہمیشہ فعال موبائل نمبر ہی ہے
+          await FirebaseFirestore.instance
+              .collection(collectionName)
+              .doc(activePhone)
+              .set(payload, SetOptions(merge: true));
 
-            data['isSynced'] = true;
-            await box.put(key, data);
-            count++;
-          }
+          data['isSynced'] = true;
+          await box.put(activePhone, data);
+          return SyncResult.success(1);
         }
       }
-      return SyncResult.success(count);
+
+      return SyncResult.success(0);
     } catch (e) {
       debugPrint('❌ CustomerPushService Error: $e');
       return SyncResult.failure(e.toString());
