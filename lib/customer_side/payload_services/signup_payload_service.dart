@@ -1,12 +1,16 @@
 import '../hive_services/hive_box_manager.dart';
+import 'signup_payload_builders/customer_payload_builder.dart';
+import 'signup_payload_builders/guarantor_payload_builder.dart';
+import 'signup_payload_builders/media_payload_builder.dart';
+import 'signup_payload_builders/user_auth_payload_builder.dart';
 
 class SignupPayloadService {
-  /// فارم کی تصدیق
+  /// فارم کی بنیادی تصدیق
   static String? validate(Map<String, dynamic> data) {
-    final phone = (data['phone'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
-    final cnic = (data['cnic'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final phone = (data['phone'] ?? data['customerPhone'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final cnic = (data['cnic'] ?? data['customerCnic'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
     final pin = (data['pin'] ?? '').toString().trim();
-    final name = (data['name'] ?? '').toString().trim();
+    final name = (data['name'] ?? data['customerName'] ?? '').toString().trim();
 
     if (phone.length != 11) return 'درست 11 ہندسوں کا موبائل نمبر درج کریں';
     if (name.isEmpty) return 'کسٹمر کا پورا نام درج کریں';
@@ -16,67 +20,21 @@ class SignupPayloadService {
     return null;
   }
 
-  /// 🎯 تمام باکسز کا پے لوڈ ایک ہی جگہ تیار کرنا
+  /// چاروں بلڈرز کو یکجا کر کے حتمی پے لوڈ بنانا
   static Map<String, Map<String, dynamic>> buildAllPayloads([Map<String, dynamic>? d]) {
-    final phone = (d?['phone'] ?? '03012700351').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final phone = (d?['phone'] ?? d?['customerPhone'] ?? '03012700351')
+        .toString()
+        .trim()
+        .replaceAll(RegExp(r'[^0-9]'), '');
 
     return {
-      // 1. customerBox
-      HiveBoxManager.customerBoxName: {
-        'docId': phone,
-        'customerPhone': phone,
-        'phone': phone,
-        'userName': phone,
-        'fullName': d?['name'] ?? 'محمد محیب',
-        'fatherName': d?['fatherName'] ?? 'احمد علی',
-        'caste': d?['caste'] ?? 'آرائیں',
-        'cnic': d?['cnic'] ?? '31202-1234567-1',
-        'address': d?['address'] ?? 'مین بازار، قائم پور',
-        'isAgreementAccepted': d?['agreementAccepted'] ?? true,
-        'status': 'pending',
-        'currentBalance': 0,
-        'isSynced': false,
-        'createdAt': DateTime.now().toIso8601String(),
-      },
-
-      // 2. guarantorBox
-      HiveBoxManager.guarantorBoxName: {
-        'customerPhone': phone,
-        'guarantorName': d?['gName'] ?? 'عمران خان',
-        'guarantorFatherName': d?['gFather'] ?? 'نور محمد',
-        'guarantorCaste': d?['gCaste'] ?? 'راجپوت',
-        'guarantorPhone': d?['gPhone'] ?? '03017654321',
-        'guarantorCnic': d?['gCnic'] ?? '31202-7654321-2',
-        'guarantorRelation': d?['gRelation'] ?? 'بھائی',
-        'guarantorAddress': d?['gAddress'] ?? 'محلہ عیدگاہ، قائم پور',
-        'isSynced': false,
-        'updatedAt': DateTime.now().toIso8601String(),
-      },
-
-      // 3. mediaBox
-      HiveBoxManager.mediaBoxName: {
-        'customerPhone': phone,
-        'isCnicFrontUploaded': d?['isCnicFrontUploaded'] ?? true,
-        'isCnicBackUploaded': d?['isCnicBackUploaded'] ?? true,
-        'isSelfieUploaded': d?['isSelfieUploaded'] ?? false,
-        'isAudioRecorded': d?['isAudioRecorded'] ?? true,
-        'isGuarantorCnicFrontUploaded': d?['isGuarantorCnicFrontUploaded'] ?? true,
-        'isGuarantorCnicBackUploaded': d?['isGuarantorCnicBackUploaded'] ?? true,
-        'isSynced': false,
-        'updatedAt': DateTime.now().toIso8601String(),
-      },
-
-      // 4. usersBox (🎯 صرف 5 حتمی فیلڈز)
-      HiveBoxManager.usersBoxName: {
-        'phone': phone,
-        'pin': (d?['pin'] ?? '7860').toString().trim(),
-        'status': 'pending',
-        'isSynced': false,
-        'createdAt': DateTime.now().toIso8601String(),
-      },
+      HiveBoxManager.customerBoxName: CustomerPayloadBuilder.build(d, phone),
+      HiveBoxManager.guarantorBoxName: GuarantorPayloadBuilder.build(d, phone),
+      HiveBoxManager.mediaBoxName: MediaPayloadBuilder.build(d, phone),
+      HiveBoxManager.usersBoxName: UserAuthPayloadBuilder.build(d, phone),
     };
   }
 
-  /// 🔬 انسپکٹر بینچ مارک
+  /// انسپکٹر بینچ مارک
   static Map<String, dynamic> getBenchmarkPayload() => buildAllPayloads();
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/zoom_handler.dart';
 import '../customer_signup_controller.dart';
-import 'cnic_capture_card_ui.dart';
 
 class GuarantorInfoCardUi extends StatelessWidget {
   final CustomerSignupController controller;
@@ -43,8 +43,18 @@ class GuarantorInfoCardUi extends StatelessWidget {
           style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
         ),
         const SizedBox(height: 11),
-        _buildField(controller.gNameCtrl, 'ضامن کا مکمل نام', 'ضامن کا نام لکھیں', TextInputType.text),
+        
+        // نام اور ذات کی لائن
+        Row(
+          children: [
+            Expanded(flex: 3, child: _buildField(controller.gNameCtrl, 'ضامن کا مکمل نام', 'ضامن کا نام', TextInputType.text)),
+            const SizedBox(width: 10),
+            Expanded(flex: 2, child: _buildField(controller.gCasteCtrl, 'ضامن کی ذات', 'قوم / ذات', TextInputType.text)), // 🎯 یہاں ذات شامل کی گئی ہے
+          ],
+        ),
         const SizedBox(height: 11),
+        
+        // ولدیت اور رشتہ کی لائن
         Row(
           children: [
             Expanded(child: _buildField(controller.gFatherCtrl, 'ضامن کی ولدیت', 'والد کا نام', TextInputType.text)),
@@ -53,6 +63,8 @@ class GuarantorInfoCardUi extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 11),
+        
+        // موبائل اور شناختی کارڈ کی لائن
         Row(
           children: [
             Expanded(child: _buildField(controller.gPhoneCtrl, 'ضامن موبائل نمبر', '0300xxxxxxx', TextInputType.phone)),
@@ -61,35 +73,27 @@ class GuarantorInfoCardUi extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 11),
+        
+        // ایڈریس
         _buildField(controller.gAddressCtrl, 'ضامن کا رہائشی پتہ', 'ضامن کا مستقل پتہ', TextInputType.streetAddress),
         const SizedBox(height: 13),
+
+        // شناختی کارڈ کی تصاویر کا زوم ہینڈلر
         Row(
           children: [
             Expanded(
-              child: CnicCaptureCardUi(
-                label: 'ضامن CNIC فرنٹ',
-                icon: Icons.credit_card_rounded,
-                hint: 'سامنے کا فوٹو',
-                isUploaded: controller.isGuarantorCnicFrontUploaded,
-                onTap: () {
-                  controller.isGuarantorCnicFrontUploaded = !controller.isGuarantorCnicFrontUploaded;
-                  // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-                  controller.notifyListeners();
-                },
+              child: ZoomHandler(
+                title: 'ضامن CNIC فرنٹ',
+                imagePath: controller.media.gCnicFront,
+                onPick: controller.toggleGuarantorCnicFront,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: CnicCaptureCardUi(
-                label: 'ضامن CNIC بیک',
-                icon: Icons.credit_card_outlined,
-                hint: 'پیچھے کا فوٹو',
-                isUploaded: controller.isGuarantorCnicBackUploaded,
-                onTap: () {
-                  controller.isGuarantorCnicBackUploaded = !controller.isGuarantorCnicBackUploaded;
-                  // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-                  controller.notifyListeners();
-                },
+              child: ZoomHandler(
+                title: 'ضامن CNIC بیک',
+                imagePath: controller.media.gCnicBack,
+                onPick: controller.toggleGuarantorCnicBack,
               ),
             ),
           ],

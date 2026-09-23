@@ -15,8 +15,9 @@ class MediaPushService {
         final raw = box.get(key);
         if (raw is Map) {
           final data = Map<String, dynamic>.from(raw);
-          // 🎯 شرط درست کر دی گئی:
-          if (data['isSynced'] != true) {
+
+          // 🎯 صرف وہ ڈیٹا جائے گا جس کا کلاؤڈنری اپ لوڈ مکمل ہو کر ready_to_push بن چکا ہو
+          if (data['isSynced'] != true && data['status'] == 'ready_to_push') {
             final docId = key.toString();
             final payload = Map<String, dynamic>.from(data);
             payload['isSynced'] = true;
@@ -29,6 +30,7 @@ class MediaPushService {
             data['isSynced'] = true;
             await box.put(key, data);
             count++;
+            debugPrint('🚀 [mediaBox] کامیابی سے فائر اسٹور پر سنک ہو گیا: $docId');
           }
         }
       }

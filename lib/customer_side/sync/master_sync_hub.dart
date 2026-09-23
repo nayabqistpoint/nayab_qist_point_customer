@@ -3,6 +3,7 @@ import 'core/connectivity_service.dart';
 import 'core/sync_status.dart';
 import 'global_sync/app_config_pull_service.dart';
 import 'global_sync/stock_pull_service.dart';
+import 'media_sync/pending_media_sync_service.dart'; // 👈 کلاؤڈنری میڈیا اپ لوڈ ورکر
 import 'pull_services/users_pull_service.dart';
 import 'pull_services/customer_pull_service.dart';
 import 'pull_services/guarantor_pull_service.dart';
@@ -60,6 +61,11 @@ class MasterSyncHub {
   static Future<void> pushAllPendingRecords() async {
     if (!await ConnectivityService.hasInternetConnection()) return;
     debugPrint('📤 پینڈنگ ریکارڈز پش ہو رہے ہیں...');
+
+    // مرحلہ الف: پہلے وہ پینڈنگ فائلیں کلاؤڈنری پر اپ لوڈ ہوں جن کا اسٹیٹس 'pending_upload' ہے
+    await PendingMediaSyncService.processPendingUploads();
+
+    // مرحلہ ب: کلاؤڈنری سے لنکس آنے کے بعد تمام باکسز فائر اسٹور پر پش ہوں گے
     await Future.wait([
       UsersPushService.pushPending(),
       CustomerPushService.pushPending(),
