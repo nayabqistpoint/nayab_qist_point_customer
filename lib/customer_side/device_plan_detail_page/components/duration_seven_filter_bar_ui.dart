@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 class DurationSevenFilterBarUi extends StatelessWidget {
   final int selectedDuration;
+  final List<int> allowedDurations;
   final Function(int) onSelect;
 
   const DurationSevenFilterBarUi({
     super.key,
     required this.selectedDuration,
+    required this.allowedDurations,
     required this.onSelect,
   });
 
@@ -22,7 +24,9 @@ class DurationSevenFilterBarUi extends StatelessWidget {
           decoration: BoxDecoration(
             color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+            border: Border.all(
+              color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1),
+            ),
           ),
           child: Text(
             label,
@@ -43,14 +47,10 @@ class DurationSevenFilterBarUi extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _chip('تمام 7 مدتیں', 0),
-          _chip('6 ماہ', 6),
-          _chip('7 ماہ', 7),
-          _chip('8 ماہ', 8),
-          _chip('9 ماہ', 9),
-          _chip('10 ماہ', 10),
-          _chip('11 ماہ', 11),
-          _chip('12 ماہ', 12),
+          _chip('تمام مدتیں', 0),
+          ...allowedDurations.map(
+            (duration) => _chip('$duration ماہ', duration),
+          ),
         ],
       ),
     );

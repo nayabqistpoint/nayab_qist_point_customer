@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../device_plan_detail_page/services/calculator_config_service.dart';
+import '../../device_plan_detail_page/services/plan_generator_service.dart';
 import 'estimate_sheet_form_ui.dart';
 
 class CustomEstimateSheetUi extends StatelessWidget {
@@ -20,6 +22,21 @@ class CustomEstimateSheetUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🚀 ہائیو کنفگریشن اور حقیقی پلانز کی گنتی
+    final config = CalculatorConfigService().getConfig();
+    final int durationCount = config.allowedDurations.length;
+    final int minDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.first : 6;
+    final int maxDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.last : 12;
+
+    final rawPlans = PlanGeneratorService.generateAllPlans(
+      baseValue: 50000,
+      userCustomAdvance: 0,
+      config: config,
+    );
+    final int totalPlans = rawPlans.length;
+    final int chequeCount = rawPlans.where((p) => p['guarantee'] == 'BANK_CHEQUE').length;
+    final int stampCount = rawPlans.where((p) => p['guarantee'] == 'LEGAL_STAMP').length;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
@@ -35,7 +52,7 @@ class CustomEstimateSheetUi extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 🌟 نایاب قسط پوائنٹ کی مستند 28 بیج والی پٹی
+              // 🌟 نایاب قسط پوائنٹ کی مستند ڈائنامک بیج والی پٹی
               Container(
                 margin: const EdgeInsets.fromLTRB(14, 14, 14, 6),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -52,7 +69,7 @@ class CustomEstimateSheetUi extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // 🟡 عنبر 28 بیج
+                    // 🟡 متحرک بیج
                     Container(
                       width: 38,
                       height: 38,
@@ -61,9 +78,9 @@ class CustomEstimateSheetUi extends StatelessWidget {
                         color: Color(0xFFFDE68A),
                         shape: BoxShape.circle,
                       ),
-                      child: const Text(
-                        '28',
-                        style: TextStyle(
+                      child: Text(
+                        '$totalPlans',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
                           color: Color(0xFF0F172A),
@@ -71,23 +88,23 @@ class CustomEstimateSheetUi extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // 📜 تفصیلی متن
-                    const Expanded(
+                    // 📜 تفصیلی متحرک متن
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'نایاب 28 اقساطی پیکجز کا مکمل جدول',
-                            style: TextStyle(
+                            'نایاب $totalPlans اقساطی پیکجز کا مکمل جدول',
+                            style: const TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            '7 مدتیں (6 تا 12 ماہ) • 14 چیک مع 14 اشٹام پلانز • زیرو ایڈوانس سہولت',
-                            style: TextStyle(
+                            '$durationCount مدتیں ($minDuration تا $maxDuration ماہ) • $chequeCount چیک مع $stampCount اشٹام پلانز • زیرو ایڈوانس سہولت',
+                            style: const TextStyle(
                               fontSize: 9.5,
                               color: Color(0xFFCBD5E1),
                               fontWeight: FontWeight.w500,
@@ -107,7 +124,10 @@ class CustomEstimateSheetUi extends StatelessWidget {
               ),
 
               // فارم باڈی
-              EstimateSheetFormUi(onSubmit: onSubmit),
+              EstimateSheetFormUi(
+                totalPlans: totalPlans,
+                onSubmit: onSubmit,
+              ),
             ],
           ),
         ),

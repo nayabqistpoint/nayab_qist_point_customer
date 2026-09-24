@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'services/calculator_config_model.dart';
+import 'services/calculator_config_service.dart';
+import 'services/plan_generator_service.dart';
+import 'services/plan_filter_sort_service.dart';
+import 'services/plan_schedule_service.dart';
+import 'services/plan_math_service.dart';
 
 class DevicePlanDetailController extends ChangeNotifier {
+  final CalculatorConfigService _configService = CalculatorConfigService();
+  
   int selectedDuration = 0;
   String selectedGuaranteeFilter = 'ALL';
   String selectedAdvanceFilter = 'ALL';
   int userCustomAdvance = 0;
-
-  // 🎯 نئی سارٹنگ کی حالت (DEFAULT, LOW_MONTHLY, SHORTEST_DURATION, LOWEST_TOTAL)
   String activeSort = 'DEFAULT';
-
   final TextEditingController customAdvanceCtrl = TextEditingController();
+
+  CalculatorConfigModel get config => _configService.getConfig();
 
   void init(int initialAdvance) {
     userCustomAdvance = initialAdvance;
-    customAdvanceCtrl.text = initialAdvance.toString();
+    customAdvanceCtrl.text = initialAdvance > 0 ? initialAdvance.toString() : '';
   }
 
   void setGuaranteeFilter(String filter) {
@@ -36,119 +43,66 @@ class DevicePlanDetailController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🎯 ترتیب بدلنے کا فنکشن
   void setSort(String sortKey) {
     activeSort = sortKey;
     notifyListeners();
   }
 
-  List<Map<String, dynamic>> calculate28Plans(int baseValue, int minRequiredAdv) {
-    final int effectiveAdvance = userCustomAdvance > 0 ? userCustomAdvance : minRequiredAdv;
-    final List<int> durations = [6, 7, 8, 9, 10, 11, 12];
-    List<Map<String, dynamic>> allPlans = [];
-
-    for (var m in durations) {
-      final totalWithProfitCheque = (baseValue * 1.25).toInt();
-      final adv1 = effectiveAdvance;
-      final monthly1 = ((totalWithProfitCheque - adv1) / m).toInt();
-
-      allPlans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': true,
-        'advance': adv1,
-        'monthly': monthly1,
-      });
-
-      allPlans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': (totalWithProfitCheque / m).toInt(),
-      });
-
-      final totalWithProfitStamp = (baseValue * 1.35).toInt();
-      final adv2 = effectiveAdvance;
-      final monthly2 = ((totalWithProfitStamp - adv2) / m).toInt();
-
-      allPlans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': true,
-        'advance': adv2,
-        'monthly': monthly2,
-      });
-
-      allPlans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': (totalWithProfitStamp / m).toInt(),
-      });
-    }
-
-    final filtered = allPlans.where((p) {
-      if (selectedGuaranteeFilter != 'ALL' && p['guarantee'] != selectedGuaranteeFilter) return false;
-      if (selectedAdvanceFilter == 'WITH_ADV' && !p['hasAdvance']) return false;
-      if (selectedAdvanceFilter == 'ZERO_ADV' && p['hasAdvance']) return false;
-      if (selectedDuration != 0 && p['months'] != selectedDuration) return false;
-      return true;
-    }).toList();
-
-    // 🎯 گاہک کی مرضی کے مطابق سمارٹ ترتیب (Sorting Engine)
-    if (activeSort == 'LOW_MONTHLY') {
-      // سب سے کم ماہانہ قسط سب سے اوپر
-      filtered.sort((a, b) => (a['monthly'] as int).compareTo(b['monthly'] as int));
-    } else if (activeSort == 'SHORTEST_DURATION') {
-      // کم ترین مدت (تیز ترین اختتام) پہلے
-      filtered.sort((a, b) => (a['months'] as int).compareTo(b['months'] as int));
-    } else if (activeSort == 'LOWEST_TOTAL') {
-      // ایڈوانس + تمام اقساط ملا کر سب سے سستا پیکج سب سے اوپر
-      filtered.sort((a, b) {
-        final totalA = (a['advance'] as int) + ((a['monthly'] as int) * (a['months'] as int));
-        final totalB = (b['advance'] as int) + ((b['monthly'] as int) * (b['months'] as int));
-        return totalA.compareTo(totalB);
-      });
-    }
-
-    return filtered;
+  /// بنیادی تخمینہ کے لیے متحرک کم از کم ایڈوانس نکالنا
+  int getDynamicMinAdvance(int baseValue) {
+    final currentConfig = config;
+    final int principal = PlanMathService.calculatePrincipal(
+      baseValue: baseValue,
+      config: currentConfig,
+    );
+    final int minDuration = currentConfig.allowedDurations.isNotEmpty
+        ? currentConfig.allowedDurations.first
+        : 6;
+    final int total = PlanMathService.calculateTotalContractPrice(
+      principal: principal,
+      months: minDuration,
+      isCheque: true,
+      config: currentConfig,
+    );
+    return PlanMathService.calculateMinAdvance(
+      totalContractPrice: total,
+      months: minDuration,
+      config: currentConfig,
+    );
   }
 
-  List<Map<String, dynamic>> generateSchedule(int months, int monthlyAmount) {
-    final List<Map<String, dynamic>> schedule = [];
-    final DateTime now = DateTime.now();
+  /// تمام ممکنہ غیر فلٹر شدہ پلانز (سنگل سورس آف ٹروتھ)
+  List<Map<String, dynamic>> getAllRawPlans(int baseValue) {
+    return PlanGeneratorService.generateAllPlans(
+      baseValue: baseValue,
+      userCustomAdvance: userCustomAdvance,
+      config: config,
+    );
+  }
 
-    DateTime nextFifth = DateTime(now.year, now.month, 5);
-    if (nextFifth.isBefore(now)) {
-      nextFifth = DateTime(now.year, now.month + 1, 5);
-    }
+  /// سکرین پر ظاہر ہونے والے فلٹر شدہ پلانز
+  List<Map<String, dynamic>> getFilteredPlans(List<Map<String, dynamic>> allPlans) {
+    return PlanFilterSortService.filterAndSort(
+      allPlans: allPlans,
+      guaranteeFilter: selectedGuaranteeFilter,
+      advanceFilter: selectedAdvanceFilter,
+      durationFilter: selectedDuration,
+      sortKey: activeSort,
+    );
+  }
 
-    final int daysLeft = nextFifth.difference(now).inDays;
-    DateTime firstDueDate = nextFifth;
-    if (daysLeft < 15) {
-      firstDueDate = DateTime(nextFifth.year, nextFifth.month + 1, 5);
-    }
-
-    final urduMonths = [
-      '', 'جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون',
-      'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'
-    ];
-
-    for (int i = 0; i < months; i++) {
-      final DateTime installmentDate = DateTime(firstDueDate.year, firstDueDate.month + i, 5);
-      final String formattedDate = '05 ${urduMonths[installmentDate.month]} ${installmentDate.year}';
-
-      schedule.add({
-        'no': i + 1,
-        'dueDate': formattedDate,
-        'amount': monthlyAmount,
-        'status': 'DUE',
-      });
-    }
-
-    return schedule;
+  /// پورا شیڈول جنریٹ کرنا
+  List<Map<String, dynamic>> generateSchedule({
+    required int months,
+    required int monthlyAmount,
+    required int advancePaid,
+  }) {
+    return PlanScheduleService.generateSchedule(
+      totalMonths: months,
+      monthlyAmount: monthlyAmount,
+      advancePaid: advancePaid,
+      config: config,
+    );
   }
 
   @override

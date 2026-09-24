@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class Vip28PromotionalBannerUi extends StatelessWidget {
-  const Vip28PromotionalBannerUi({super.key});
+  final int totalCount;
+  final int durationCount;
+
+  const Vip28PromotionalBannerUi({
+    super.key,
+    required this.totalCount,
+    required this.durationCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +39,9 @@ class Vip28PromotionalBannerUi extends StatelessWidget {
               color: Color(0xFFFDE68A),
               shape: BoxShape.circle,
             ),
-            child: const Text(
-              '28',
-              style: TextStyle(
+            child: Text(
+              '$totalCount',
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF0F172A),
@@ -42,18 +49,18 @@ class Vip28PromotionalBannerUi extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'نایاب 28 اقساطی پیکجز کا مکمل جدول',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A)),
+                  'نایاب $totalCount اقساطی پیکجز کا مکمل جدول',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A)),
                 ),
-                SizedBox(height: 1),
+                const SizedBox(height: 1),
                 Text(
-                  '7 مدتیں (6 تا 12 ماہ) • 14 چیک مع 14 اشٹام پلانز • زیرو ایڈوانس سہولت',
-                  style: TextStyle(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w500),
+                  '$durationCount مدتیں • آسان چیک و اشٹام پلانز • زیرو ایڈوانس سہولت',
+                  style: const TextStyle(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w500),
                 ),
               ],
             ),

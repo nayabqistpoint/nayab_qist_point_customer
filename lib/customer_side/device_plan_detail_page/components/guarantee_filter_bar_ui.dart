@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 class GuaranteeFilterBarUi extends StatelessWidget {
   final String selectedFilter;
+  final int totalCount;
+  final int chequeCount;
+  final int stampCount;
   final Function(String) onSelect;
 
   const GuaranteeFilterBarUi({
     super.key,
     required this.selectedFilter,
+    required this.totalCount,
+    required this.chequeCount,
+    required this.stampCount,
     required this.onSelect,
   });
 
@@ -43,9 +49,9 @@ class GuaranteeFilterBarUi extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _chip('سبھی ضمانتیں (28)', 'ALL'),
-          _chip('🏦 بینک چیک گارنٹی (14)', 'BANK_CHEQUE'),
-          _chip('⚖️ قانونی اشٹام و پرنوٹ (14)', 'LEGAL_STAMP'),
+          _chip('سبھی ضمانتیں ($totalCount)', 'ALL'),
+          if (chequeCount > 0) _chip('🏦 بینک چیک گارنٹی ($chequeCount)', 'BANK_CHEQUE'),
+          if (stampCount > 0) _chip('⚖️ قانونی اشٹام و پرنوٹ ($stampCount)', 'LEGAL_STAMP'),
         ],
       ),
     );

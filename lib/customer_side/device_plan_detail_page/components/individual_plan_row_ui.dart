@@ -17,7 +17,8 @@ class IndividualPlanRowUi extends StatelessWidget {
     final int advance = plan['advance'] as int;
     final int monthly = plan['monthly'] as int;
     final int months = plan['months'] as int;
-    final int totalContractPrice = advance + (monthly * months);
+    final int totalContractPrice = (plan['totalContract'] as int?) ?? 
+        (advance + (monthly * (months - 1)));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -134,7 +135,7 @@ class IndividualPlanRowUi extends StatelessWidget {
               ),
               const Text(
                 'ماہانہ قسط',
-                style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
+                style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               ElevatedButton(

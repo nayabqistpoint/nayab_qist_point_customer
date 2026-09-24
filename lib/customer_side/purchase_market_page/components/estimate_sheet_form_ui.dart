@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class EstimateSheetFormUi extends StatefulWidget {
+  final int totalPlans;
   final Function(String name, int estimatePrice, int advance) onSubmit;
 
-  const EstimateSheetFormUi({super.key, required this.onSubmit});
+  const EstimateSheetFormUi({
+    super.key,
+    required this.totalPlans,
+    required this.onSubmit,
+  });
 
   @override
   State<EstimateSheetFormUi> createState() => _EstimateSheetFormUiState();
@@ -68,7 +73,10 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
-              child: const Text('28 اقساطی پیکجز کا شیڈول دیکھیں', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              child: Text(
+                '${widget.totalPlans} اقساطی پیکجز کا شیڈول دیکھیں',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           const SizedBox(height: 10),

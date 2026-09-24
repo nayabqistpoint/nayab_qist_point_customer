@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 class AdvanceOptionFilterBarUi extends StatelessWidget {
   final String selectedFilter;
+  final int totalCount;
+  final int zeroAdvCount;
+  final int withAdvCount;
   final Function(String) onSelect;
 
   const AdvanceOptionFilterBarUi({
     super.key,
     required this.selectedFilter,
+    required this.totalCount,
+    required this.zeroAdvCount,
+    required this.withAdvCount,
     required this.onSelect,
   });
 
@@ -44,8 +50,8 @@ class AdvanceOptionFilterBarUi extends StatelessWidget {
       child: Row(
         children: [
           _chip('تمام آپشنز', 'ALL'),
-          _chip('⭐ بغیر ایڈوانس (14)', 'ZERO_ADV'),
-          _chip('👛 ایڈوانس کے ساتھ (14)', 'WITH_ADV'),
+          if (zeroAdvCount > 0) _chip('⭐ بغیر ایڈوانس ($zeroAdvCount)', 'ZERO_ADV'),
+          if (withAdvCount > 0) _chip('👛 ایڈوانس کے ساتھ ($withAdvCount)', 'WITH_ADV'),
         ],
       ),
     );
