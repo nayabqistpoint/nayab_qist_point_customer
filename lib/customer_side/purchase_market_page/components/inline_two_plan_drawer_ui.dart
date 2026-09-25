@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class InlineTwoPlanDrawerUi extends StatelessWidget {
   final int zeroAdvMonthly;
   final int withAdvMonthly;
+  final int totalPlans;
   final VoidCallback onOpenFullPlan;
 
   const InlineTwoPlanDrawerUi({
     super.key,
     required this.zeroAdvMonthly,
     required this.withAdvMonthly,
+    required this.totalPlans,
     required this.onOpenFullPlan,
   });
 
@@ -69,7 +71,7 @@ class InlineTwoPlanDrawerUi extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onOpenFullPlan,
               icon: const Icon(Icons.fullscreen_rounded, size: 15),
-              label: const Text('مکمل 28 اقساطی پلانز کھولیں اور آرڈر بک کریں'),
+              label: Text('مکمل $totalPlans اقساطی پلانز کھولیں اور آرڈر بک کریں'),
               style: OutlinedButton.styleFrom(
                 visualDensity: VisualDensity.compact,
                 foregroundColor: const Color(0xFF0F172A),

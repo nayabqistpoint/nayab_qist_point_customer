@@ -62,6 +62,7 @@ lib/
         advance_option_filter_bar_ui.dart
         bill_style_schedule_header_ui.dart
         custom_advance_input_box_ui.dart
+        custom_estimate_hero_card_ui.dart
         detail_app_bar_ui.dart
         device_spec_pills_ui.dart
         duration_seven_filter_bar_ui.dart
@@ -69,8 +70,17 @@ lib/
         guarantee_filter_bar_ui.dart
         hero_image_swiper_ui.dart
         individual_plan_row_ui.dart
+        plan_filter_section_card_ui.dart
         plan_sorting_toolbar_ui.dart
+        stock_device_hero_card_ui.dart
         vip_28_promotional_banner_ui.dart
+      services/
+        calculator_config_model.dart
+        calculator_config_service.dart
+        plan_filter_sort_service.dart
+        plan_generator_service.dart
+        plan_math_service.dart
+        plan_schedule_service.dart
       device_plan_detail_controller.dart
       device_plan_detail_page.dart
 </directory_structure>
@@ -155,6 +165,137 @@ class SignupInstructionCardUi extends StatelessWidget {
           _buildStepRow('1', 'پہلے اپنا مختصر سائن اپ فارم پُر کریں۔'),
           _buildStepRow('2', 'ایڈمن جانچ کے بعد کھاتہ منظور کرے گا۔'),
           _buildStepRow('3', 'آپ کے موبائل کے آخری 4 ہندسے ہی آپ کا پاسورڈ (PIN) ہوں گے۔', isHighlight: true),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/custom_estimate_hero_card_ui.dart">
+import 'package:flutter/material.dart';
+class CustomEstimateHeroCardUi extends StatelessWidget {
+  final String title;
+  final int baseValue;
+  final int displayedAdvance;
+  const CustomEstimateHeroCardUi({
+    super.key,
+    required this.title,
+    required this.baseValue,
+    required this.displayedAdvance,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
+          const Divider(height: 18, color: Color(0xFF334155)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('تخمینہ رقم: Rs. $baseValue', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFFFDE68A))),
+              Text(
+                displayedAdvance > 0 ? 'ایڈوانس: Rs. $displayedAdvance' : '⭐ بغیر ایڈوانس پلان',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF34D399)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/plan_filter_section_card_ui.dart">
+import 'package:flutter/material.dart';
+import '../device_plan_detail_controller.dart';
+import 'guarantee_filter_bar_ui.dart';
+import 'advance_option_filter_bar_ui.dart';
+import 'duration_seven_filter_bar_ui.dart';
+import 'custom_advance_input_box_ui.dart';
+class PlanFilterSectionCardUi extends StatelessWidget {
+  final DevicePlanDetailController controller;
+  final int totalPossiblePlans;
+  final int chequeCount;
+  final int stampCount;
+  final int zeroAdvCount;
+  final int withAdvCount;
+  final int calculatedMinAdv;
+  const PlanFilterSectionCardUi({
+    super.key,
+    required this.controller,
+    required this.totalPossiblePlans,
+    required this.chequeCount,
+    required this.stampCount,
+    required this.zeroAdvCount,
+    required this.withAdvCount,
+    required this.calculatedMinAdv,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ضمانت اور مدت چھانٹیں (تمام فلٹرز آن ہونے پر تمام پیکجز نظر آئیں گے):',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GuaranteeFilterBarUi(
+            selectedFilter: controller.selectedGuaranteeFilter,
+            totalCount: totalPossiblePlans,
+            chequeCount: chequeCount,
+            stampCount: stampCount,
+            onSelect: controller.setGuaranteeFilter,
+          ),
+          const SizedBox(height: 6),
+          AdvanceOptionFilterBarUi(
+            selectedFilter: controller.selectedAdvanceFilter,
+            totalCount: totalPossiblePlans,
+            zeroAdvCount: zeroAdvCount,
+            withAdvCount: withAdvCount,
+            onSelect: controller.setAdvanceFilter,
+          ),
+          const SizedBox(height: 6),
+          DurationSevenFilterBarUi(
+            selectedDuration: controller.selectedDuration,
+            allowedDurations: controller.config.allowedDurations,
+            onSelect: controller.setDuration,
+          ),
+          const Divider(height: 16, color: Color(0xFFE2E8F0)),
+          CustomAdvanceInputBoxUi(
+            minAdvanceRequired: calculatedMinAdv,
+            controller: controller.customAdvanceCtrl,
+            onChanged: controller.updateCustomAdvance,
+          ),
         ],
       ),
     );
@@ -263,6 +404,480 @@ class PlanSortingToolbarUi extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/stock_device_hero_card_ui.dart">
+import 'package:flutter/material.dart';
+import 'hero_image_swiper_ui.dart';
+import 'device_spec_pills_ui.dart';
+class StockDeviceHeroCardUi extends StatelessWidget {
+  final Map<String, dynamic> device;
+  final List<String> images;
+  const StockDeviceHeroCardUi({
+    super.key,
+    required this.device,
+    required this.images,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: Column(
+        children: [
+          HeroImageSwiperUi(images: images),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        device['name'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'صرف آسان اقساط پر دستیاب',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                DeviceSpecPillsUi(
+                  ramRom: device['ramRom'] ?? '',
+                  condition: device['condition'] ?? '',
+                  warranty: device['warranty'] ?? '12 ماہ آفیشل وارنٹی',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/calculator_config_model.dart">
+class CalculatorConfigModel {
+  final bool addProcessingFeeToPrincipal;
+  final double advancePercentage;
+  final List<int> allowedDurations;
+  final int gracePeriodDays;
+  final int installmentDueDay;
+  final bool isCompoundingProfit;
+  final double perMonthIncrement;
+  final int processingFee;
+  final double profitWithCheck;
+  final double profitWithoutCheck;
+  final int roundToNearest;
+  final String status;
+  const CalculatorConfigModel({
+    required this.addProcessingFeeToPrincipal,
+    required this.advancePercentage,
+    required this.allowedDurations,
+    required this.gracePeriodDays,
+    required this.installmentDueDay,
+    required this.isCompoundingProfit,
+    required this.perMonthIncrement,
+    required this.processingFee,
+    required this.profitWithCheck,
+    required this.profitWithoutCheck,
+    required this.roundToNearest,
+    required this.status,
+  });
+  factory CalculatorConfigModel.fallback() {
+    return const CalculatorConfigModel(
+      addProcessingFeeToPrincipal: false,
+      advancePercentage: 0.8,
+      allowedDurations: [6, 7, 8, 9, 10, 11, 12],
+      gracePeriodDays: 15,
+      installmentDueDay: 5,
+      isCompoundingProfit: false,
+      perMonthIncrement: 0.05,
+      processingFee: 0,
+      profitWithCheck: 0.25,
+      profitWithoutCheck: 0.35,
+      roundToNearest: 100,
+      status: 'approved',
+    );
+  }
+  factory CalculatorConfigModel.fromMap(Map<dynamic, dynamic>? map) {
+    if (map == null) return CalculatorConfigModel.fallback();
+    List<int> parseDurations(dynamic raw) {
+      if (raw is List) {
+        final parsed = raw
+            .map((e) => int.tryParse(e.toString()) ?? 0)
+            .where((e) => e > 0)
+            .toList();
+        if (parsed.isNotEmpty) return parsed;
+      }
+      return [6, 7, 8, 9, 10, 11, 12];
+    }
+    return CalculatorConfigModel(
+      addProcessingFeeToPrincipal: map['addProcessingFeeToPrincipal'] == true,
+      advancePercentage: (map['advancePercentage'] as num?)?.toDouble() ?? 0.8,
+      allowedDurations: parseDurations(map['allowedDurations']),
+      gracePeriodDays: (map['gracePeriodDays'] as num?)?.toInt() ?? 15,
+      installmentDueDay: (map['installmentDueDay'] as num?)?.toInt() ?? 5,
+      isCompoundingProfit: map['isCompoundingProfit'] == true,
+      perMonthIncrement: (map['perMonthIncrement'] as num?)?.toDouble() ?? 0.05,
+      processingFee: (map['processingFee'] as num?)?.toInt() ?? 0,
+      profitWithCheck: (map['profitWithCheck'] as num?)?.toDouble() ?? 0.25,
+      profitWithoutCheck: (map['profitWithoutCheck'] as num?)?.toDouble() ?? 0.35,
+      roundToNearest: (map['roundToNearest'] as num?)?.toInt() ?? 100,
+      status: map['status']?.toString() ?? 'approved',
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/calculator_config_service.dart">
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'calculator_config_model.dart';
+class CalculatorConfigService {
+  static const String boxName = 'appConfigBox';
+  static const String configDocKey = 'calculator_config';
+  Box? _box;
+  Box get _configBox {
+    if (_box != null && _box!.isOpen) return _box!;
+    if (Hive.isBoxOpen(boxName)) {
+      _box = Hive.box(boxName);
+      return _box!;
+    }
+    throw StateError('ہائیو باکس "$boxName" کھلا ہوا نہیں ہے!');
+  }
+  CalculatorConfigModel getConfig() {
+    try {
+      final box = _configBox;
+      final rawData = box.get(configDocKey);
+      if (rawData is Map) {
+        return CalculatorConfigModel.fromMap(rawData);
+      }
+    } catch (_) {}
+    return CalculatorConfigModel.fallback();
+  }
+  ValueListenable<Box> listenToConfig() {
+    return _configBox.listenable(keys: [configDocKey]);
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/plan_filter_sort_service.dart">
+class PlanFilterSortService {
+  static List<Map<String, dynamic>> filterAndSort({
+    required List<Map<String, dynamic>> allPlans,
+    required String guaranteeFilter,
+    required String advanceFilter,
+    required int durationFilter,
+    required String sortKey,
+  }) {
+    final filtered = allPlans.where((plan) {
+      if (guaranteeFilter != 'ALL' && plan['guarantee'] != guaranteeFilter) {
+        return false;
+      }
+      if (advanceFilter == 'WITH_ADV' && plan['hasAdvance'] == false) {
+        return false;
+      }
+      if (advanceFilter == 'ZERO_ADV' && plan['hasAdvance'] == true) {
+        return false;
+      }
+      if (durationFilter != 0 && plan['months'] != durationFilter) {
+        return false;
+      }
+      return true;
+    }).toList();
+    if (sortKey == 'LOW_MONTHLY') {
+      filtered.sort((a, b) => (a['monthly'] as int).compareTo(b['monthly'] as int));
+    } else if (sortKey == 'SHORTEST_DURATION') {
+      filtered.sort((a, b) => (a['months'] as int).compareTo(b['months'] as int));
+    } else if (sortKey == 'LOWEST_TOTAL') {
+      filtered.sort((a, b) {
+        final int totalA = (a['advance'] as int) + ((a['monthly'] as int) * ((a['months'] as int) - 1));
+        final int totalB = (b['advance'] as int) + ((b['monthly'] as int) * ((b['months'] as int) - 1));
+        return totalA.compareTo(totalB);
+      });
+    } else {
+      filtered.sort((a, b) {
+        final int cmpDuration = (a['months'] as int).compareTo(b['months'] as int);
+        if (cmpDuration != 0) return cmpDuration;
+        return (a['monthly'] as int).compareTo(b['monthly'] as int);
+      });
+    }
+    return filtered;
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/plan_generator_service.dart">
+import 'calculator_config_model.dart';
+import 'plan_math_service.dart';
+class PlanGeneratorService {
+  static List<Map<String, dynamic>> generateAllPlans({
+    required int baseValue,
+    required int userCustomAdvance,
+    required CalculatorConfigModel config,
+  }) {
+    final List<Map<String, dynamic>> plans = [];
+    final int principal = PlanMathService.calculatePrincipal(
+      baseValue: baseValue,
+      config: config,
+    );
+    for (final int m in config.allowedDurations) {
+      final int chequeTotal = PlanMathService.calculateTotalContractPrice(
+        principal: principal,
+        months: m,
+        isCheque: true,
+        config: config,
+      );
+      final int chequeMinAdv = PlanMathService.calculateMinAdvance(
+        totalContractPrice: chequeTotal,
+        months: m,
+        config: config,
+      );
+      final int effectiveChequeAdv = userCustomAdvance > 0
+          ? (userCustomAdvance > chequeTotal ? chequeTotal : userCustomAdvance)
+          : chequeMinAdv;
+      plans.add({
+        'months': m,
+        'guarantee': 'BANK_CHEQUE',
+        'hasAdvance': true,
+        'advance': effectiveChequeAdv,
+        'monthly': PlanMathService.calculateMonthlyEmi(
+          totalContractPrice: chequeTotal,
+          advancePaid: effectiveChequeAdv,
+          months: m,
+          config: config,
+        ),
+        'totalContract': chequeTotal,
+        'minAdvanceRequired': chequeMinAdv,
+      });
+      plans.add({
+        'months': m,
+        'guarantee': 'BANK_CHEQUE',
+        'hasAdvance': false,
+        'advance': 0,
+        'monthly': PlanMathService.calculateMonthlyEmi(
+          totalContractPrice: chequeTotal,
+          advancePaid: 0,
+          months: m,
+          config: config,
+        ),
+        'totalContract': chequeTotal,
+        'minAdvanceRequired': chequeMinAdv,
+      });
+      final int stampTotal = PlanMathService.calculateTotalContractPrice(
+        principal: principal,
+        months: m,
+        isCheque: false,
+        config: config,
+      );
+      final int stampMinAdv = PlanMathService.calculateMinAdvance(
+        totalContractPrice: stampTotal,
+        months: m,
+        config: config,
+      );
+      final int effectiveStampAdv = userCustomAdvance > 0
+          ? (userCustomAdvance > stampTotal ? stampTotal : userCustomAdvance)
+          : stampMinAdv;
+      plans.add({
+        'months': m,
+        'guarantee': 'LEGAL_STAMP',
+        'hasAdvance': true,
+        'advance': effectiveStampAdv,
+        'monthly': PlanMathService.calculateMonthlyEmi(
+          totalContractPrice: stampTotal,
+          advancePaid: effectiveStampAdv,
+          months: m,
+          config: config,
+        ),
+        'totalContract': stampTotal,
+        'minAdvanceRequired': stampMinAdv,
+      });
+      plans.add({
+        'months': m,
+        'guarantee': 'LEGAL_STAMP',
+        'hasAdvance': false,
+        'advance': 0,
+        'monthly': PlanMathService.calculateMonthlyEmi(
+          totalContractPrice: stampTotal,
+          advancePaid: 0,
+          months: m,
+          config: config,
+        ),
+        'totalContract': stampTotal,
+        'minAdvanceRequired': stampMinAdv,
+      });
+    }
+    return plans;
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/plan_math_service.dart">
+import 'calculator_config_model.dart';
+class PlanMathService {
+  static int ceilValue(num value, int roundToNearest) {
+    if (roundToNearest <= 0) return value.ceil();
+    final double remainder = (value % roundToNearest).toDouble();
+    if (remainder == 0) return value.toInt();
+    return (value + (roundToNearest - remainder)).toInt();
+  }
+  static int calculatePrincipal({
+    required int baseValue,
+    required CalculatorConfigModel config,
+  }) {
+    if (config.addProcessingFeeToPrincipal) {
+      return baseValue + config.processingFee;
+    }
+    return baseValue;
+  }
+  static int calculateTotalContractPrice({
+    required int principal,
+    required int months,
+    required bool isCheque,
+    required CalculatorConfigModel config,
+  }) {
+    final int baseDuration = config.allowedDurations.isNotEmpty
+        ? config.allowedDurations.first
+        : 6;
+    final double baseRate =
+        isCheque ? config.profitWithCheck : config.profitWithoutCheck;
+    final int extraMonths = (months - baseDuration) > 0 ? (months - baseDuration) : 0;
+    double calculatedTotal = 0.0;
+    if (!config.isCompoundingProfit) {
+      final double totalRate = baseRate + (extraMonths * config.perMonthIncrement);
+      calculatedTotal = principal * (1.0 + totalRate);
+    } else {
+      double runningTotal = principal * (1.0 + baseRate);
+      for (int i = 0; i < extraMonths; i++) {
+        runningTotal = runningTotal * (1.0 + config.perMonthIncrement);
+      }
+      calculatedTotal = runningTotal;
+    }
+    if (!config.addProcessingFeeToPrincipal && config.processingFee > 0) {
+      calculatedTotal += config.processingFee;
+    }
+    return ceilValue(calculatedTotal, config.roundToNearest);
+  }
+  static int calculateMinAdvance({
+    required int totalContractPrice,
+    required int months,
+    required CalculatorConfigModel config,
+  }) {
+    if (months <= 0) return 0;
+    final double theoreticalEmi = totalContractPrice / months;
+    final double rawMinAdv = theoreticalEmi * config.advancePercentage;
+    return ceilValue(rawMinAdv, config.roundToNearest);
+  }
+  static int calculateMonthlyEmi({
+    required int totalContractPrice,
+    required int advancePaid,
+    required int months,
+    required CalculatorConfigModel config,
+  }) {
+    final int remainingInstallments = (months - 1) > 0 ? (months - 1) : 1;
+    final int balance = totalContractPrice - advancePaid;
+    if (balance <= 0) return 0;
+    final double rawMonthly = balance / remainingInstallments;
+    return ceilValue(rawMonthly, config.roundToNearest);
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/services/plan_schedule_service.dart">
+import 'calculator_config_model.dart';
+class PlanScheduleService {
+  static const List<String> urduMonths = [
+    '',
+    'جنوری',
+    'فروری',
+    'مارچ',
+    'اپریل',
+    'مئی',
+    'جون',
+    'جولائی',
+    'اگست',
+    'ستمبر',
+    'اکتوبر',
+    'نومبر',
+    'دسمبر',
+  ];
+  /// پوری m اقساط کا شیڈول تیار کرنا (پہلی قسط موقع پر + بقیہ m-1 اقساط)
+  static List<Map<String, dynamic>> generateSchedule({
+    required int totalMonths,
+    required int monthlyAmount,
+    required int advancePaid,
+    required CalculatorConfigModel config,
+    DateTime? requestDate,
+  }) {
+    final List<Map<String, dynamic>> schedule = [];
+    final DateTime now = requestDate ?? DateTime.now();
+    final int dueDay = config.installmentDueDay > 0 ? config.installmentDueDay : 5;
+    final int graceDays = config.gracePeriodDays > 0 ? config.gracePeriodDays : 15;
+    // پہلی قسط: موقع پر ادائیگی (درخواست کی موجودہ تاریخ)
+    final String todayFormatted =
+        '${now.day.toString().padLeft(2, '0')} ${urduMonths[now.month]} ${now.year}';
+    schedule.add({
+      'no': 1,
+      'dueDate': '$todayFormatted (موقع پر / ایڈوانس)',
+      'amount': advancePaid,
+      'status': advancePaid > 0 ? 'PAID_ADVANCE' : 'ZERO_ADVANCE',
+    });
+    DateTime nextDue = DateTime(now.year, now.month, dueDay);
+    if (nextDue.isBefore(now)) {
+      nextDue = DateTime(now.year, now.month + 1, dueDay);
+    }
+    final int daysLeft = nextDue.difference(now).inDays;
+    DateTime firstDueDate = nextDue;
+    if (daysLeft < graceDays) {
+      firstDueDate = DateTime(nextDue.year, nextDue.month + 1, dueDay);
+    }
+    final int remainingCount = (totalMonths - 1) > 0 ? (totalMonths - 1) : 1;
+    for (int i = 0; i < remainingCount; i++) {
+      final DateTime installmentDate = DateTime(
+        firstDueDate.year,
+        firstDueDate.month + i,
+        dueDay,
+      );
+      final String formattedDate =
+          '${installmentDate.day.toString().padLeft(2, '0')} ${urduMonths[installmentDate.month]} ${installmentDate.year}';
+      schedule.add({
+        'no': i + 2,
+        'dueDate': formattedDate,
+        'amount': monthlyAmount,
+        'status': 'DUE',
+      });
+    }
+    return schedule;
   }
 }
 </file>
@@ -756,58 +1371,6 @@ class SubmitOrderButtonUi extends StatelessWidget {
 }
 </file>
 
-<file path="lib/customer_side/device_plan_detail_page/components/advance_option_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class AdvanceOptionFilterBarUi extends StatelessWidget {
-  final String selectedFilter;
-  final Function(String) onSelect;
-  const AdvanceOptionFilterBarUi({
-    super.key,
-    required this.selectedFilter,
-    required this.onSelect,
-  });
-  Widget _chip(String label, String value) {
-    final active = selectedFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('تمام آپشنز', 'ALL'),
-          _chip('⭐ بغیر ایڈوانس (14)', 'ZERO_ADV'),
-          _chip('👛 ایڈوانس کے ساتھ (14)', 'WITH_ADV'),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
 <file path="lib/customer_side/device_plan_detail_page/components/bill_style_schedule_header_ui.dart">
 import 'package:flutter/material.dart';
 class BillStyleScheduleHeaderUi extends StatelessWidget {
@@ -991,63 +1554,6 @@ class DeviceSpecPillsUi extends StatelessWidget {
 }
 </file>
 
-<file path="lib/customer_side/device_plan_detail_page/components/duration_seven_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class DurationSevenFilterBarUi extends StatelessWidget {
-  final int selectedDuration;
-  final Function(int) onSelect;
-  const DurationSevenFilterBarUi({
-    super.key,
-    required this.selectedDuration,
-    required this.onSelect,
-  });
-  Widget _chip(String label, int value) {
-    final active = selectedDuration == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('تمام 7 مدتیں', 0),
-          _chip('6 ماہ', 6),
-          _chip('7 ماہ', 7),
-          _chip('8 ماہ', 8),
-          _chip('9 ماہ', 9),
-          _chip('10 ماہ', 10),
-          _chip('11 ماہ', 11),
-          _chip('12 ماہ', 12),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
 <file path="lib/customer_side/device_plan_detail_page/components/full_screen_zoom_gallery_ui.dart">
 import 'package:flutter/material.dart';
 class FullScreenZoomGalleryUi extends StatefulWidget {
@@ -1188,58 +1694,6 @@ class _FullScreenZoomGalleryUiState extends State<FullScreenZoomGalleryUi> {
 }
 </file>
 
-<file path="lib/customer_side/device_plan_detail_page/components/guarantee_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class GuaranteeFilterBarUi extends StatelessWidget {
-  final String selectedFilter;
-  final Function(String) onSelect;
-  const GuaranteeFilterBarUi({
-    super.key,
-    required this.selectedFilter,
-    required this.onSelect,
-  });
-  Widget _chip(String label, String value) {
-    final active = selectedFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('سبھی ضمانتیں (28)', 'ALL'),
-          _chip('🏦 بینک چیک گارنٹی (14)', 'BANK_CHEQUE'),
-          _chip('⚖️ قانونی اشٹام و پرنوٹ (14)', 'LEGAL_STAMP'),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
 <file path="lib/customer_side/device_plan_detail_page/components/hero_image_swiper_ui.dart">
 import 'package:flutter/material.dart';
 import 'full_screen_zoom_gallery_ui.dart';
@@ -1292,360 +1746,6 @@ class HeroImageSwiperUi extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart">
-import 'package:flutter/material.dart';
-class IndividualPlanRowUi extends StatelessWidget {
-  final Map<String, dynamic> plan;
-  final VoidCallback onOrderTap;
-  const IndividualPlanRowUi({
-    super.key,
-    required this.plan,
-    required this.onOrderTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final bool isCheque = plan['guarantee'] == 'BANK_CHEQUE';
-    final bool hasAdv = plan['hasAdvance'] as bool;
-    final int advance = plan['advance'] as int;
-    final int monthly = plan['monthly'] as int;
-    final int months = plan['months'] as int;
-    final int totalContractPrice = advance + (monthly * months);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isCheque ? const Color(0xFFECFDF5) : const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
-              ),
-            ),
-            child: Icon(
-              isCheque ? Icons.account_balance_rounded : Icons.balance_rounded,
-              size: 19,
-              color: isCheque ? const Color(0xFF059669) : const Color(0xFF3730A3),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 3,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      '$months ماہ کی مدت',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: const Color(0xFFA7F3D0)),
-                      ),
-                      child: Text(
-                        'کل: Rs. $totalContractPrice',
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF065F46),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 2,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: isCheque ? const Color(0xFFDCFCE7) : const Color(0xFFE0E7FF),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isCheque ? 'بینک چیک' : 'اشٹام پرنوٹ',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: isCheque ? const Color(0xFF047857) : const Color(0xFF3730A3),
-                        ),
-                      ),
-                    ),
-                    const Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 10)),
-                    Text(
-                      hasAdv ? 'ایڈوانس: Rs. $advance' : '⭐ بغیر ایڈوانس',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: hasAdv ? const Color(0xFFB45309) : const Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Rs. $monthly',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0D9488),
-                ),
-              ),
-              const Text(
-                'ماہانہ قسط',
-                style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
-              ),
-              const SizedBox(height: 4),
-              ElevatedButton(
-                onPressed: onOrderTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  foregroundColor: Colors.white,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-                child: const Text(
-                  'آرڈر شیڈول',
-                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/vip_28_promotional_banner_ui.dart">
-import 'package:flutter/material.dart';
-class Vip28PromotionalBannerUi extends StatelessWidget {
-  const Vip28PromotionalBannerUi({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFDE68A).withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFDE68A),
-              shape: BoxShape.circle,
-            ),
-            child: const Text(
-              '28',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'نایاب 28 اقساطی پیکجز کا مکمل جدول',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A)),
-                ),
-                SizedBox(height: 1),
-                Text(
-                  '7 مدتیں (6 تا 12 ماہ) • 14 چیک مع 14 اشٹام پلانز • زیرو ایڈوانس سہولت',
-                  style: TextStyle(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/device_plan_detail_controller.dart">
-import 'package:flutter/material.dart';
-class DevicePlanDetailController extends ChangeNotifier {
-  int selectedDuration = 0;
-  String selectedGuaranteeFilter = 'ALL';
-  String selectedAdvanceFilter = 'ALL';
-  int userCustomAdvance = 0;
-  String activeSort = 'DEFAULT';
-  final TextEditingController customAdvanceCtrl = TextEditingController();
-  void init(int initialAdvance) {
-    userCustomAdvance = initialAdvance;
-    customAdvanceCtrl.text = initialAdvance.toString();
-  }
-  void setGuaranteeFilter(String filter) {
-    selectedGuaranteeFilter = filter;
-    notifyListeners();
-  }
-  void setAdvanceFilter(String filter) {
-    selectedAdvanceFilter = filter;
-    notifyListeners();
-  }
-  void setDuration(int duration) {
-    selectedDuration = duration;
-    notifyListeners();
-  }
-  void updateCustomAdvance(int amount) {
-    userCustomAdvance = amount;
-    notifyListeners();
-  }
-  void setSort(String sortKey) {
-    activeSort = sortKey;
-    notifyListeners();
-  }
-  List<Map<String, dynamic>> calculate28Plans(int baseValue, int minRequiredAdv) {
-    final int effectiveAdvance = userCustomAdvance > 0 ? userCustomAdvance : minRequiredAdv;
-    final List<int> durations = [6, 7, 8, 9, 10, 11, 12];
-    List<Map<String, dynamic>> allPlans = [];
-    for (var m in durations) {
-      final totalWithProfitCheque = (baseValue * 1.25).toInt();
-      final adv1 = effectiveAdvance;
-      final monthly1 = ((totalWithProfitCheque - adv1) / m).toInt();
-      allPlans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': true,
-        'advance': adv1,
-        'monthly': monthly1,
-      });
-      allPlans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': (totalWithProfitCheque / m).toInt(),
-      });
-      final totalWithProfitStamp = (baseValue * 1.35).toInt();
-      final adv2 = effectiveAdvance;
-      final monthly2 = ((totalWithProfitStamp - adv2) / m).toInt();
-      allPlans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': true,
-        'advance': adv2,
-        'monthly': monthly2,
-      });
-      allPlans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': (totalWithProfitStamp / m).toInt(),
-      });
-    }
-    final filtered = allPlans.where((p) {
-      if (selectedGuaranteeFilter != 'ALL' && p['guarantee'] != selectedGuaranteeFilter) return false;
-      if (selectedAdvanceFilter == 'WITH_ADV' && !p['hasAdvance']) return false;
-      if (selectedAdvanceFilter == 'ZERO_ADV' && p['hasAdvance']) return false;
-      if (selectedDuration != 0 && p['months'] != selectedDuration) return false;
-      return true;
-    }).toList();
-    if (activeSort == 'LOW_MONTHLY') {
-      filtered.sort((a, b) => (a['monthly'] as int).compareTo(b['monthly'] as int));
-    } else if (activeSort == 'SHORTEST_DURATION') {
-      filtered.sort((a, b) => (a['months'] as int).compareTo(b['months'] as int));
-    } else if (activeSort == 'LOWEST_TOTAL') {
-      filtered.sort((a, b) {
-        final totalA = (a['advance'] as int) + ((a['monthly'] as int) * (a['months'] as int));
-        final totalB = (b['advance'] as int) + ((b['monthly'] as int) * (b['months'] as int));
-        return totalA.compareTo(totalB);
-      });
-    }
-    return filtered;
-  }
-  List<Map<String, dynamic>> generateSchedule(int months, int monthlyAmount) {
-    final List<Map<String, dynamic>> schedule = [];
-    final DateTime now = DateTime.now();
-    DateTime nextFifth = DateTime(now.year, now.month, 5);
-    if (nextFifth.isBefore(now)) {
-      nextFifth = DateTime(now.year, now.month + 1, 5);
-    }
-    final int daysLeft = nextFifth.difference(now).inDays;
-    DateTime firstDueDate = nextFifth;
-    if (daysLeft < 15) {
-      firstDueDate = DateTime(nextFifth.year, nextFifth.month + 1, 5);
-    }
-    final urduMonths = [
-      '', 'جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون',
-      'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'
-    ];
-    for (int i = 0; i < months; i++) {
-      final DateTime installmentDate = DateTime(firstDueDate.year, firstDueDate.month + i, 5);
-      final String formattedDate = '05 ${urduMonths[installmentDate.month]} ${installmentDate.year}';
-      schedule.add({
-        'no': i + 1,
-        'dueDate': formattedDate,
-        'amount': monthlyAmount,
-        'status': 'DUE',
-      });
-    }
-    return schedule;
-  }
-  @override
-  void dispose() {
-    customAdvanceCtrl.dispose();
-    super.dispose();
   }
 }
 </file>
@@ -1767,17 +1867,517 @@ class SignUpBarrierDialogUi extends StatelessWidget {
 }
 </file>
 
+<file path="lib/customer_side/device_plan_detail_page/components/advance_option_filter_bar_ui.dart">
+import 'package:flutter/material.dart';
+class AdvanceOptionFilterBarUi extends StatelessWidget {
+  final String selectedFilter;
+  final int totalCount;
+  final int zeroAdvCount;
+  final int withAdvCount;
+  final Function(String) onSelect;
+  const AdvanceOptionFilterBarUi({
+    super.key,
+    required this.selectedFilter,
+    required this.totalCount,
+    required this.zeroAdvCount,
+    required this.withAdvCount,
+    required this.onSelect,
+  });
+  Widget _chip(String label, String value) {
+    final active = selectedFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: InkWell(
+        onTap: () => onSelect(value),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              color: active ? Colors.white : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _chip('تمام آپشنز', 'ALL'),
+          if (zeroAdvCount > 0) _chip('⭐ بغیر ایڈوانس ($zeroAdvCount)', 'ZERO_ADV'),
+          if (withAdvCount > 0) _chip('👛 ایڈوانس کے ساتھ ($withAdvCount)', 'WITH_ADV'),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/duration_seven_filter_bar_ui.dart">
+import 'package:flutter/material.dart';
+class DurationSevenFilterBarUi extends StatelessWidget {
+  final int selectedDuration;
+  final List<int> allowedDurations;
+  final Function(int) onSelect;
+  const DurationSevenFilterBarUi({
+    super.key,
+    required this.selectedDuration,
+    required this.allowedDurations,
+    required this.onSelect,
+  });
+  Widget _chip(String label, int value) {
+    final active = selectedDuration == value;
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: InkWell(
+        onTap: () => onSelect(value),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              color: active ? Colors.white : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _chip('تمام مدتیں', 0),
+          ...allowedDurations.map(
+            (duration) => _chip('$duration ماہ', duration),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/guarantee_filter_bar_ui.dart">
+import 'package:flutter/material.dart';
+class GuaranteeFilterBarUi extends StatelessWidget {
+  final String selectedFilter;
+  final int totalCount;
+  final int chequeCount;
+  final int stampCount;
+  final Function(String) onSelect;
+  const GuaranteeFilterBarUi({
+    super.key,
+    required this.selectedFilter,
+    required this.totalCount,
+    required this.chequeCount,
+    required this.stampCount,
+    required this.onSelect,
+  });
+  Widget _chip(String label, String value) {
+    final active = selectedFilter == value;
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: InkWell(
+        onTap: () => onSelect(value),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              color: active ? Colors.white : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _chip('سبھی ضمانتیں ($totalCount)', 'ALL'),
+          if (chequeCount > 0) _chip('🏦 بینک چیک گارنٹی ($chequeCount)', 'BANK_CHEQUE'),
+          if (stampCount > 0) _chip('⚖️ قانونی اشٹام و پرنوٹ ($stampCount)', 'LEGAL_STAMP'),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart">
+import 'package:flutter/material.dart';
+class IndividualPlanRowUi extends StatelessWidget {
+  final Map<String, dynamic> plan;
+  final VoidCallback onOrderTap;
+  const IndividualPlanRowUi({
+    super.key,
+    required this.plan,
+    required this.onOrderTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final bool isCheque = plan['guarantee'] == 'BANK_CHEQUE';
+    final bool hasAdv = plan['hasAdvance'] as bool;
+    final int advance = plan['advance'] as int;
+    final int monthly = plan['monthly'] as int;
+    final int months = plan['months'] as int;
+    final int totalContractPrice = (plan['totalContract'] as int?) ??
+        (advance + (monthly * (months - 1)));
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isCheque ? const Color(0xFFECFDF5) : const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
+              ),
+            ),
+            child: Icon(
+              isCheque ? Icons.account_balance_rounded : Icons.balance_rounded,
+              size: 19,
+              color: isCheque ? const Color(0xFF059669) : const Color(0xFF3730A3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 3,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '$months ماہ کی مدت',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: Text(
+                        'کل: Rs. $totalContractPrice',
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF065F46),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: isCheque ? const Color(0xFFDCFCE7) : const Color(0xFFE0E7FF),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isCheque ? 'بینک چیک' : 'اشٹام پرنوٹ',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: isCheque ? const Color(0xFF047857) : const Color(0xFF3730A3),
+                        ),
+                      ),
+                    ),
+                    const Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 10)),
+                    Text(
+                      hasAdv ? 'ایڈوانس: Rs. $advance' : '⭐ بغیر ایڈوانس',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: hasAdv ? const Color(0xFFB45309) : const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Rs. $monthly',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF0D9488),
+                ),
+              ),
+              const Text(
+                'ماہانہ قسط',
+                style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              ElevatedButton(
+                onPressed: onOrderTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F172A),
+                  foregroundColor: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                child: const Text(
+                  'آرڈر شیڈول',
+                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/components/vip_28_promotional_banner_ui.dart">
+import 'package:flutter/material.dart';
+class Vip28PromotionalBannerUi extends StatelessWidget {
+  final int totalCount;
+  final int durationCount;
+  const Vip28PromotionalBannerUi({
+    super.key,
+    required this.totalCount,
+    required this.durationCount,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.centerRight,
+          end: Alignment.centerLeft,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFDE68A).withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFDE68A),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$totalCount',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'نایاب $totalCount اقساطی پیکجز کا مکمل جدول',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A)),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  '$durationCount مدتیں • آسان چیک و اشٹام پلانز • زیرو ایڈوانس سہولت',
+                  style: const TextStyle(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/device_plan_detail_page/device_plan_detail_controller.dart">
+import 'package:flutter/material.dart';
+import 'services/calculator_config_model.dart';
+import 'services/calculator_config_service.dart';
+import 'services/plan_generator_service.dart';
+import 'services/plan_filter_sort_service.dart';
+import 'services/plan_schedule_service.dart';
+import 'services/plan_math_service.dart';
+class DevicePlanDetailController extends ChangeNotifier {
+  final CalculatorConfigService _configService = CalculatorConfigService();
+  int selectedDuration = 0;
+  String selectedGuaranteeFilter = 'ALL';
+  String selectedAdvanceFilter = 'ALL';
+  int userCustomAdvance = 0;
+  String activeSort = 'DEFAULT';
+  final TextEditingController customAdvanceCtrl = TextEditingController();
+  CalculatorConfigModel get config => _configService.getConfig();
+  void init(int initialAdvance) {
+    userCustomAdvance = initialAdvance;
+    customAdvanceCtrl.text = initialAdvance > 0 ? initialAdvance.toString() : '';
+  }
+  void setGuaranteeFilter(String filter) {
+    selectedGuaranteeFilter = filter;
+    notifyListeners();
+  }
+  void setAdvanceFilter(String filter) {
+    selectedAdvanceFilter = filter;
+    notifyListeners();
+  }
+  void setDuration(int duration) {
+    selectedDuration = duration;
+    notifyListeners();
+  }
+  void updateCustomAdvance(int amount) {
+    userCustomAdvance = amount;
+    notifyListeners();
+  }
+  void setSort(String sortKey) {
+    activeSort = sortKey;
+    notifyListeners();
+  }
+  int getDynamicMinAdvance(int baseValue) {
+    final currentConfig = config;
+    final int principal = PlanMathService.calculatePrincipal(
+      baseValue: baseValue,
+      config: currentConfig,
+    );
+    final int minDuration = currentConfig.allowedDurations.isNotEmpty
+        ? currentConfig.allowedDurations.first
+        : 6;
+    final int total = PlanMathService.calculateTotalContractPrice(
+      principal: principal,
+      months: minDuration,
+      isCheque: true,
+      config: currentConfig,
+    );
+    return PlanMathService.calculateMinAdvance(
+      totalContractPrice: total,
+      months: minDuration,
+      config: currentConfig,
+    );
+  }
+  List<Map<String, dynamic>> getAllRawPlans(int baseValue) {
+    return PlanGeneratorService.generateAllPlans(
+      baseValue: baseValue,
+      userCustomAdvance: userCustomAdvance,
+      config: config,
+    );
+  }
+  List<Map<String, dynamic>> getFilteredPlans(List<Map<String, dynamic>> allPlans) {
+    return PlanFilterSortService.filterAndSort(
+      allPlans: allPlans,
+      guaranteeFilter: selectedGuaranteeFilter,
+      advanceFilter: selectedAdvanceFilter,
+      durationFilter: selectedDuration,
+      sortKey: activeSort,
+    );
+  }
+  List<Map<String, dynamic>> generateSchedule({
+    required int months,
+    required int monthlyAmount,
+    required int advancePaid,
+  }) {
+    return PlanScheduleService.generateSchedule(
+      totalMonths: months,
+      monthlyAmount: monthlyAmount,
+      advancePaid: advancePaid,
+      config: config,
+    );
+  }
+  @override
+  void dispose() {
+    customAdvanceCtrl.dispose();
+    super.dispose();
+  }
+}
+</file>
+
 <file path="lib/customer_side/device_plan_detail_page/device_plan_detail_page.dart">
 import 'package:flutter/material.dart';
 import 'device_plan_detail_controller.dart';
 import 'components/detail_app_bar_ui.dart';
-import 'components/hero_image_swiper_ui.dart';
-import 'components/device_spec_pills_ui.dart';
+import 'components/stock_device_hero_card_ui.dart';
+import 'components/custom_estimate_hero_card_ui.dart';
 import 'components/vip_28_promotional_banner_ui.dart';
-import 'components/guarantee_filter_bar_ui.dart';
-import 'components/advance_option_filter_bar_ui.dart';
-import 'components/duration_seven_filter_bar_ui.dart';
-import 'components/custom_advance_input_box_ui.dart';
+import 'components/plan_filter_section_card_ui.dart';
 import 'components/plan_sorting_toolbar_ui.dart';
 import 'components/bill_style_schedule_header_ui.dart';
 import 'components/individual_plan_row_ui.dart';
@@ -1785,11 +2385,7 @@ import 'components/order_receipt_sheet/order_receipt_sheet.dart';
 class DevicePlanDetailPage extends StatefulWidget {
   final Map<String, dynamic> device;
   final String? customerPhone;
-  const DevicePlanDetailPage({
-    super.key,
-    required this.device,
-    this.customerPhone,
-  });
+  const DevicePlanDetailPage({super.key, required this.device, this.customerPhone});
   @override
   State<DevicePlanDetailPage> createState() => _DevicePlanDetailPageState();
 }
@@ -1801,8 +2397,7 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
     _controller = DevicePlanDetailController();
     final int initAdv = (widget.device['userCustomAdvance'] as int?) ??
         (widget.device['minAdvanceRequired'] as int?) ??
-        (widget.device['minAdvance'] as int?) ??
-        5000;
+        (widget.device['minAdvance'] as int?) ?? 0;
     _controller.init(initAdv);
   }
   @override
@@ -1810,12 +2405,23 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
     _controller.dispose();
     super.dispose();
   }
+  void _openOrderSheet(Map<String, dynamic> plan) {
+    final schedule = _controller.generateSchedule(
+      months: plan['months'],
+      monthlyAmount: plan['monthly'],
+      advancePaid: plan['advance'],
+    );
+    OrderReceiptSheet.show(
+      context,
+      plan: plan,
+      deviceName: widget.device['name'] ?? '',
+      customerPhone: widget.customerPhone,
+      installmentSchedule: schedule,
+    );
+  }
   @override
   Widget build(BuildContext context) {
-    final int baseValue = (widget.device['baseValue'] as int?) ?? 50000;
-    final int minAdvReq = (widget.device['minAdvanceRequired'] as int?) ??
-        (widget.device['minAdvance'] as int?) ??
-        5000;
+    final int baseValue = (widget.device['baseValue'] as int?) ?? 0;
     final List<String> images = (widget.device['images'] as List?)?.cast<String>() ?? [];
     final bool isCustomEstimate = widget.device['isCustomEstimate'] == true || images.isEmpty;
     return Directionality(
@@ -1823,12 +2429,15 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          final plans = _controller.calculate28Plans(baseValue, minAdvReq);
+          final rawPlans = _controller.getAllRawPlans(baseValue);
+          final plans = _controller.getFilteredPlans(rawPlans);
+          final int calculatedMinAdv = _controller.getDynamicMinAdvance(baseValue);
+          final int displayedAdv = _controller.userCustomAdvance > 0 ? _controller.userCustomAdvance : calculatedMinAdv;
           return Scaffold(
             backgroundColor: const Color(0xFFF1F5F9),
             appBar: DetailAppBarUi(
               title: widget.device['name'] ?? 'موبائل پلان',
-              subtitle: 'نایاب قسط پوائنٹ • 28 سمارٹ اقساطی پیکجز',
+              subtitle: 'نایاب قسط پوائنٹ • ${rawPlans.length} سمارٹ اقساطی پیکجز',
             ),
             body: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -1837,210 +2446,34 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isCustomEstimate)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      ),
-                      child: Column(
-                        children: [
-                          HeroImageSwiperUi(images: images),
-                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        widget.device['name'] ?? '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0F172A),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFECFDF5),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Text(
-                                        'صرف آسان اقساط پر دستیاب',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF059669),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                DeviceSpecPillsUi(
-                                  ramRom: widget.device['ramRom'] ?? '',
-                                  condition: widget.device['condition'] ?? '',
-                                  warranty: widget.device['warranty'] ?? '12 ماہ آفیشل وارنٹی',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
+                    StockDeviceHeroCardUi(device: widget.device, images: images)
                   else
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF334155), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF059669).withValues(alpha: 0.25),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.calculate_rounded, color: Color(0xFF34D399), size: 20),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'نایاب قسط پوائنٹ • کسٹم ریٹ کیلکولیٹر',
-                                      style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 18, color: Color(0xFF334155)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'تخمینہ رقم: Rs. $baseValue',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFFDE68A),
-                                ),
-                              ),
-                              Text(
-                                minAdvReq > 0 ? 'ایڈوانس: Rs. $minAdvReq' : 'بغیر ایڈوانس پلان',
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF34D399),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    CustomEstimateHeroCardUi(
+                      title: widget.device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
+                      baseValue: baseValue,
+                      displayedAdvance: displayedAdv,
                     ),
                   const SizedBox(height: 14),
-                  const Vip28PromotionalBannerUi(),
+                  Vip28PromotionalBannerUi(
+                    totalCount: rawPlans.length,
+                    durationCount: _controller.config.allowedDurations.length,
+                  ),
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'ضمانت اور مدت چھانٹیں (تمام فلٹرز آن ہونے پر 28 پیکجز نظر آئیں گے):',
-                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-                        ),
-                        const SizedBox(height: 8),
-                        GuaranteeFilterBarUi(
-                          selectedFilter: _controller.selectedGuaranteeFilter,
-                          onSelect: _controller.setGuaranteeFilter,
-                        ),
-                        const SizedBox(height: 6),
-                        AdvanceOptionFilterBarUi(
-                          selectedFilter: _controller.selectedAdvanceFilter,
-                          onSelect: _controller.setAdvanceFilter,
-                        ),
-                        const SizedBox(height: 6),
-                        DurationSevenFilterBarUi(
-                          selectedDuration: _controller.selectedDuration,
-                          onSelect: _controller.setDuration,
-                        ),
-                        const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                        CustomAdvanceInputBoxUi(
-                          minAdvanceRequired: minAdvReq,
-                          controller: _controller.customAdvanceCtrl,
-                          onChanged: _controller.updateCustomAdvance,
-                        ),
-                      ],
-                    ),
+                  PlanFilterSectionCardUi(
+                    controller: _controller,
+                    totalPossiblePlans: rawPlans.length,
+                    chequeCount: rawPlans.where((p) => p['guarantee'] == 'BANK_CHEQUE').length,
+                    stampCount: rawPlans.where((p) => p['guarantee'] == 'LEGAL_STAMP').length,
+                    zeroAdvCount: rawPlans.where((p) => p['hasAdvance'] == false).length,
+                    withAdvCount: rawPlans.where((p) => p['hasAdvance'] == true).length,
+                    calculatedMinAdv: calculatedMinAdv,
                   ),
                   const SizedBox(height: 12),
-                  PlanSortingToolbarUi(
-                    activeSort: _controller.activeSort,
-                    onSortChanged: _controller.setSort,
-                  ),
+                  PlanSortingToolbarUi(activeSort: _controller.activeSort, onSortChanged: _controller.setSort),
                   const SizedBox(height: 10),
                   BillStyleScheduleHeaderUi(count: plans.length),
                   const SizedBox(height: 8),
-                  ...plans.map((plan) {
-                    return IndividualPlanRowUi(
-                      plan: plan,
-                      onOrderTap: () {
-                        final schedule = _controller.generateSchedule(plan['months'], plan['monthly']);
-                        OrderReceiptSheet.show(
-                          context,
-                          plan: plan,
-                          deviceName: widget.device['name'] ?? '',
-                          customerPhone: widget.customerPhone,
-                          installmentSchedule: schedule,
-                        );
-                      },
-                    );
-                  }),
+                  ...plans.map((plan) => IndividualPlanRowUi(plan: plan, onOrderTap: () => _openOrderSheet(plan))),
                   const SizedBox(height: 80),
                 ],
               ),

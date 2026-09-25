@@ -6,6 +6,7 @@ import 'inline_two_plan_drawer_ui.dart';
 class StockPhoneCardUi extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool isRibbonExpanded;
+  final int totalPlans;
   final VoidCallback onCardTap;
   final VoidCallback onToggleRibbon;
 
@@ -13,12 +14,16 @@ class StockPhoneCardUi extends StatelessWidget {
     super.key,
     required this.item,
     required this.isRibbonExpanded,
+    required this.totalPlans,
     required this.onCardTap,
     required this.onToggleRibbon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final List images = (item['images'] as List?) ?? [];
+    final bool hasValidImage = images.isNotEmpty && images.first.toString().trim().isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -52,15 +57,25 @@ class StockPhoneCardUi extends StatelessWidget {
                       width: 88,
                       height: 94,
                       color: const Color(0xFFF8FAFC),
-                      child: Image.network(
-                        (item['images'] as List).first,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.phone_android_rounded,
-                          size: 38,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
+                      child: hasValidImage
+                          ? Image.network(
+                              images.first.toString(),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(
+                                  Icons.phone_android_rounded,
+                                  size: 38,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.phone_android_rounded,
+                                size: 38,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -73,7 +88,7 @@ class StockPhoneCardUi extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                item['name'],
+                                item['name'] ?? '',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -90,7 +105,7 @@ class StockPhoneCardUi extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
-                                item['status'],
+                                item['status'] ?? '',
                                 style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
@@ -106,10 +121,10 @@ class StockPhoneCardUi extends StatelessWidget {
                           style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
                         ),
                         const SizedBox(height: 6),
-                        ZeroAdvancePillBadgeUi(monthlyAmount: item['zeroAdvMonthly']),
+                        ZeroAdvancePillBadgeUi(monthlyAmount: item['zeroAdvMonthly'] ?? 0),
                         const SizedBox(height: 4),
                         Text(
-                          'یا ایڈوانس کے ساتھ صرف: Rs. ${item['minMonthlyWithAdv']} /ماہ',
+                          'یا ایڈوانس کے ساتھ صرف: Rs. ${item['minMonthlyWithAdv'] ?? 0} /ماہ',
                           style: const TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
@@ -129,8 +144,9 @@ class StockPhoneCardUi extends StatelessWidget {
           ),
           if (isRibbonExpanded)
             InlineTwoPlanDrawerUi(
-              zeroAdvMonthly: item['zeroAdvMonthly'],
-              withAdvMonthly: item['minMonthlyWithAdv'],
+              zeroAdvMonthly: item['zeroAdvMonthly'] ?? 0,
+              withAdvMonthly: item['minMonthlyWithAdv'] ?? 0,
+              totalPlans: totalPlans,
               onOpenFullPlan: onCardTap,
             ),
         ],

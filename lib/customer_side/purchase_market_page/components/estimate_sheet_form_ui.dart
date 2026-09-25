@@ -19,9 +19,35 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
   final _priceCtrl = TextEditingController();
   final _advanceCtrl = TextEditingController(text: '0');
   String? _error;
+  int _dynamicMinAdvance = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _priceCtrl.addListener(_onPriceChanged);
+  }
+
+  // 🎯 راؤنڈنگ لاجک: رقم کو 100 کے قریب ترین راؤنڈ کرنا
+  int _calculateRoundedMinAdvance(int price) {
+    if (price <= 0) return 0;
+    final double raw = price * 0.1667;
+    // 100 پر راؤنڈ اپ کرنا تاکہ کنٹرولر اور UI میں ایک ہی رقم آئے
+    return ((raw / 100).ceil()) * 100;
+  }
+
+  void _onPriceChanged() {
+    final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final calculatedMin = _calculateRoundedMinAdvance(price);
+    if (_dynamicMinAdvance != calculatedMin) {
+      setState(() {
+        _dynamicMinAdvance = calculatedMin;
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _priceCtrl.removeListener(_onPriceChanged);
     _nameCtrl.dispose();
     _priceCtrl.dispose();
     _advanceCtrl.dispose();
@@ -36,17 +62,27 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
       setState(() => _error = 'برائے مہربانی درست مالیت درج کریں');
       return;
     }
-    if (adv > 0 && adv < 5000) {
-      setState(() => _error = 'ایڈوانس یا تو 0 ہو یا کم از کم Rs. 5,000');
+
+    final requiredMin = _calculateRoundedMinAdvance(price);
+    if (adv > 0 && adv < requiredMin) {
+      setState(() => _error = 'ایڈوانس یا تو 0 ہو یا کم از کم Rs. $requiredMin ضروری ہے');
       return;
     }
 
-    // 🚀 صرف ڈیٹا آگے بھیجیں (Navigator.pop یہاں نہیں لگانا)
+    if (adv > price) {
+      setState(() => _error = 'ایڈوانس رقم موبائل کی کل قیمت سے زیادہ نہیں ہو سکتی');
+      return;
+    }
+
     widget.onSubmit(_nameCtrl.text.trim(), price, adv);
   }
 
   @override
   Widget build(BuildContext context) {
+    final String advanceHint = _dynamicMinAdvance > 0 
+        ? '0 یا کم از کم Rs. $_dynamicMinAdvance' 
+        : 'بغیر ایڈوانس کیلئے 0 رکھیں';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
@@ -56,7 +92,7 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
           const SizedBox(height: 12),
           _field(_priceCtrl, 'کل مالیت کا تخمینہ (روپوں میں)*', 'مثلاً 45000', TextInputType.number),
           const SizedBox(height: 12),
-          _field(_advanceCtrl, 'متوقع ایڈوانس رقم (بغیر ایڈوانس کیلئے 0 رکھیں)', '0 یا کم از کم 5000', TextInputType.number),
+          _field(_advanceCtrl, 'متوقع ایڈوانس رقم (بغیر ایڈوانس کیلئے 0 رکھیں)', advanceHint, TextInputType.number),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!, style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),

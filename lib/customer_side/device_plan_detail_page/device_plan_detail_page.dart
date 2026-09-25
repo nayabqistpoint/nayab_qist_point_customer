@@ -51,6 +51,8 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
       deviceName: widget.device['name'] ?? '',
       customerPhone: widget.customerPhone,
       installmentSchedule: schedule,
+      sourceMode: widget.device['isCustomEstimate'] == true ? 'CUSTOM_ESTIMATE' : 'STOCK',
+      imeiNo: widget.device['imeiNo']?.toString() ?? widget.device['imei']?.toString(),
     );
   }
 
@@ -58,7 +60,7 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
   Widget build(BuildContext context) {
     final int baseValue = (widget.device['baseValue'] as int?) ?? 0;
     final List<String> images = (widget.device['images'] as List?)?.cast<String>() ?? [];
-    final bool isCustomEstimate = widget.device['isCustomEstimate'] == true || images.isEmpty;
+    final bool isCustomEstimate = widget.device['isCustomEstimate'] == true;
 
     return Directionality(
       textDirection: TextDirection.rtl,

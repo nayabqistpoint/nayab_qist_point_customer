@@ -1,62 +1,51 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
+import 'services/stock_box_service.dart';
 
 class PurchaseMarketController extends ChangeNotifier {
+  final StockBoxService _stockService = StockBoxService();
   int expandedCardIndex = -1;
 
-  final List<Map<String, dynamic>> stockItems = [
-    {
-      'id': 'STK-901',
-      'name': 'Infinix Note 40 Pro',
-      'baseValue': 75000,
-      'ramRom': '8GB / 256GB',
-      'condition': 'ڈبہ پیک',
-      'status': 'موجود ہے',
-      'zeroAdvMonthly': 7812,
-      'minMonthlyWithAdv': 6250,
-      'minAdvance': 10000,
-      'images': [
-        'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=800',
-        'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800',
-      ],
-    },
-    {
-      'id': 'STK-902',
-      'name': 'Vivo Y21 Ultra',
-      'baseValue': 48000,
-      'ramRom': '4GB / 64GB',
-      'condition': 'استعمال شدہ (10/10)',
-      'status': 'موجود ہے',
-      'zeroAdvMonthly': 5000,
-      'minMonthlyWithAdv': 4000,
-      'minAdvance': 6000,
-      'images': [
-        'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800',
-        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800',
-      ],
-    },
-    {
-      'id': 'STK-903',
-      'name': 'Tecno Camon 30',
-      'baseValue': 58000,
-      'ramRom': '8GB / 128GB',
-      'condition': 'ڈبہ پیک',
-      'status': 'آرڈر پر دستیاب',
-      'zeroAdvMonthly': 6040,
-      'minMonthlyWithAdv': 4830,
-      'minAdvance': 8000,
-      'images': [
-        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800',
-        'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=800',
-      ],
-    },
-  ];
+  ValueListenable<Box> get stockListenable => _stockService.listenToStock();
+  List<Map<String, dynamic>> getStockDevices() => _stockService.getAllStockDevices();
+  int get totalPlansCount => _stockService.getTotalPlansCount();
 
   void toggleRibbon(int index) {
-    if (expandedCardIndex == index) {
-      expandedCardIndex = -1;
-    } else {
-      expandedCardIndex = index;
-    }
+    expandedCardIndex = (expandedCardIndex == index) ? -1 : index;
     notifyListeners();
+  }
+
+  void navigateToPlanDetail(BuildContext context, Map<String, dynamic> device, String? customerPhone) {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.planDetail,
+      arguments: {
+        'device': device,
+        'customerPhone': customerPhone,
+      },
+    );
+  }
+
+  void handleCustomEstimateSubmit(BuildContext context, String name, int price, int adv, String? customerPhone) {
+    // 🎯 16.67% کا راؤنڈڈ کم از کم ایڈوانس (100 پر راؤنڈ)
+    final int dynamicMinAdv = (((price * 0.1667) / 100).ceil()) * 100;
+    
+    // اگر کسٹمر نے بغیر ایڈوانس (0) منتخب کیا تو 0 رہے گا، ورنہ کم از کم حد سے کم نہیں ہو سکتا
+    final int finalUserAdv = adv == 0 ? 0 : (adv < dynamicMinAdv ? dynamicMinAdv : adv);
+
+    final device = {
+      'name': name.isEmpty ? 'کسٹم ڈیوائس تخمینہ' : name,
+      'baseValue': price,
+      'ramRom': 'کسٹمر ڈیمانڈ',
+      'condition': 'نئی یا طلب کے مطابق',
+      'warranty': '12 ماہ وارنٹی',
+      'minAdvanceRequired': dynamicMinAdv,
+      'userCustomAdvance': finalUserAdv,
+      'isCustomEstimate': true,
+      'images': <String>[],
+    };
+    navigateToPlanDetail(context, device, customerPhone);
   }
 }
