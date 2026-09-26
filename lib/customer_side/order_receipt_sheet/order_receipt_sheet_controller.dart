@@ -23,7 +23,11 @@ class OrderReceiptSheetController extends ChangeNotifier {
     advance = (plan['advance'] as num?)?.toInt() ?? 0;
     monthly = (plan['monthly'] as num?)?.toInt() ?? 0;
     months = (plan['months'] as num?)?.toInt() ?? 6;
-    totalInstallmentSum = advance + (monthly * months);
+
+    // اصل کل کنٹریکٹ رقم جو پچھلی اسکرین سے آئی ہے یا فارمولے سے حاصل ہوئی ہے
+    totalInstallmentSum = (plan['totalContract'] as num?)?.toInt() ??
+        (advance + (monthly * ((months - 1) > 0 ? (months - 1) : 1)));
+
     isChequePlan = plan['guarantee'] == 'BANK_CHEQUE';
     tokenNo = 'NQP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
   }
@@ -60,7 +64,7 @@ class OrderReceiptSheetController extends ChangeNotifier {
 
     try {
       final payload = PurchaseOrderPayloadService.buildOrderPayload(
-        orderId: tokenNo,
+        docId: tokenNo,
         customerPhone: customerPhone.trim(),
         sourceMode: sourceMode ?? 'STOCK',
         itemName: deviceName,
@@ -69,8 +73,9 @@ class OrderReceiptSheetController extends ChangeNotifier {
         bankName: bankNameCtrl.text,
         chequeNo: chequeNoCtrl.text,
         totalMonths: months,
-        advancePaid: advance,
+        advance: advance,
         monthlyAmount: monthly,
+        totalContractAmount: totalInstallmentSum,
         orderDateTime: DateTime.now(),
       );
 
@@ -84,7 +89,7 @@ class OrderReceiptSheetController extends ChangeNotifier {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں ارسال ہو گیا!'),
+          content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں کامیابی سے بن گیا!'),
           backgroundColor: const Color(0xFF059669),
         ),
       );

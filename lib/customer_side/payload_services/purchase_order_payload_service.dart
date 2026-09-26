@@ -1,6 +1,9 @@
+import '../device_plan_detail_page/services/calculator_config_model.dart';
+import '../device_plan_detail_page/services/plan_schedule_service.dart';
+
 class PurchaseOrderPayloadService {
   static Map<String, dynamic> buildOrderPayload({
-    required String orderId,
+    required String docId,
     required String customerPhone,
     required String sourceMode, // 'STOCK' یا 'CUSTOM_ESTIMATE'
     required String itemName,
@@ -9,72 +12,66 @@ class PurchaseOrderPayloadService {
     String? bankName,
     String? chequeNo,
     required int totalMonths,
-    required int advancePaid,
+    required int advance,
     required int monthlyAmount,
+    required int totalContractAmount,
     required DateTime orderDateTime,
+    CalculatorConfigModel? config,
   }) {
     final bool isCheque = guaranteeType == 'BANK_CHEQUE';
-    final List<Map<String, dynamic>> scheduleRows = [];
 
-    // ۱. قسط نمبر 1 (ہمیشہ ایڈوانس ادائیگی)
-    scheduleRows.add({
-      'installmentNo': 1,
-      'title': 'ایڈوانس قسط (قسط نمبر 1)',
-      'monthLabel': _formatMonthYear(orderDateTime),
-      'dueDate': orderDateTime.toIso8601String(),
-      'dueAmount': advancePaid,
-      'paidAmount': advancePaid == 0 ? 0 : 0,
-      'remainingAmount': advancePaid,
-      'paymentPercentage': advancePaid == 0 ? 100.0 : 0.0,
-      'status': advancePaid == 0 ? 'FULLY_PAID' : 'PENDING',
-    });
+    // 🎯 مستند PlanScheduleService سے شیڈول حاصل کیا گیا، کوئی الگ لاجک نہیں لگائی گئی
+    final effectiveConfig = config ?? CalculatorConfigModel.fallback();
+    final generatedSchedule = PlanScheduleService.generateSchedule(
+      totalMonths: totalMonths,
+      monthlyAmount: monthlyAmount,
+      advancePaid: advance,
+      config: effectiveConfig,
+      requestDate: orderDateTime,
+    );
 
-    // ۲. بقیہ ماہانہ اقساط (مثلاً 6 ماہ کا پلان ہے تو قسط نمبر 2 سے 6 تک کل 5 اقساط)
-    for (int i = 2; i <= totalMonths; i++) {
-      final int monthOffset = i - 1;
-      final dueDate = DateTime(
-        orderDateTime.year,
-        orderDateTime.month + monthOffset,
-        orderDateTime.day,
-      );
+    final List<Map<String, dynamic>> finalInstallments = [];
 
-      scheduleRows.add({
-        'installmentNo': i,
-        'title': 'ماہانہ قسط نمبر $i',
-        'monthLabel': _formatMonthYear(dueDate),
-        'dueDate': dueDate.toIso8601String(),
-        'dueAmount': monthlyAmount,
+    for (int i = 0; i < generatedSchedule.length; i++) {
+      final item = generatedSchedule[i];
+      final int instNo = (item['no'] as num?)?.toInt() ?? (i + 1);
+      final int amt = (item['amount'] as num?)?.toInt() ?? 0;
+      final bool isFirst = instNo == 1;
+
+      // اگر زیرو ایڈوانس پلان ہو تو پہلی قسط خود بخود مکمل ادا شدہ مانی جائے گی
+      final bool isZeroAdv = isFirst && advance == 0;
+
+      finalInstallments.add({
+        'installmentNo': instNo,
+        'title': isFirst
+            ? (advance > 0 ? 'ایڈوانس قسط (قسط نمبر 1)' : 'زیرو ایڈوانس (قسط نمبر 1)')
+            : 'ماہانہ قسط نمبر $instNo',
+        'dueDate': item['dueDate']?.toString() ?? '',
+        'dueAmount': amt,
         'paidAmount': 0,
-        'remainingAmount': monthlyAmount,
-        'paymentPercentage': 0.0,
-        'status': 'PENDING',
+        'remainingAmount': amt,
+        'paymentPercentage': isZeroAdv ? 100 : 0,
+        'status': isZeroAdv ? 'PAID' : 'PENDING',
       });
     }
 
     return {
-      'orderId': orderId,
+      'docId': docId,
       'customerPhone': customerPhone,
       'sourceMode': sourceMode,
-      'createdAt': orderDateTime.toIso8601String(),
-      'status': 'PENDING',
-      'isSynced': false,
       'itemName': itemName,
       'imeiNo': (imeiNo != null && imeiNo.trim().isNotEmpty) ? imeiNo.trim() : null,
       'guaranteeType': guaranteeType,
       'bankName': isCheque ? (bankName?.trim() ?? '') : null,
       'chequeNo': isCheque ? (chequeNo?.trim() ?? '') : null,
       'totalMonths': totalMonths,
-      'advancePaid': advancePaid,
+      'advance': advance,
       'monthlyAmount': monthlyAmount,
-      'installments': scheduleRows,
+      'totalContractAmount': totalContractAmount,
+      'status': 'PENDING',
+      'isSynced': false,
+      'createdAt': orderDateTime.toIso8601String(),
+      'installments': finalInstallments,
     };
-  }
-
-  static String _formatMonthYear(DateTime date) {
-    const urduMonths = [
-      'جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون',
-      'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'
-    ];
-    return '${date.day} ${urduMonths[date.month - 1]} ${date.year}';
   }
 }

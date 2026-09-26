@@ -1,50 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
+import '../hive_services/hive_box_manager.dart';
 import '../universal_payments/universal_payment_page.dart';
 import '../service_stock/service_stock_entry_page.dart';
+import 'services/ledger_services/installment_ledger_service.dart';
+import 'services/ledger_services/ledger_math_service.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
+  String customerPhone;
+
   int selectedTabIndex = 0;
   int selectedProductIndex = 0;
+  bool isLoading = true;
 
-  final List<Map<String, dynamic>> customerProducts = [
-    {
-      'id': 'P-101',
-      'name': 'Infinix Note 40 Pro',
-      'plan': '10 ماہ پلان (35% منافع)',
-      'total': 75600,
-      'paid': 22680,
-      'monthlyInstallment': 7560,
-      'schedule': [
-        {'no': 1, 'date': '05 جولائی 2026', 'amount': 7560, 'paidAmount': 7560, 'status': 'PAID'},
-        {'no': 2, 'date': '05 اگست 2026', 'amount': 7560, 'paidAmount': 7560, 'status': 'PAID'},
-        {'no': 3, 'date': '05 ستمبر 2026', 'amount': 7560, 'paidAmount': 7560, 'status': 'PAID'},
-        {'no': 4, 'date': '05 اکتوبر 2026', 'amount': 7560, 'paidAmount': 3500, 'status': 'DUE'},
-        {'no': 5, 'date': '05 نومبر 2026', 'amount': 7560, 'paidAmount': 0, 'status': 'UPCOMING'},
-        {'no': 6, 'date': '05 دسمبر 2026', 'amount': 7560, 'paidAmount': 0, 'status': 'UPCOMING'},
-      ],
-    },
-    {
-      'id': 'P-102',
-      'name': 'Vivo Y21',
-      'plan': '8 ماہ پلان (25% منافع)',
-      'total': 47500,
-      'paid': 15936,
-      'monthlyInstallment': 5312,
-      'schedule': [
-        {'no': 1, 'date': '05 جولائی 2026', 'amount': 5312, 'paidAmount': 5312, 'status': 'PAID'},
-        {'no': 2, 'date': '05 اگست 2026', 'amount': 5312, 'paidAmount': 5312, 'status': 'PAID'},
-        {'no': 3, 'date': '05 ستمبر 2026', 'amount': 5312, 'paidAmount': 5312, 'status': 'PAID'},
-        {'no': 4, 'date': '05 اکتوبر 2026', 'amount': 5312, 'paidAmount': 0, 'status': 'DUE'},
-      ],
-    },
-  ];
+  List<Map<String, dynamic>> customerProducts = [];
 
   int cashLoanBalance = 50000;
   final List<Map<String, dynamic>> cashLoanEntries = [
     {'title': 'دکان سے نقد دستی کیش لیا', 'date': '10 اگست 2026', 'amount': 50000, 'type': 'DEBIT'},
   ];
-
   final List<Map<String, dynamic>> serviceTransactions = [
     {
       'title': 'ماہانہ کریانہ راشن بل',
@@ -57,15 +31,63 @@ class CustomerLedgerController extends ChangeNotifier {
         {'name': 'گھی کا ڈبہ (5 لیٹر)', 'amount': 2850},
       ],
       'totalAmount': 4350,
-      'target': 'Infinix قسط کھاتہ',
+      'target': 'قسط کھاتہ',
       'hasAudio': true,
       'hasPhoto': true,
       'date': '09 ستمبر 2026',
     },
   ];
 
-  int get totalInstallmentDue => customerProducts.fold(
-      0, (sum, p) => sum + ((p['total'] as int) - (p['paid'] as int)));
+  CustomerLedgerController({this.customerPhone = ''}) {
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    // ۱. اگر پیرنٹ سے فون نہ ملا ہو تو HiveBoxManager کے settingsBox سے سیشن فون حاصل کریں
+    if (customerPhone.trim().isEmpty) {
+      try {
+        final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+        final phone = settingsBox.get('activePhone') ?? settingsBox.get('remembered_phone');
+        if (phone != null && phone.toString().trim().isNotEmpty) {
+          customerPhone = phone.toString().trim();
+        }
+      } catch (_) {}
+    }
+
+    // ۲. انسٹالمنٹ باکس اوپن یقینی بنائیں
+    await InstallmentLedgerService.ensureBoxOpen();
+
+    // ۳. لسنر اٹیچ کریں
+    InstallmentLedgerService.boxListenable?.addListener(_onHiveBoxChanged);
+
+    // ۴. ڈیٹا لوڈ کریں
+    await loadCustomerData();
+    isLoading = false;
+    notifyListeners();
+  }
+
+  void _onHiveBoxChanged() {
+    loadCustomerData();
+  }
+
+  @override
+  void dispose() {
+    InstallmentLedgerService.boxListenable?.removeListener(_onHiveBoxChanged);
+    super.dispose();
+  }
+
+  Future<void> loadCustomerData() async {
+    customerProducts = await InstallmentLedgerService.getCustomerInstallmentOrders(customerPhone);
+
+    if (selectedProductIndex >= customerProducts.length) {
+      selectedProductIndex = 0;
+    }
+    notifyListeners();
+  }
+
+  int get totalInstallmentDue {
+    return customerProducts.fold(0, (sum, p) => sum + ((p['remaining'] as int?) ?? 0));
+  }
 
   int get approvedServiceCredit => serviceTransactions
       .where((t) => t['syncStatus'] == 'ADMIN_APPROVED')
@@ -73,12 +95,7 @@ class CustomerLedgerController extends ChangeNotifier {
 
   int get grandNetTotal => (totalInstallmentDue + cashLoanBalance) - approvedServiceCredit;
 
-  String formatAmount(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
+  String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
 
   void setTabIndex(int index) {
     selectedTabIndex = index;
@@ -95,16 +112,18 @@ class CustomerLedgerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🎯 نیا شو روم مارکیٹ پیج (سینٹرلائزڈ روٹ کے ذریعے)
   void openPurchasePage(BuildContext context) {
     Navigator.pushNamed(
       context,
       AppRoutes.purchaseMarket,
+      arguments: {'customerPhone': customerPhone},
     );
   }
 
   Future<void> handleInstallmentPayment(BuildContext context, Map<String, dynamic> schedItem) async {
-    final remaining = (schedItem['amount'] as int) - ((schedItem['paidAmount'] as int?) ?? 0);
+    final remaining = (schedItem['remainingAmount'] as int?) ??
+        ((schedItem['amount'] as int) - ((schedItem['paidAmount'] as int?) ?? 0));
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -116,28 +135,16 @@ class CustomerLedgerController extends ChangeNotifier {
       ),
     );
 
-    if (result != null && context.mounted) {
-      final int newlyPaid = result['paid'] as int;
-      final int totalAmt = schedItem['amount'] as int;
-      final int currentPaid = (schedItem['paidAmount'] as int?) ?? 0;
-      final int updatedPaid = currentPaid + newlyPaid;
-
-      schedItem['paidAmount'] = updatedPaid;
-      if (updatedPaid >= totalAmt) {
-        schedItem['status'] = 'PAID';
+    if (result != null) {
+      await loadCustomerData();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('قسط وصولی جمع ہو گئی: Rs. ${formatAmount(result['paid'] ?? remaining)}'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
       }
-
-      customerProducts[selectedProductIndex]['paid'] =
-          (customerProducts[selectedProductIndex]['paid'] as int) + (result['resolved'] as int);
-
-      notifyListeners();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('قسط ادا! وصولی: Rs. ${formatAmount(result['paid'])}'),
-          backgroundColor: const Color(0xFF059669),
-        ),
-      );
     }
   }
 
@@ -153,10 +160,9 @@ class CustomerLedgerController extends ChangeNotifier {
       ),
     );
 
-    if (result != null && context.mounted) {
+    if (result != null) {
       final int paid = result['paid'] as int;
       final int discount = (result['discount'] as int?) ?? 0;
-
       cashLoanBalance -= (paid + discount);
       cashLoanEntries.insert(0, {
         'title': 'دستی قرض واپسی ادا کی',
@@ -164,15 +170,7 @@ class CustomerLedgerController extends ChangeNotifier {
         'amount': paid,
         'type': 'CREDIT',
       });
-
       notifyListeners();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('قرض واپسی جمع! رقم: Rs. ${formatAmount(result['paid'])}'),
-          backgroundColor: const Color(0xFF059669),
-        ),
-      );
     }
   }
 
@@ -190,16 +188,9 @@ class CustomerLedgerController extends ChangeNotifier {
       ),
     );
 
-    if (newTransaction != null && context.mounted) {
+    if (newTransaction != null) {
       serviceTransactions.insert(0, newTransaction);
       notifyListeners();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Rs. ${formatAmount(newTransaction['totalAmount'])} کا بل ایڈمن منظوری کے لیے ارسال ہو گیا!'),
-          backgroundColor: const Color(0xFF059669),
-        ),
-      );
     }
   }
 }
