@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'installment_action_badge_ui.dart';
 
 class InstallmentTableRowUi {
   static TableRow build({
@@ -8,6 +9,8 @@ class InstallmentTableRowUi {
     required ValueChanged<Map<String, dynamic>> onPaymentRequested,
   }) {
     final String status = item['status'] ?? 'UPCOMING';
+    final String verificationStatus = item['verificationStatus'] ?? 'UNDER_REVIEW';
+
     final bool isPaid = status == 'PAID';
     final bool isDue = status == 'DUE';
     final bool isPartial = status == 'PARTIAL';
@@ -18,10 +21,21 @@ class InstallmentTableRowUi {
     final int percent = (item['percent'] as int?) ?? 0;
     final double progressRatio = (percent / 100.0).clamp(0.0, 1.0);
 
+    final bool isUnderReview = paidAmt > 0 && verificationStatus == 'UNDER_REVIEW';
+
+    Color progressColor;
+    if (isPaid && !isUnderReview) {
+      progressColor = const Color(0xFF059669);
+    } else if (isUnderReview) {
+      progressColor = const Color(0xFFD97706);
+    } else if (isDue) {
+      progressColor = const Color(0xFFDC2626);
+    } else {
+      progressColor = const Color(0xFF0D9488);
+    }
+
     return TableRow(
-      decoration: BoxDecoration(
-        color: isDue ? const Color(0xFFFEF2F2) : Colors.transparent, // واجب الادا کے لیے ہلکا سرخ بیک گراؤنڈ
-      ),
+      decoration: BoxDecoration(color: isDue ? const Color(0xFFFEF2F2) : Colors.transparent),
       children: [
         // 1. قسط نمبر
         Padding(
@@ -29,11 +43,7 @@ class InstallmentTableRowUi {
           child: Text(
             '${item['no']}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
           ),
         ),
 
@@ -44,20 +54,19 @@ class InstallmentTableRowUi {
             item['date']?.toString() ?? '',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               color: isDue ? const Color(0xFFDC2626) : const Color(0xFF334155),
             ),
           ),
         ),
 
-        // 3. تفصیلات، پروگریس بار اور ادائیگی بٹن
+        // 3. پروگریس بار، رقم اور ماڈیولر ایکشن بٹن
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // قسط اور فیصد
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -66,140 +75,90 @@ class InstallmentTableRowUi {
                       'قسط: Rs. ${formatAmount(totalAmt)}',
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '$percent%',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                      color: isPaid
-                          ? const Color(0xFF059669)
-                          : isDue
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF0D9488),
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: progressColor),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-
-              // پروگریس بار
+              const SizedBox(height: 5),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progressRatio,
-                  minHeight: 6.5,
+                  minHeight: 6,
                   backgroundColor: const Color(0xFFE2E8F0),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isPaid
-                        ? const Color(0xFF059669)
-                        : isDue
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF0D9488),
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
               ),
-              const SizedBox(height: 8),
-
-              // نیچے کا ٹیکسٹ اور بٹن
+              const SizedBox(height: 7),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Text(
-                      isPaid
-                          ? 'مکمل ادا شدہ'
-                          : paidAmt > 0
-                              ? 'باقی: Rs. ${formatAmount(remainingAmt)}'
-                              : 'واجب: Rs. ${formatAmount(totalAmt)}',
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: isPaid
-                            ? const Color(0xFF059669)
-                            : isDue
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isDue
+                                  ? Icons.error_outline_rounded
+                                  : isPartial
+                                      ? Icons.timelapse_rounded
+                                      : Icons.receipt_rounded,
+                              size: 11,
+                              color: isDue || isPartial ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              isPartial ? 'بقیہ:' : 'واجب:',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: isDue || isPartial ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 1),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Rs. ${formatAmount(isPartial ? remainingAmt : (isPaid ? 0 : totalAmt))}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w900,
+                              color: isDue || isPartial ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        if (isUnderReview)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Text(
+                              '● زیرِ تصدیق',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 6),
-
-                  // بٹن یا مکمل ادا کا بیج
-                  if (isPaid)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF86EFAC)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF16A34A)),
-                          SizedBox(width: 4),
-                          Text(
-                            'مکمل ادا',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => onPaymentRequested(item),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Ink(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-                          decoration: BoxDecoration(
-                            color: isDue
-                                ? const Color(0xFFDC2626)
-                                : isPartial
-                                    ? const Color(0xFF0D9488)
-                                    : const Color(0xFF1E293B),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.payment_rounded, size: 12, color: Colors.white),
-                              const SizedBox(width: 4),
-                              Text(
-                                isDue ? 'واجب ادا کریں' : 'ادائیگی کریں',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  InstallmentActionBadgeUi(
+                    isPaid: isPaid,
+                    isUnderReview: isUnderReview,
+                    isDue: isDue,
+                    isPartial: isPartial,
+                    onTap: () => onPaymentRequested(item),
+                  ),
                 ],
               ),
             ],

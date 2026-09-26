@@ -8,17 +8,23 @@ import 'services/ledger_services/ledger_math_service.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
   String customerPhone;
-
   int selectedTabIndex = 0;
   int selectedProductIndex = 0;
   bool isLoading = true;
-
   List<Map<String, dynamic>> customerProducts = [];
 
+  // نقد ادھار کی معلومات
   int cashLoanBalance = 50000;
   final List<Map<String, dynamic>> cashLoanEntries = [
-    {'title': 'دکان سے نقد دستی کیش لیا', 'date': '10 اگست 2026', 'amount': 50000, 'type': 'DEBIT'},
+    {
+      'title': 'دکان سے نقد دستی کیش لیا',
+      'date': '10 اگست 2026',
+      'amount': 50000,
+      'type': 'DEBIT',
+    },
   ];
+
+  // خدمات و راشن ٹرانزیکشنز
   final List<Map<String, dynamic>> serviceTransactions = [
     {
       'title': 'ماہانہ کریانہ راشن بل',
@@ -43,7 +49,7 @@ class CustomerLedgerController extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    // ۱. اگر پیرنٹ سے فون نہ ملا ہو تو HiveBoxManager کے settingsBox سے سیشن فون حاصل کریں
+    // اگر فون نمبر پاس نہ ہوا ہو تو ایکٹو سیشن سے لینا
     if (customerPhone.trim().isEmpty) {
       try {
         final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
@@ -54,13 +60,8 @@ class CustomerLedgerController extends ChangeNotifier {
       } catch (_) {}
     }
 
-    // ۲. انسٹالمنٹ باکس اوپن یقینی بنائیں
     await InstallmentLedgerService.ensureBoxOpen();
-
-    // ۳. لسنر اٹیچ کریں
     InstallmentLedgerService.boxListenable?.addListener(_onHiveBoxChanged);
-
-    // ۴. ڈیٹا لوڈ کریں
     await loadCustomerData();
     isLoading = false;
     notifyListeners();
@@ -78,22 +79,29 @@ class CustomerLedgerController extends ChangeNotifier {
 
   Future<void> loadCustomerData() async {
     customerProducts = await InstallmentLedgerService.getCustomerInstallmentOrders(customerPhone);
-
     if (selectedProductIndex >= customerProducts.length) {
       selectedProductIndex = 0;
     }
     notifyListeners();
   }
 
+  // کل اقساط کی واجب رقم
   int get totalInstallmentDue {
     return customerProducts.fold(0, (sum, p) => sum + ((p['remaining'] as int?) ?? 0));
   }
 
-  int get approvedServiceCredit => serviceTransactions
-      .where((t) => t['syncStatus'] == 'ADMIN_APPROVED')
-      .fold(0, (sum, t) => sum + (t['totalAmount'] as int));
+  // زیرِ جائزہ (Pending Review) بلز کی کل رقم
+  int get pendingServiceCredit => serviceTransactions
+      .where((t) => (t['syncStatus'] ?? '').toString().toUpperCase() != 'ADMIN_APPROVED')
+      .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
 
-  int get grandNetTotal => (totalInstallmentDue + cashLoanBalance) - approvedServiceCredit;
+  // منظور شدہ بلز (صرف ریکارڈ کے لیے، مین کھاتے میں ڈبل کٹوتی نہیں ہوگی)
+  int get approvedServiceCredit => serviceTransactions
+      .where((t) => (t['syncStatus'] ?? '').toString().toUpperCase() == 'ADMIN_APPROVED')
+      .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
+
+  // اصل کل خالص میزان (اقساط واجب + نقد قرض)
+  int get grandNetTotal => totalInstallmentDue + cashLoanBalance;
 
   String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
 
@@ -120,6 +128,7 @@ class CustomerLedgerController extends ChangeNotifier {
     );
   }
 
+  // قسط ادائیگی کا ہینڈلر
   Future<void> handleInstallmentPayment(BuildContext context, Map<String, dynamic> schedItem) async {
     final remaining = (schedItem['remainingAmount'] as int?) ??
         ((schedItem['amount'] as int) - ((schedItem['paidAmount'] as int?) ?? 0));
@@ -148,6 +157,7 @@ class CustomerLedgerController extends ChangeNotifier {
     }
   }
 
+  // نقد ادھار واپسی کا ہینڈلر
   Future<void> handleCashLoanRepayment(BuildContext context) async {
     final result = await Navigator.push(
       context,
@@ -174,6 +184,7 @@ class CustomerLedgerController extends ChangeNotifier {
     }
   }
 
+  // نئی سروس / راشن ٹرانزیکشن کا ہینڈلر
   Future<void> handleNewServiceTransaction(BuildContext context) async {
     final newTransaction = await Navigator.push(
       context,

@@ -15,8 +15,6 @@ class MobileSelectorDropdownUi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (products.isEmpty) return const SizedBox.shrink();
-
-    // نل اور رینج سے باہر انڈیکس کا تحفظ
     final int safeIndex = (selectedIndex >= 0 && selectedIndex < products.length)
         ? selectedIndex
         : 0;
@@ -39,7 +37,7 @@ class MobileSelectorDropdownUi extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -72,6 +70,24 @@ class MobileSelectorDropdownUi extends StatelessWidget {
                     ),
                   ),
                   onChanged: onChanged,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // 🎯 کسٹمر کے کل موبائلز کا متحرک بیج
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: Text(
+                '${safeIndex + 1} از ${products.length} فون',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFDC2626),
                 ),
               ),
             ),

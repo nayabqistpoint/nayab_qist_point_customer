@@ -5,10 +5,12 @@ import 'customer_ledger_components_ui/ledger_app_bar_ui.dart';
 import 'customer_ledger_components_ui/wallet_master_card_ui.dart';
 import 'customer_ledger_components_ui/category_tabs_ui.dart';
 import 'customer_ledger_components_ui/ledger_components/mobile_selector_dropdown_ui.dart';
+import 'customer_ledger_components_ui/active_order_summary_card_ui.dart';
 import 'customer_ledger_components_ui/ledger_components/installment_table_header_ui.dart';
 import 'customer_ledger_components_ui/ledger_components/installment_table_row_ui.dart';
 import 'customer_ledger_components_ui/cash_loan_section_ui.dart';
 import 'customer_ledger_components_ui/service_transactions_section_ui.dart';
+import 'services/ledger_services/ledger_math_service.dart';
 import '../inspector/floating_inspector_ui.dart';
 
 class CustomerLedgerView extends StatefulWidget {
@@ -37,7 +39,6 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // اگر فون نمبر روٹ آرگیومنٹس میں بھیجا گیا ہو تو اسے کیچ کرنا
     if (controller.customerPhone.isEmpty) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map && args['customerPhone'] != null) {
@@ -62,7 +63,11 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
         final currentProduct = hasProducts
             ? controller.customerProducts[controller.selectedProductIndex]
             : null;
-        final scheduleList = (currentProduct?['schedule'] as List?) ?? [];
+        final scheduleList = (currentProduct?['schedule'] as List?)
+                ?.cast<Map<String, dynamic>>() ??
+            [];
+
+        final overdueSummary = LedgerMathService.calculateOverdueSummary(scheduleList);
 
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -103,7 +108,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                     isDebtor: controller.grandNetTotal >= 0,
                     totalInstallmentDue: controller.totalInstallmentDue,
                     cashLoanBalance: controller.cashLoanBalance,
-                    approvedServiceCredit: controller.approvedServiceCredit,
+                    pendingServiceCredit: controller.pendingServiceCredit,
                     formatAmount: controller.formatAmount,
                   ),
                   const SizedBox(height: 12),
@@ -129,7 +134,11 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                         child: const Center(
                           child: Text(
                             'اس کسٹمر کے نام پر کوئی فعال اقساط کا پلان موجود نہیں ہے۔',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ),
                       )
@@ -139,7 +148,16 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                         selectedIndex: controller.selectedProductIndex,
                         onChanged: (v) => controller.setProductIndex(v ?? 0),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
+                      ActiveOrderSummaryCardUi(
+                        itemName: currentProduct?['name']?.toString() ?? 'موبائل فون',
+                        totalContract: (currentProduct?['total'] as int?) ?? 0,
+                        totalPaid: (currentProduct?['paid'] as int?) ?? 0,
+                        totalRemaining: (currentProduct?['remaining'] as int?) ?? 0,
+                        totalMonths: (currentProduct?['rawOrder']?['totalMonths'] as num?)?.toInt() ?? scheduleList.length,
+                        formatAmount: controller.formatAmount,
+                      ),
+                      const SizedBox(height: 2),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -157,9 +175,10 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                           children: [
                             InstallmentTableHeaderUi(
                               planName: currentProduct?['plan']?.toString() ?? '',
-                              monthlyInstallment: controller.formatAmount(
-                                (currentProduct?['monthlyInstallment'] as int?) ?? 0,
-                              ),
+                              orderStatus: currentProduct?['orderStatus']?.toString() ?? 'PENDING',
+                              overdueCount: overdueSummary['count'] as int,
+                              overdueAmount: overdueSummary['amount'] as int,
+                              formatAmount: controller.formatAmount,
                             ),
                             const Divider(height: 1, color: Color(0xFFE2E8F0)),
                             Table(

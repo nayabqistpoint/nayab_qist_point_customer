@@ -35,7 +35,6 @@ class InstallmentLedgerService {
         if (isMatch) {
           final installmentsList = (rawData['installments'] as List?) ?? [];
           final List<Map<String, dynamic>> parsedSchedule = [];
-
           int totalOrderAmount = 0;
           int totalPaidAmount = 0;
 
@@ -44,16 +43,14 @@ class InstallmentLedgerService {
               final dueAmount = (inst['dueAmount'] as num?)?.toInt() ?? 0;
               final paidAmount = (inst['paidAmount'] as num?)?.toInt() ?? 0;
               final remainingAmount = (inst['remainingAmount'] as num?)?.toInt() ?? (dueAmount - paidAmount);
-              
-              // 🎯 تاریخ پڑھنے کا درست طریقہ: ترجیحاً نئی dueDate فیلڈ پڑھی جائے گی
-              final String displayDate = (inst['dueDate'] ?? inst['monthLabel'] ?? '').toString();
-              final String? rawDate = inst['rawDueDate']?.toString();
+              final String dueDateStr = (inst['dueDate'] ?? '').toString();
+              final String vStatus = (inst['verificationStatus'] ?? 'UNDER_REVIEW').toString();
 
               final computedStatus = LedgerMathService.resolveInstallmentStatus(
                 dueAmount: dueAmount,
                 paidAmount: paidAmount,
                 remainingAmount: remainingAmount,
-                dueDateStr: rawDate,
+                dueDateStr: dueDateStr,
               );
 
               int percent = 0;
@@ -68,12 +65,13 @@ class InstallmentLedgerService {
 
               parsedSchedule.add({
                 'no': inst['installmentNo'] ?? (parsedSchedule.length + 1),
-                'date': displayDate, // اب یہاں اردو تاریخ (05 نومبر 2026 وغیرہ) ظاہر ہوگی
-                'dueDate': rawDate ?? displayDate,
+                'date': dueDateStr,
+                'dueDate': dueDateStr,
                 'amount': dueAmount,
                 'paidAmount': paidAmount,
                 'remainingAmount': remainingAmount,
                 'status': computedStatus,
+                'verificationStatus': vStatus,
                 'percent': percent,
                 'title': inst['title']?.toString() ?? '',
                 'raw': inst,
@@ -83,23 +81,26 @@ class InstallmentLedgerService {
 
           final totalMonths = (rawData['totalMonths'] as num?)?.toInt() ?? parsedSchedule.length;
           final monthlyAmount = (rawData['monthlyAmount'] as num?)?.toInt() ?? 0;
+          final orderStatus = (rawData['status'] ?? 'PENDING').toString().toUpperCase();
+          final int remainingBalance = totalOrderAmount - totalPaidAmount;
 
           results.add({
             'orderKey': key,
-            'orderId': rawData['orderId']?.toString() ?? key.toString(),
+            'orderId': rawData['docId']?.toString() ?? rawData['orderId']?.toString() ?? key.toString(),
             'name': rawData['itemName']?.toString() ?? 'موبائل فون',
             'plan': '$totalMonths ماہ پلان',
             'monthlyInstallment': monthlyAmount,
             'total': totalOrderAmount,
             'paid': totalPaidAmount,
-            'remaining': totalOrderAmount - totalPaidAmount,
+            'remaining': remainingBalance,
+            'orderStatus': orderStatus,
+            'isCompleted': remainingBalance <= 0 && totalOrderAmount > 0,
             'schedule': parsedSchedule,
             'rawOrder': rawData,
           });
         }
       }
     }
-
     return results;
   }
 }

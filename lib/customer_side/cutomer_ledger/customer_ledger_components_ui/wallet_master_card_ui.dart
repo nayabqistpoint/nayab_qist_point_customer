@@ -5,7 +5,7 @@ class WalletMasterCardUi extends StatelessWidget {
   final bool isDebtor;
   final int totalInstallmentDue;
   final int cashLoanBalance;
-  final int approvedServiceCredit;
+  final int pendingServiceCredit; // 🎯 اب یہ زیرِ جائزہ کلیم بل ہیں
   final String Function(int) formatAmount;
 
   const WalletMasterCardUi({
@@ -14,12 +14,15 @@ class WalletMasterCardUi extends StatelessWidget {
     required this.isDebtor,
     required this.totalInstallmentDue,
     required this.cashLoanBalance,
-    required this.approvedServiceCredit,
+    required this.pendingServiceCredit,
     required this.formatAmount,
   });
 
   @override
   Widget build(BuildContext context) {
+    // اگر کسٹمر نے نقد ادھار زائد دیا ہوا ہے تو وہ ایڈوانس (کریڈٹ) مانا جائے گا
+    final bool isLoanInCredit = cashLoanBalance < 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -38,6 +41,7 @@ class WalletMasterCardUi extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // اوپر کا ہیڈر: عنوان اور اسٹیٹس پل
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -59,7 +63,7 @@ class WalletMasterCardUi extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        isDebtor ? 'کل واجب الادا رقم:' : 'کل کریڈٹ بیلنس:',
+                        isDebtor ? 'کل خالص واجب الادا رقم:' : 'کل خالص کسٹمر کریڈٹ:',
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                         style: const TextStyle(
@@ -77,6 +81,8 @@ class WalletMasterCardUi extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+
+          // مین بقایا رقم (صاف ستھری اور واضح)
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
@@ -106,36 +112,43 @@ class WalletMasterCardUi extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           const Text(
-            'اقساط اور نقد قرض میں سے صرف منظور شدہ بل منہا ہوتا ہے',
+            'اقساط بقایا اور نقد ادھار کا مجموعی خالص میزان',
             style: TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8)),
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: Color(0xFFCBD5E1), thickness: 1.3),
           ),
+
+          // نیچے کی 3 چپس (اقساط واجب + نقد قرض + زیرِ جائزہ بل)
           Row(
             children: [
+              // ۱. اقساط واجب (ہمیشہ سرخ قرض)
               Expanded(
                 child: _summaryChipDark(
                   'اقساط واجب',
                   'Rs. ${formatAmount(totalInstallmentDue)}',
-                  const Color(0xFF1E3A8A),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _summaryChipDark(
-                  'نقد قرض',
-                  'Rs. ${formatAmount(cashLoanBalance)}',
                   const Color(0xFFDC2626),
                 ),
               ),
               const SizedBox(width: 6),
+
+              // ۲. نقد قرض (اگر مثبت ہے تو سرخ قرض، اگر منفی ہے تو سبز ایڈوانس)
               Expanded(
                 child: _summaryChipDark(
-                  'منظور بل',
-                  '- Rs. ${formatAmount(approvedServiceCredit)}',
-                  const Color(0xFF0D9488),
+                  isLoanInCredit ? 'نقد ایڈوانس' : 'نقد ادھار',
+                  '${isLoanInCredit ? '-' : ''}Rs. ${formatAmount(cashLoanBalance.abs())}',
+                  isLoanInCredit ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                ),
+              ),
+              const SizedBox(width: 6),
+
+              // ۳. زیرِ جائزہ راشن / سروس بل (معلوماتی چپ، پیلے/امبر رنگ میں)
+              Expanded(
+                child: _summaryChipDark(
+                  'زیرِ جائزہ بل',
+                  'Rs. ${formatAmount(pendingServiceCredit)}',
+                  const Color(0xFFD97706), // امبر کلر برائے پینڈنگ ریویو
                 ),
               ),
             ],

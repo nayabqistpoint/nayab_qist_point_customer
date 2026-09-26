@@ -52,6 +52,8 @@ class PurchaseOrderPayloadService {
         'remainingAmount': amt,
         'paymentPercentage': isZeroAdv ? 100 : 0,
         'status': isZeroAdv ? 'PAID' : 'PENDING',
+        // 🎯 آپ کے منتخب کردہ دو واضح اور معیاری اسٹیٹس:
+        'verificationStatus': isZeroAdv ? 'VERIFIED' : 'UNDER_REVIEW',
       });
     }
 
