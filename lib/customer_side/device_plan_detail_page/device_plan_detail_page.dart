@@ -8,7 +8,7 @@ import 'components/plan_filter_section_card_ui.dart';
 import 'components/plan_sorting_toolbar_ui.dart';
 import 'components/bill_style_schedule_header_ui.dart';
 import 'components/individual_plan_row_ui.dart';
-import 'components/order_receipt_sheet/order_receipt_sheet.dart';
+import '../order_receipt_sheet/order_receipt_sheet.dart';
 
 class DevicePlanDetailPage extends StatefulWidget {
   final Map<String, dynamic> device;

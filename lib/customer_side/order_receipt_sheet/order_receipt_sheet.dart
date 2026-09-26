@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'order_receipt_sheet_controller.dart';
-import 'receipt_token_header_ui.dart';
-import 'receipt_summary_rows_ui.dart';
-import 'receipt_schedule_table_ui.dart';
-import 'bank_cheque_input_box_ui.dart';
-import 'grace_period_note_ui.dart';
-import 'submit_order_button_ui.dart';
+import 'components/receipt_token_header_ui.dart';
+import 'components/receipt_summary_rows_ui.dart';
+import 'components/receipt_schedule_table_ui.dart';
+import 'components/bank_cheque_input_box_ui.dart';
+import 'components/grace_period_note_ui.dart';
+import 'components/submit_order_button_ui.dart';
 
 class OrderReceiptSheet extends StatefulWidget {
   final Map<String, dynamic> plan;
