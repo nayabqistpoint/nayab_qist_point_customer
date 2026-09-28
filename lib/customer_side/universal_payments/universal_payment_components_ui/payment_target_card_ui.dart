@@ -64,6 +64,8 @@ class PaymentTargetCardUi extends StatelessWidget {
         ? '${controller.itemName ?? "موبائل فون"} • ${controller.planTitle ?? "اقساط پلان"}'
         : 'نقد دستی ادھار کھاتہ واپسی';
 
+    final bool isOverCeiling = controller.isExceedingMaxLimit;
+
     return Column(
       children: [
         Container(
@@ -160,7 +162,10 @@ class PaymentTargetCardUi extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+              border: Border.all(
+                color: isOverCeiling ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+                width: 1.2,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,37 +178,68 @@ class PaymentTargetCardUi extends StatelessWidget {
                 TextFormField(
                   controller: controller.targetAmountCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isOverCeiling ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
+                  ),
                   decoration: InputDecoration(
                     hintText: 'رقم درج کریں (مثلاً 8000)',
                     hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
                     prefixText: 'Rs. ',
-                    prefixStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                    prefixStyle: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isOverCeiling ? const Color(0xFFDC2626) : const Color(0xFF0D9488),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isOverCeiling ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1)),
+                    ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: isOverCeiling ? const Color(0xFFFEF2F2) : const Color(0xFFF8FAFC),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // کسٹمر کے لیے صاف ستھرا اور سادہ انتباہی نوٹ
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
-                  ),
-                  child: const Text(
-                    'وضاحت: اگر آپ قسط سے کم رقم درج کریں گے تو وہ جزوی ادائیگی شمار ہوگی، اور اگر زیادہ رقم جمع کروائیں گے تو بقیہ رقم خودکار طور پر اگلی اقساط کے کھاتے میں پیشگی جمع کر دی جائے گی۔',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: Color(0xFF166534),
-                      fontWeight: FontWeight.w600,
-                      height: 1.4,
+                if (isOverCeiling)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Text(
+                      'غلطی: اس موبائل پلان کا کل واجب الادا بقایا صرف Rs. ${controller.formatAmount(controller.maxAllowedAmount ?? 0)} ہے۔ آپ اس سے زیادہ رقم درج نہیں کر سکتے۔',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.bold,
+                        height: 1.4,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: const Text(
+                      'وضاحت: اگر آپ قسط سے کم رقم درج کریں گے تو وہ جزوی ادائیگی شمار ہوگی، اور اگر زیادہ رقم جمع کروائیں گے تو بقیہ رقم خودکار طور پر اگلی اقساط کے کھاتے میں پیشگی جمع کر دی جائے گی۔',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF166534),
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

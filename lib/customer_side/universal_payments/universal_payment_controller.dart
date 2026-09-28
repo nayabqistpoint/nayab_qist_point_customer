@@ -11,6 +11,7 @@ class UniversalPaymentController extends ChangeNotifier {
   final String? itemName;
   final String? planTitle;
   final int? installmentNo;
+  final int? maxAllowedAmount; // موبائل کا کل واجب الادا بقایا
 
   late final TextEditingController targetAmountCtrl;
   late final TextEditingController discountCtrl;
@@ -39,6 +40,7 @@ class UniversalPaymentController extends ChangeNotifier {
     this.itemName,
     this.planTitle,
     this.installmentNo,
+    this.maxAllowedAmount,
   }) {
     targetAmountCtrl = TextEditingController(text: baseAmount.toString());
     discountCtrl = TextEditingController(text: '0');
@@ -53,7 +55,6 @@ class UniversalPaymentController extends ChangeNotifier {
     availableSources = await PaymentConfigService.getPaymentSources();
     availableDiscountCategories = await PaymentConfigService.getDiscountCategories();
 
-    // جو سورس لسٹ میں پہلے نمبر پر ہے وہی بائی ڈیفالٹ مین سورس بنے گا
     final primarySource = availableSources.isNotEmpty ? availableSources.first : 'دکان کیش دراز';
     splitEntries.add(SplitSourceItem(source: primarySource, amount: baseAmount));
 
@@ -87,7 +88,19 @@ class UniversalPaymentController extends ChangeNotifier {
         splitsTotal: splitsSum,
         discountAmount: discountAmount,
       );
-  bool get isReconciled => PaymentRebalanceEngine.verifyReconciliation(
+
+  /// 🎯 زیادہ سے زیادہ حد (Ceiling) کی ویلیڈیشن: کیا رقم کل بقایا سے بڑھ گئی ہے؟
+  bool get isExceedingMaxLimit {
+    if (isInstallment && maxAllowedAmount != null && maxAllowedAmount! > 0) {
+      return targetPayable > maxAllowedAmount!;
+    }
+    return false;
+  }
+
+  /// حتمی ویلیڈیشن: حساب بھی برابر ہو اور حد سے زیادہ بھی نہ ہو
+  bool get isReconciled =>
+      !isExceedingMaxLimit &&
+      PaymentRebalanceEngine.verifyReconciliation(
         totalTarget: targetPayable,
         splitsTotal: splitsSum,
         discountAmount: discountAmount,
@@ -95,7 +108,6 @@ class UniversalPaymentController extends ChangeNotifier {
 
   void refresh() => notifyListeners();
 
-  /// پہلے مین سورس کی آٹو ایڈجسٹمنٹ
   void _syncPrimaryBox() {
     PaymentRebalanceEngine.autoAdjustPrimarySource(
       splits: splitEntries,
@@ -129,13 +141,10 @@ class UniversalPaymentController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// جب کسی بھی سورس میں رقم لکھی جائے تو پہلے مین سورس سے خودبخود مائنس ہو
   void updateSplitAmount(int index, String val) {
     final parsed = int.tryParse(val.replaceAll(',', '').trim()) ?? 0;
     if (index >= 0 && index < splitEntries.length) {
       splitEntries[index].amount = parsed;
-
-      // اگر ذیلی سورس (index > 0) میں تبدیلی ہوئی ہے تو پہلے مین سورس کو فوراً اپڈیٹ کریں
       if (index > 0) {
         _syncPrimaryBox();
       } else {
@@ -166,7 +175,6 @@ class UniversalPaymentController extends ChangeNotifier {
       splitEntries.removeAt(index);
       splitTextControllers[index].dispose();
       splitTextControllers.removeAt(index);
-
       _syncPrimaryBox();
     }
   }

@@ -16,6 +16,7 @@ class UniversalPaymentPage extends StatefulWidget {
   final String? itemName;
   final String? planTitle;
   final int? installmentNo;
+  final int? maxAllowedAmount;
 
   const UniversalPaymentPage({
     super.key,
@@ -25,6 +26,7 @@ class UniversalPaymentPage extends StatefulWidget {
     this.itemName,
     this.planTitle,
     this.installmentNo,
+    this.maxAllowedAmount,
   });
 
   @override
@@ -44,6 +46,7 @@ class _UniversalPaymentPageState extends State<UniversalPaymentPage> {
       itemName: widget.itemName,
       planTitle: widget.planTitle,
       installmentNo: widget.installmentNo,
+      maxAllowedAmount: widget.maxAllowedAmount,
     );
   }
 
@@ -71,26 +74,17 @@ class _UniversalPaymentPageState extends State<UniversalPaymentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. کل رقم کا کارڈ
                   PaymentTargetCardUi(controller: controller),
                   const SizedBox(height: 14),
-
-                  // 2. بینک اور کیش وصولی کارڈ (ٹاپ ترجیح)
                   PaymentSourcesSplitCardUi(
                     controller: controller,
                     onStateChange: controller.refresh,
                   ),
                   const SizedBox(height: 14),
-
-                  // 3. اختیاری ڈسکاؤنٹ کلیم (معمول میں بند رہے گا)
                   PaymentAdjustmentCardUi(controller: controller),
                   const SizedBox(height: 14),
-
-                  // 4. رسید تصویر اور آڈیو نوٹ
                   PaymentNotesMediaCardUi(controller: controller),
                   const SizedBox(height: 16),
-
-                  // 5. فوٹر میزان و جمع بٹن
                   PaymentFooterActionBarUi(
                     controller: controller,
                     onSubmit: () => Navigator.pop(context, controller.buildSubmissionResult()),

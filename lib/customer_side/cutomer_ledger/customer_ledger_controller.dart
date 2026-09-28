@@ -156,6 +156,9 @@ class CustomerLedgerController extends ChangeNotifier {
     final dynamic orderKey = currentProduct['orderKey'];
     final Map<dynamic, dynamic> rawOrder = currentProduct['rawOrder'] as Map<dynamic, dynamic>;
 
+    // اس مخصوص موبائل کا کل باقی رہنے والا بقایا (میکسیمم سیلنگ لمٹ)
+    final int totalPlanRemaining = (currentProduct['remaining'] as int?) ?? remaining;
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -166,6 +169,7 @@ class CustomerLedgerController extends ChangeNotifier {
           itemName: resolvedItemName,
           planTitle: resolvedPlanTitle,
           installmentNo: schedItem['no'] as int?,
+          maxAllowedAmount: totalPlanRemaining, // 🎯 کل بقایا کی حد مقرر کر دی گئی
         ),
       ),
     );
@@ -212,17 +216,19 @@ class CustomerLedgerController extends ChangeNotifier {
       MaterialPageRoute(
         builder: (context) => UniversalPaymentPage(
           title: 'نقد دستی ادھار کی واپسی',
-          baseAmount: cashLoanBalance,
+          baseAmount: cashLoanBalance > 0 ? cashLoanBalance : 0,
           isInstallment: false,
           itemName: 'نقد ادھار کھاتہ',
           planTitle: 'دستی قرض کھاتہ',
+          // نقد قرض کے لیے کوئی حد مقرر نہیں تاکہ وہ پیشگی رقم بھی جمع کرا سکے
         ),
       ),
     );
 
-    if (result != null) {
-      final int paid = result['paid'] as int;
-      final int discount = (result['discount'] as int?) ?? 0;
+    if (result != null && result is Map<String, dynamic>) {
+      final int paid = (result['paid'] as num?)?.toInt() ?? 0;
+      final int discount = (result['discount'] as num?)?.toInt() ?? 0;
+      
       cashLoanBalance -= (paid + discount);
       cashLoanEntries.insert(0, {
         'title': 'دستی قرض واپسی ادا کی',
