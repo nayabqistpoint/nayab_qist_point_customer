@@ -3,6 +3,7 @@ import 'package:nayab_qist_point_customer/app_routes.dart';
 import '../hive_services/hive_box_manager.dart';
 import '../universal_payments/universal_payment_page.dart';
 import '../service_stock/service_stock_entry_page.dart';
+import '../payload_services/installment_allocation_service.dart';
 import 'services/ledger_services/installment_ledger_service.dart';
 import 'services/ledger_services/ledger_math_service.dart';
 
@@ -13,7 +14,6 @@ class CustomerLedgerController extends ChangeNotifier {
   bool isLoading = true;
   List<Map<String, dynamic>> customerProducts = [];
 
-  // نقد ادھار کی معلومات
   int cashLoanBalance = 50000;
   final List<Map<String, dynamic>> cashLoanEntries = [
     {
@@ -24,7 +24,6 @@ class CustomerLedgerController extends ChangeNotifier {
     },
   ];
 
-  // خدمات و راشن ٹرانزیکشنز
   final List<Map<String, dynamic>> serviceTransactions = [
     {
       'title': 'ماہانہ کریانہ راشن بل',
@@ -49,7 +48,6 @@ class CustomerLedgerController extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    // اگر فون نمبر پاس نہ ہوا ہو تو ایکٹو سیشن سے لینا
     if (customerPhone.trim().isEmpty) {
       try {
         final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
@@ -59,7 +57,6 @@ class CustomerLedgerController extends ChangeNotifier {
         }
       } catch (_) {}
     }
-
     await InstallmentLedgerService.ensureBoxOpen();
     InstallmentLedgerService.boxListenable?.addListener(_onHiveBoxChanged);
     await loadCustomerData();
@@ -85,23 +82,24 @@ class CustomerLedgerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // کل اقساط کی واجب رقم
+  /// 🎯 مین کارڈ: کسٹمر کے تمام موبائل فونز کے کل بقایا جات کا مجموعہ
   int get totalInstallmentDue {
     return customerProducts.fold(0, (sum, p) => sum + ((p['remaining'] as int?) ?? 0));
   }
 
-  // زیرِ جائزہ (Pending Review) بلز کی کل رقم
   int get pendingServiceCredit => serviceTransactions
       .where((t) => (t['syncStatus'] ?? '').toString().toUpperCase() != 'ADMIN_APPROVED')
       .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
 
-  // منظور شدہ بلز (صرف ریکارڈ کے لیے، مین کھاتے میں ڈبل کٹوتی نہیں ہوگی)
   int get approvedServiceCredit => serviceTransactions
       .where((t) => (t['syncStatus'] ?? '').toString().toUpperCase() == 'ADMIN_APPROVED')
       .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
 
-  // اصل کل خالص میزان (اقساط واجب + نقد قرض)
-  int get grandNetTotal => totalInstallmentDue + cashLoanBalance;
+  /// خالص مجموعی میزان: اقساط واجب + نقد دستی ادھار (منفی ہونے کا کوئی چانس نہیں)
+  int get grandNetTotal {
+    final int net = (totalInstallmentDue + cashLoanBalance) - approvedServiceCredit;
+    return net > 0 ? net : 0;
+  }
 
   String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
 
@@ -128,10 +126,35 @@ class CustomerLedgerController extends ChangeNotifier {
     );
   }
 
-  // قسط ادائیگی کا ہینڈلر
-  Future<void> handleInstallmentPayment(BuildContext context, Map<String, dynamic> schedItem) async {
-    final remaining = (schedItem['remainingAmount'] as int?) ??
-        ((schedItem['amount'] as int) - ((schedItem['paidAmount'] as int?) ?? 0));
+  Future<void> handleInstallmentPayment(
+    BuildContext context,
+    Map<String, dynamic> schedItem, {
+    String? itemName,
+    String? planTitle,
+  }) async {
+    final remaining = (schedItem['remainingAmount'] as int?) ?? (schedItem['amount'] as int);
+
+    final currentProduct = customerProducts.isNotEmpty && selectedProductIndex < customerProducts.length
+        ? customerProducts[selectedProductIndex]
+        : null;
+
+    if (currentProduct == null) return;
+
+    // اگر اس کھاتے پر پہلے ہی کوئی ادائیگی زیرِ جائزہ ہے تو نئی ادائیگی نہیں کھلے گی
+    if (currentProduct['hasPendingReview'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('پچھلی ادائیگی ایڈمن کی زیرِ تصدیق ہے۔ اس کھاتے پر مزید ادائیگی مقفل ہے۔'),
+          backgroundColor: Color(0xFFD97706),
+        ),
+      );
+      return;
+    }
+
+    final resolvedItemName = itemName ?? currentProduct['name']?.toString() ?? 'موبائل فون';
+    final resolvedPlanTitle = planTitle ?? currentProduct['plan']?.toString() ?? 'اقساط پلان';
+    final dynamic orderKey = currentProduct['orderKey'];
+    final Map<dynamic, dynamic> rawOrder = currentProduct['rawOrder'] as Map<dynamic, dynamic>;
 
     final result = await Navigator.push(
       context,
@@ -140,24 +163,49 @@ class CustomerLedgerController extends ChangeNotifier {
           title: 'قسط نمبر ${schedItem['no']} کی ادائیگی',
           baseAmount: remaining,
           isInstallment: true,
+          itemName: resolvedItemName,
+          planTitle: resolvedPlanTitle,
+          installmentNo: schedItem['no'] as int?,
         ),
       ),
     );
 
-    if (result != null) {
-      await loadCustomerData();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('قسط وصولی جمع ہو گئی: Rs. ${formatAmount(result['paid'] ?? remaining)}'),
-            backgroundColor: const Color(0xFF059669),
-          ),
-        );
+    if (result != null && result is Map<String, dynamic>) {
+      final int paid = (result['paid'] as num?)?.toInt() ?? 0;
+      final int discount = (result['discount'] as num?)?.toInt() ?? 0;
+      final int extra = (result['extra'] as num?)?.toInt() ?? 0;
+      final splits = (result['splits'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final String note = (result['note'] ?? '').toString();
+      final String receiptImagePath = (result['receiptImagePath'] ?? '').toString();
+      final String voiceNotePath = (result['voiceNotePath'] ?? '').toString();
+
+      final success = await InstallmentAllocationService.processPaymentAllocation(
+        customerPhone: customerPhone,
+        orderKey: orderKey,
+        rawOrder: rawOrder,
+        totalPaidAmount: paid,
+        discountAmount: discount,
+        extraAmount: extra,
+        splits: splits,
+        note: note,
+        receiptImagePath: receiptImagePath,
+        voiceNotePath: voiceNotePath,
+      );
+
+      if (success) {
+        await loadCustomerData();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('وصولی تصدیق کے لیے جمع ہو گئی: Rs. ${formatAmount(paid)}'),
+              backgroundColor: const Color(0xFF059669),
+            ),
+          );
+        }
       }
     }
   }
 
-  // نقد ادھار واپسی کا ہینڈلر
   Future<void> handleCashLoanRepayment(BuildContext context) async {
     final result = await Navigator.push(
       context,
@@ -166,6 +214,8 @@ class CustomerLedgerController extends ChangeNotifier {
           title: 'نقد دستی ادھار کی واپسی',
           baseAmount: cashLoanBalance,
           isInstallment: false,
+          itemName: 'نقد ادھار کھاتہ',
+          planTitle: 'دستی قرض کھاتہ',
         ),
       ),
     );
@@ -184,7 +234,6 @@ class CustomerLedgerController extends ChangeNotifier {
     }
   }
 
-  // نئی سروس / راشن ٹرانزیکشن کا ہینڈلر
   Future<void> handleNewServiceTransaction(BuildContext context) async {
     final newTransaction = await Navigator.push(
       context,

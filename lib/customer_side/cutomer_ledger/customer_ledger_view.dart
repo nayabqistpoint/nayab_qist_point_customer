@@ -4,13 +4,9 @@ import 'customer_ledger_controller.dart';
 import 'customer_ledger_components_ui/ledger_app_bar_ui.dart';
 import 'customer_ledger_components_ui/wallet_master_card_ui.dart';
 import 'customer_ledger_components_ui/category_tabs_ui.dart';
-import 'customer_ledger_components_ui/ledger_components/mobile_selector_dropdown_ui.dart';
-import 'customer_ledger_components_ui/active_order_summary_card_ui.dart';
-import 'customer_ledger_components_ui/ledger_components/installment_table_header_ui.dart';
-import 'customer_ledger_components_ui/ledger_components/installment_table_row_ui.dart';
+import 'customer_ledger_components_ui/installment_section_ui.dart';
 import 'customer_ledger_components_ui/cash_loan_section_ui.dart';
 import 'customer_ledger_components_ui/service_transactions_section_ui.dart';
-import 'services/ledger_services/ledger_math_service.dart';
 import '../inspector/floating_inspector_ui.dart';
 
 class CustomerLedgerView extends StatefulWidget {
@@ -59,16 +55,6 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final bool hasProducts = controller.customerProducts.isNotEmpty;
-        final currentProduct = hasProducts
-            ? controller.customerProducts[controller.selectedProductIndex]
-            : null;
-        final scheduleList = (currentProduct?['schedule'] as List?)
-                ?.cast<Map<String, dynamic>>() ??
-            [];
-
-        final overdueSummary = LedgerMathService.calculateOverdueSummary(scheduleList);
-
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
@@ -121,108 +107,22 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                     onTabSelected: (idx) => controller.setTabIndex(idx),
                   ),
                   const SizedBox(height: 12),
-                  if (controller.selectedTabIndex == 0) ...[
-                    if (!hasProducts)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'اس کسٹمر کے نام پر کوئی فعال اقساط کا پلان موجود نہیں ہے۔',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      )
-                    else ...[
-                      MobileSelectorDropdownUi(
-                        products: controller.customerProducts,
-                        selectedIndex: controller.selectedProductIndex,
-                        onChanged: (v) => controller.setProductIndex(v ?? 0),
-                      ),
-                      const SizedBox(height: 8),
-                      ActiveOrderSummaryCardUi(
-                        itemName: currentProduct?['name']?.toString() ?? 'موبائل فون',
-                        totalContract: (currentProduct?['total'] as int?) ?? 0,
-                        totalPaid: (currentProduct?['paid'] as int?) ?? 0,
-                        totalRemaining: (currentProduct?['remaining'] as int?) ?? 0,
-                        totalMonths: (currentProduct?['rawOrder']?['totalMonths'] as num?)?.toInt() ?? scheduleList.length,
-                        formatAmount: controller.formatAmount,
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            InstallmentTableHeaderUi(
-                              planName: currentProduct?['plan']?.toString() ?? '',
-                              orderStatus: currentProduct?['orderStatus']?.toString() ?? 'PENDING',
-                              overdueCount: overdueSummary['count'] as int,
-                              overdueAmount: overdueSummary['amount'] as int,
-                              formatAmount: controller.formatAmount,
-                            ),
-                            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                            Table(
-                              border: TableBorder.symmetric(
-                                inside: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-                              ),
-                              columnWidths: const {
-                                0: FlexColumnWidth(0.6),
-                                1: FlexColumnWidth(1.2),
-                                2: FlexColumnWidth(2.4),
-                              },
-                              children: [
-                                ...scheduleList.map((item) {
-                                  return InstallmentTableRowUi.build(
-                                    context: context,
-                                    item: item,
-                                    formatAmount: controller.formatAmount,
-                                    onPaymentRequested: (it) =>
-                                        controller.handleInstallmentPayment(context, it),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                  if (controller.selectedTabIndex == 1) ...[
+                  if (controller.selectedTabIndex == 0)
+                    InstallmentSectionUi(controller: controller),
+                  if (controller.selectedTabIndex == 1)
                     CashLoanSectionUi(
                       cashLoanBalance: controller.cashLoanBalance,
                       cashLoanEntries: controller.cashLoanEntries,
                       formatAmount: controller.formatAmount,
                       onRepaymentPressed: () => controller.handleCashLoanRepayment(context),
                     ),
-                  ],
-                  if (controller.selectedTabIndex == 2) ...[
+                  if (controller.selectedTabIndex == 2)
                     ServiceTransactionsSectionUi(
                       serviceTransactions: controller.serviceTransactions,
                       formatAmount: controller.formatAmount,
                       onNewServicePressed: () => controller.handleNewServiceTransaction(context),
                       onToggleExpand: (tx) => controller.toggleTransactionExpand(tx),
                     ),
-                  ],
                   const SizedBox(height: 120),
                 ],
               ),

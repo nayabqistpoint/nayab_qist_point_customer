@@ -13,41 +13,38 @@ class LedgerMathService {
     return ((paid / total).clamp(0.0, 1.0) * 100).toInt();
   }
 
+  /// قسط کا اسٹیٹس معلوم کرنا (صرف منظور شدہ ادا کے مطابق)
   static String resolveInstallmentStatus({
     required int dueAmount,
-    required int paidAmount,
+    required int approvedPaidAmount,
     required int remainingAmount,
     required String? dueDateStr,
     int installmentNo = 2,
   }) {
-    if (remainingAmount <= 0 || (dueAmount > 0 && paidAmount >= dueAmount)) {
+    if (remainingAmount <= 0 || (dueAmount > 0 && approvedPaidAmount >= dueAmount)) {
       return 'PAID';
     }
     if (LedgerDateService.isDueOrPassed(dueDateStr, installmentNo: installmentNo)) {
       return 'DUE';
     }
-    if (paidAmount > 0) {
+    if (approvedPaidAmount > 0) {
       return 'PARTIAL';
     }
     return 'UPCOMING';
   }
 
+  /// شارٹ اور اوور ڈیو کا خلاصہ
   static Map<String, dynamic> calculateOverdueSummary(List<Map<String, dynamic>> schedule) {
     int count = 0;
     int amount = 0;
     for (final item in schedule) {
-      if (item['status'] == 'DUE' && ((item['remainingAmount'] as int?) ?? 0) > 0) {
+      final String status = item['status']?.toString() ?? '';
+      final int rem = (item['remainingAmount'] as int?) ?? 0;
+      if (status == 'DUE' && rem > 0) {
         count++;
-        amount += (item['remainingAmount'] as int);
+        amount += rem;
       }
     }
     return {'count': count, 'amount': amount, 'hasOverdue': count > 0};
-  }
-
-  static int calculateOrderRemaining(Map<dynamic, dynamic> order) {
-    final installments = (order['installments'] as List?) ?? [];
-    return installments.fold<int>(0, (sum, inst) {
-      return sum + ((inst is Map ? inst['remainingAmount'] as num? : 0)?.toInt() ?? 0);
-    });
   }
 }

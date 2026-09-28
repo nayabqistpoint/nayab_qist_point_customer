@@ -1,17 +1,14 @@
+// lib/customer_side/universal_payments/universal_payment_components_ui/payment_target_card_ui.dart
+
 import 'package:flutter/material.dart';
 import '../universal_payment_controller.dart';
 
 class PaymentTargetCardUi extends StatelessWidget {
   final UniversalPaymentController controller;
-  final VoidCallback onStateChange;
 
-  const PaymentTargetCardUi({
-    super.key,
-    required this.controller,
-    required this.onStateChange,
-  });
+  const PaymentTargetCardUi({super.key, required this.controller});
 
-  Widget _toggleBtn({required String label, required bool active, required VoidCallback onTap}) {
+  Widget _toggleTab({required String label, required bool active, required VoidCallback onTap}) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -22,14 +19,38 @@ class PaymentTargetCardUi extends StatelessWidget {
             color: active ? const Color(0xFF0D9488) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: active ? const Color(0xFF0D9488) : const Color(0xFFCBD5E1), width: 1.2),
-            boxShadow: active ? [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.25), blurRadius: 6, offset: const Offset(0, 2))] : null,
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(active ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 16, color: active ? Colors.white : const Color(0xFF94A3B8)),
+              Icon(
+                active ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                size: 16,
+                color: active ? Colors.white : const Color(0xFF94A3B8),
+              ),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: active ? Colors.white : const Color(0xFF475569))),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: active ? Colors.white : const Color(0xFF475569),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -39,6 +60,10 @@ class PaymentTargetCardUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String subTitleText = controller.isInstallment
+        ? '${controller.itemName ?? "موبائل فون"} • ${controller.planTitle ?? "اقساط پلان"}'
+        : 'نقد دستی ادھار کھاتہ واپسی';
+
     return Column(
       children: [
         Container(
@@ -52,7 +77,13 @@ class PaymentTargetCardUi extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.3), width: 1.2),
-            boxShadow: [BoxShadow(color: const Color(0xFF064E3B).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF064E3B).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -65,16 +96,22 @@ class PaymentTargetCardUi extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFDE68A), size: 16),
                         ),
                         const SizedBox(width: 8),
-                        const Text('کل مقررہ بل', style: TextStyle(fontSize: 12.5, color: Color(0xFFD1FAE5), fontWeight: FontWeight.bold)),
+                        Text(
+                          controller.isInstallment ? 'مقررہ قسط کی رقم' : 'واجب الادا نقد قرض',
+                          style: const TextStyle(fontSize: 12.5, color: Color(0xFFD1FAE5), fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      controller.isInstallment ? 'کل اقساط: 10 ماہ پلان (${controller.title})' : 'نقد دستی ادھار کھاتہ واپسی',
+                      subTitleText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
@@ -103,18 +140,20 @@ class PaymentTargetCardUi extends StatelessWidget {
         const SizedBox(height: 14),
         Row(
           children: [
-            _toggleBtn(label: 'پوری ادائیگی', active: !controller.isPartial, onTap: () {
-              controller.togglePartial(false);
-              onStateChange();
-            }),
+            _toggleTab(
+              label: 'مقررہ قسط',
+              active: !controller.isCustomAmountMode,
+              onTap: () => controller.toggleCustomMode(false),
+            ),
             const SizedBox(width: 10),
-            _toggleBtn(label: 'جزوی ادائیگی', active: controller.isPartial, onTap: () {
-              controller.togglePartial(true);
-              onStateChange();
-            }),
+            _toggleTab(
+              label: 'کسٹم / اضافی رقم',
+              active: controller.isCustomAmountMode,
+              onTap: () => controller.toggleCustomMode(true),
+            ),
           ],
         ),
-        if (controller.isPartial) ...[
+        if (controller.isCustomAmountMode) ...[
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
@@ -126,17 +165,18 @@ class PaymentTargetCardUi extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('مطلوبہ ادائیگی کی رقم درج کریں:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                const Text(
+                  'مطلوبہ وصولی کی کل رقم درج کریں (کم یا زیادہ):',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: controller.targetAmountCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  onChanged: (val) {
-                    controller.updateTargetAmount(val);
-                    onStateChange();
-                  },
                   decoration: InputDecoration(
+                    hintText: 'رقم درج کریں (مثلاً 8000)',
+                    hintStyle: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
                     prefixText: 'Rs. ',
                     prefixStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -145,14 +185,25 @@ class PaymentTargetCardUi extends StatelessWidget {
                     fillColor: const Color(0xFFF8FAFC),
                   ),
                 ),
-                if (controller.shortAmount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      'بقیہ Rs. ${controller.formatAmount(controller.shortAmount)} اگلے ماہ کے لیے واجب الادا رہیں گے۔',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
+                const SizedBox(height: 8),
+                // کسٹمر کے لیے صاف ستھرا اور سادہ انتباہی نوٹ
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: const Text(
+                    'وضاحت: اگر آپ قسط سے کم رقم درج کریں گے تو وہ جزوی ادائیگی شمار ہوگی، اور اگر زیادہ رقم جمع کروائیں گے تو بقیہ رقم خودکار طور پر اگلی اقساط کے کھاتے میں پیشگی جمع کر دی جائے گی۔',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: Color(0xFF166534),
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
                     ),
                   ),
+                ),
               ],
             ),
           ),

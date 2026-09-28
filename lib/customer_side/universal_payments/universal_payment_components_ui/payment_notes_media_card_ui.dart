@@ -1,34 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../core/services/audio_service.dart';
 import '../universal_payment_controller.dart';
 
 class PaymentNotesMediaCardUi extends StatelessWidget {
   final UniversalPaymentController controller;
-  final VoidCallback onStateChange;
 
-  const PaymentNotesMediaCardUi({
-    super.key,
-    required this.controller,
-    required this.onStateChange,
-  });
+  const PaymentNotesMediaCardUi({super.key, required this.controller});
 
-  Widget _mediaBtn({required bool active, required IconData icon, required Color c, required Color bg, required Color bdr, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFECFDF5) : bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: active ? const Color(0xFFA7F3D0) : bdr, width: 1.2),
+  void _showMediaPickerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'رسید کی تصویر شامل کریں',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: Color(0xFF0D9488)),
+                title: const Text('کیمرہ سے رسید کی تصویر لیں'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  controller.pickReceiptImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF2563EB)),
+                title: const Text('گیلری یا اسکرین شاٹ چنیں'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  controller.pickReceiptImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         ),
-        child: Icon(active ? Icons.check_circle_rounded : icon, size: 22, color: active ? const Color(0xFF059669) : c),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool hasImg = controller.hasReceiptPhoto;
+    final bool hasVoice = controller.hasVoiceNote;
+    final bool isRec = controller.isRecording;
+    final bool isPlay = controller.isPlayingAudio;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -36,46 +62,172 @@ class PaymentNotesMediaCardUi extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFCBD5E1)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextFormField(
-              controller: controller.noteCtrl,
-              style: const TextStyle(fontSize: 12),
-              decoration: InputDecoration(
-                hintText: 'تفصیلی ڈسکرپشن یا ادائیگی نوٹ درج کریں...',
-                hintStyle: const TextStyle(fontSize: 11.5),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller.noteCtrl,
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'ادائیگی نوٹ یا حوالہ درج کریں...',
+                    hintStyle: const TextStyle(fontSize: 11.5),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // کیمرہ بٹن
+              InkWell(
+                onTap: () => _showMediaPickerSheet(context),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: hasImg ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: hasImg ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Icon(
+                    hasImg ? Icons.check_circle_rounded : Icons.camera_alt_rounded,
+                    size: 22,
+                    color: hasImg ? const Color(0xFF059669) : const Color(0xFF2563EB),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // مائیک بٹن
+              InkWell(
+                onTap: controller.toggleVoiceRecord,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isRec
+                        ? const Color(0xFFFEF2F2)
+                        : (hasVoice ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isRec
+                          ? const Color(0xFFEF4444)
+                          : (hasVoice ? const Color(0xFFA7F3D0) : const Color(0xFFCCFBF1)),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Icon(
+                    isRec
+                        ? Icons.stop_rounded
+                        : (hasVoice ? Icons.check_circle_rounded : Icons.mic_rounded),
+                    size: 22,
+                    color: isRec
+                        ? Colors.red
+                        : (hasVoice ? const Color(0xFF059669) : const Color(0xFF0D9488)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // آڈیو ریکارڈنگ پٹی
+          if (isRec) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.fiber_manual_record, color: Colors.red, size: 14),
+                const SizedBox(width: 4),
+                const Text(
+                  'آواز ریکارڈ ہو رہی ہے...',
+                  style: TextStyle(fontSize: 10.5, color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
+                  GlobalAudioService.formatSeconds(GlobalAudioService.recordSeconds),
+                  style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ] else if (hasVoice) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      isPlay ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: const Color(0xFF0D9488),
+                      size: 20,
+                    ),
+                    onPressed: controller.togglePlayVoice,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'صوتی ریکارڈنگ محفوظ ہے',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                    onPressed: controller.deleteVoiceNote,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          _mediaBtn(
-            active: controller.hasPhoto,
-            icon: Icons.camera_alt_rounded,
-            c: const Color(0xFF2563EB),
-            bg: const Color(0xFFEFF6FF),
-            bdr: const Color(0xFFBFDBFE),
-            onTap: () {
-              controller.hasPhoto = !controller.hasPhoto;
-              onStateChange();
-            },
-          ),
-          const SizedBox(width: 8),
-          _mediaBtn(
-            active: controller.hasAudio,
-            icon: Icons.mic_rounded,
-            c: const Color(0xFF0D9488),
-            bg: const Color(0xFFF0FDFA),
-            bdr: const Color(0xFFCCFBF1),
-            onTap: () {
-              controller.hasAudio = !controller.hasAudio;
-              onStateChange();
-            },
-          ),
+          ],
+
+          // تصویر کی تصدیق
+          if (hasImg) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.image_rounded, size: 13, color: Color(0xFF059669)),
+                const SizedBox(width: 4),
+                const Expanded(
+                  child: Text(
+                    'رسید کی تصویر منسلک کر دی گئی ہے',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF059669),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: controller.removeReceiptImage,
+                  child: const Text(
+                    'تصویر ہٹائیں',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

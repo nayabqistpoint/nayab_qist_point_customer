@@ -1,3 +1,5 @@
+// lib/customer_side/cutomer_ledger/customer_ledger_components_ui/ledger_components/installment_table_row_ui.dart
+
 import 'package:flutter/material.dart';
 import 'installment_action_badge_ui.dart';
 
@@ -5,33 +7,31 @@ class InstallmentTableRowUi {
   static TableRow build({
     required BuildContext context,
     required Map<String, dynamic> item,
+    required bool isLocked,
     required String Function(int) formatAmount,
     required ValueChanged<Map<String, dynamic>> onPaymentRequested,
   }) {
     final String status = item['status'] ?? 'UPCOMING';
-    final String verificationStatus = item['verificationStatus'] ?? 'UNDER_REVIEW';
-
-    final bool isPaid = status == 'PAID';
+    final bool isApproved = item['isApproved'] == true;
+    final bool isUnderReview = item['isUnderReview'] == true;
     final bool isDue = status == 'DUE';
     final bool isPartial = status == 'PARTIAL';
 
     final int totalAmt = (item['amount'] as int?) ?? 0;
-    final int paidAmt = (item['paidAmount'] as int?) ?? 0;
-    final int remainingAmt = (item['remainingAmount'] as int?) ?? (totalAmt - paidAmt);
+    final int rawPaidAmt = (item['paidAmount'] as int?) ?? 0;
+    final int remainingAmt = (item['remainingAmount'] as int?) ?? (totalAmt - rawPaidAmt);
     final int percent = (item['percent'] as int?) ?? 0;
     final double progressRatio = (percent / 100.0).clamp(0.0, 1.0);
 
-    final bool isUnderReview = paidAmt > 0 && verificationStatus == 'UNDER_REVIEW';
-
     Color progressColor;
-    if (isPaid && !isUnderReview) {
-      progressColor = const Color(0xFF059669);
+    if (isApproved && remainingAmt <= 0) {
+      progressColor = const Color(0xFF059669); // مکمل ادا - سبز
     } else if (isUnderReview) {
-      progressColor = const Color(0xFFD97706);
+      progressColor = const Color(0xFFD97706); // زیرِ جائزہ - زرد
     } else if (isDue) {
-      progressColor = const Color(0xFFDC2626);
+      progressColor = const Color(0xFFDC2626); // واجب - سرخ
     } else {
-      progressColor = const Color(0xFF0D9488);
+      progressColor = const Color(0xFF0D9488); // آنے والی - ٹیل
     }
 
     return TableRow(
@@ -46,7 +46,6 @@ class InstallmentTableRowUi {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
           ),
         ),
-
         // 2. تاریخ
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 18),
@@ -60,8 +59,7 @@ class InstallmentTableRowUi {
             ),
           ),
         ),
-
-        // 3. پروگریس بار، رقم اور ماڈیولر ایکشن بٹن
+        // 3. تفصیلات، پروگریس بار، وصول شدہ رقم اور ایکشن بٹن
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Column(
@@ -79,9 +77,12 @@ class InstallmentTableRowUi {
                     ),
                   ),
                   const SizedBox(width: 4),
+                  // رقم اور فیصد دونوں کی شفاف نمائش
                   Text(
-                    '$percent%',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: progressColor),
+                    rawPaidAmt > 0 && rawPaidAmt < totalAmt
+                        ? 'Rs. ${formatAmount(rawPaidAmt)} ($percent%)'
+                        : '$percent%',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: progressColor),
                   ),
                 ],
               ),
@@ -118,7 +119,7 @@ class InstallmentTableRowUi {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              isPartial ? 'بقیہ:' : 'واجب:',
+                              isPartial ? 'بقیہ واجب:' : 'واجب:',
                               style: TextStyle(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w700,
@@ -132,7 +133,7 @@ class InstallmentTableRowUi {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
                           child: Text(
-                            'Rs. ${formatAmount(isPartial ? remainingAmt : (isPaid ? 0 : totalAmt))}',
+                            'Rs. ${formatAmount(remainingAmt)}',
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w900,
@@ -144,7 +145,7 @@ class InstallmentTableRowUi {
                           const Padding(
                             padding: EdgeInsets.only(top: 2),
                             child: Text(
-                              '● زیرِ تصدیق',
+                              '● تصدیق کا انتظار',
                               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFFD97706)),
                             ),
                           ),
@@ -153,10 +154,11 @@ class InstallmentTableRowUi {
                   ),
                   const SizedBox(width: 6),
                   InstallmentActionBadgeUi(
-                    isPaid: isPaid,
+                    isPaid: isApproved && remainingAmt <= 0,
                     isUnderReview: isUnderReview,
                     isDue: isDue,
                     isPartial: isPartial,
+                    isLocked: isLocked,
                     onTap: () => onPaymentRequested(item),
                   ),
                 ],

@@ -1,3 +1,5 @@
+// lib/customer_side/universal_payments/universal_payment_components_ui/payment_sources_split_card_ui.dart
+
 import 'package:flutter/material.dart';
 import '../universal_payment_controller.dart';
 
@@ -20,7 +22,7 @@ class PaymentSourcesSplitCardUi extends StatelessWidget {
           children: [
             const Expanded(
               child: Text(
-                'بینک و کیش سورسز (اسپلٹ ادائیگی):',
+                'بینک و کیش سورسز (اسپلٹ وصولی):',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
@@ -32,14 +34,17 @@ class PaymentSourcesSplitCardUi extends StatelessWidget {
                 onStateChange();
               },
               icon: const Icon(Icons.add_circle_outline_rounded, size: 16, color: Color(0xFF0D9488)),
-              label: const Text('دوسرا سورس جوڑیں', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+              label: const Text(
+                'دوسرا سورس جوڑیں',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        ...controller.splitEntries.asMap().entries.map((entry) {
-          int idx = entry.key;
-          Map<String, dynamic> item = entry.value;
+        ...List.generate(controller.splitEntries.length, (idx) {
+          final item = controller.splitEntries[idx];
+          final textCtrl = controller.splitTextControllers[idx];
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -48,7 +53,13 @@ class PaymentSourcesSplitCardUi extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFCBD5E1)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -63,15 +74,21 @@ class PaymentSourcesSplitCardUi extends StatelessWidget {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: item['source'],
+                        value: controller.availableSources.contains(item.source)
+                            ? item.source
+                            : (controller.availableSources.isNotEmpty ? controller.availableSources.first : null),
                         isExpanded: true,
                         dropdownColor: Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                        items: controller.configPaymentSources.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+                        items: controller.availableSources
+                            .map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)))
+                            .toList(),
                         onChanged: (v) {
-                          controller.updateSplitEntry(idx, v ?? controller.configPaymentSources.first, item['amount'] ?? 0);
-                          onStateChange();
+                          if (v != null) {
+                            controller.updateSplitSource(idx, v);
+                            onStateChange();
+                          }
                         },
                       ),
                     ),
@@ -81,11 +98,11 @@ class PaymentSourcesSplitCardUi extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    initialValue: item['amount'].toString(),
+                    controller: textCtrl,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
                     onChanged: (v) {
-                      controller.updateSplitEntry(idx, item['source'], int.tryParse(v) ?? 0);
+                      controller.updateSplitAmount(idx, v);
                       onStateChange();
                     },
                     decoration: InputDecoration(
