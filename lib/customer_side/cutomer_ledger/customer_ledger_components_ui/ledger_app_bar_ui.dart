@@ -3,8 +3,13 @@ import 'logout_confirm_dialog_ui.dart';
 
 class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onPurchasePressed;
+  final VoidCallback onStatementPressed;
 
-  const LedgerAppBarUi({super.key, required this.onPurchasePressed});
+  const LedgerAppBarUi({
+    super.key,
+    required this.onPurchasePressed,
+    required this.onStatementPressed,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(66);
@@ -24,7 +29,7 @@ class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
-              // 🔴 لاگ آؤٹ بٹن (اب نئے الگ ڈائیلاگ کو کال کر رہا ہے)
+              // لاگ آؤٹ بٹن
               InkWell(
                 onTap: () => LogoutConfirmDialogUi.show(context),
                 borderRadius: BorderRadius.circular(8),
@@ -41,7 +46,28 @@ class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+
+              // اسٹیٹمنٹ / پاس بک بٹن
+              InkWell(
+                onTap: onStatementPressed,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.5)),
+                  ),
+                  child: const Icon(
+                    Icons.receipt_long_rounded,
+                    color: Color(0xFF5EEAD4),
+                    size: 18,
+                  ),
+                ),
+              ),
               const SizedBox(width: 10),
+
               const Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +99,10 @@ class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
                   ],
                 ),
               ),
+
               const SizedBox(width: 8),
+
+              // نیا موبائل لیں
               Flexible(
                 fit: FlexFit.loose,
                 child: ElevatedButton.icon(

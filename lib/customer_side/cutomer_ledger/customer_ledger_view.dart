@@ -69,6 +69,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                   },
                 );
               },
+              onStatementPressed: () => controller.openCustomerStatement(context),
             ),
             floatingActionButton: FloatingActionButton.extended(
               backgroundColor: const Color(0xFF059669),

@@ -4,8 +4,11 @@ import '../hive_services/hive_box_manager.dart';
 import '../universal_payments/universal_payment_page.dart';
 import '../service_stock/service_stock_entry_page.dart';
 import '../payload_services/installment_allocation_service.dart';
+import '../payload_services/cash_loan_repayment_service.dart';
 import 'services/ledger_services/installment_ledger_service.dart';
 import 'services/ledger_services/ledger_math_service.dart';
+import 'services/ledger_services/transaction_ledger_service.dart';
+import 'customer_ledger_components_ui/customer_statement_sheet_ui.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
   String customerPhone;
@@ -58,6 +61,7 @@ class CustomerLedgerController extends ChangeNotifier {
       } catch (_) {}
     }
     await InstallmentLedgerService.ensureBoxOpen();
+    await TransactionLedgerService.ensureBoxOpen();
     InstallmentLedgerService.boxListenable?.addListener(_onHiveBoxChanged);
     await loadCustomerData();
     isLoading = false;
@@ -126,6 +130,18 @@ class CustomerLedgerController extends ChangeNotifier {
     );
   }
 
+  /// کھاتہ اسٹیٹمنٹ اور پاس بک ہسٹری کھولنا
+  Future<void> openCustomerStatement(BuildContext context) async {
+    final transactions = await TransactionLedgerService.getCustomerTransactions(customerPhone);
+    if (context.mounted) {
+      CustomerStatementSheetUi.show(
+        context,
+        transactions: transactions,
+        formatAmount: formatAmount,
+      );
+    }
+  }
+
   Future<void> handleInstallmentPayment(
     BuildContext context,
     Map<String, dynamic> schedItem, {
@@ -156,7 +172,7 @@ class CustomerLedgerController extends ChangeNotifier {
     final dynamic orderKey = currentProduct['orderKey'];
     final Map<dynamic, dynamic> rawOrder = currentProduct['rawOrder'] as Map<dynamic, dynamic>;
 
-    // اس مخصوص موبائل کا کل باقی رہنے والا بقایا (میکسیمم سیلنگ لمٹ)
+    // اس مخصوص موبائل کا کل باقی رہنے والا بقایا (میکسیمم حد)
     final int totalPlanRemaining = (currentProduct['remaining'] as int?) ?? remaining;
 
     final result = await Navigator.push(
@@ -169,7 +185,7 @@ class CustomerLedgerController extends ChangeNotifier {
           itemName: resolvedItemName,
           planTitle: resolvedPlanTitle,
           installmentNo: schedItem['no'] as int?,
-          maxAllowedAmount: totalPlanRemaining, // 🎯 کل بقایا کی حد مقرر کر دی گئی
+          maxAllowedAmount: totalPlanRemaining, // 🎯 کل بقایا سے زیادہ لکھنے کی ممانعت
         ),
       ),
     );
@@ -210,6 +226,7 @@ class CustomerLedgerController extends ChangeNotifier {
     }
   }
 
+  /// نقد دستی ادھار کی واپسی کا مکمل اور محفوظ طریقہ
   Future<void> handleCashLoanRepayment(BuildContext context) async {
     final result = await Navigator.push(
       context,
@@ -220,7 +237,6 @@ class CustomerLedgerController extends ChangeNotifier {
           isInstallment: false,
           itemName: 'نقد ادھار کھاتہ',
           planTitle: 'دستی قرض کھاتہ',
-          // نقد قرض کے لیے کوئی حد مقرر نہیں تاکہ وہ پیشگی رقم بھی جمع کرا سکے
         ),
       ),
     );
@@ -228,15 +244,42 @@ class CustomerLedgerController extends ChangeNotifier {
     if (result != null && result is Map<String, dynamic>) {
       final int paid = (result['paid'] as num?)?.toInt() ?? 0;
       final int discount = (result['discount'] as num?)?.toInt() ?? 0;
-      
-      cashLoanBalance -= (paid + discount);
-      cashLoanEntries.insert(0, {
-        'title': 'دستی قرض واپسی ادا کی',
-        'date': 'آج',
-        'amount': paid,
-        'type': 'CREDIT',
-      });
-      notifyListeners();
+      final splits = (result['splits'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final String note = (result['note'] ?? '').toString();
+      final String receiptImagePath = (result['receiptImagePath'] ?? '').toString();
+      final String voiceNotePath = (result['voiceNotePath'] ?? '').toString();
+
+      // 🎯 سنگل رسپانسبلٹی سروس کے ذریعے پے لوڈ اور ٹرانزیکشن باکس میں محفوظ کرنا
+      final success = await CashLoanRepaymentService.processRepayment(
+        customerPhone: customerPhone,
+        paidAmount: paid,
+        discountAmount: discount,
+        splits: splits,
+        note: note,
+        receiptImagePath: receiptImagePath,
+        voiceNotePath: voiceNotePath,
+      );
+
+      if (success) {
+        final now = DateTime.now();
+        cashLoanBalance -= (paid + discount);
+        cashLoanEntries.insert(0, {
+          'title': 'دستی قرض واپسی ادا کی',
+          'date': '${now.day}-${now.month}-${now.year}',
+          'amount': paid,
+          'type': 'CREDIT',
+        });
+        notifyListeners();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('نقد واپسی رسید تصدیق کے لیے جمع ہو گئی: Rs. ${formatAmount(paid)}'),
+              backgroundColor: const Color(0xFF059669),
+            ),
+          );
+        }
+      }
     }
   }
 
