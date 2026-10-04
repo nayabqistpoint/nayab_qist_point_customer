@@ -1,5 +1,5 @@
-import 'hive_box_manager.dart';
-import '../inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
 
 class LoginHiveService {
   /// محفوظ اسناد چیک کر کے لاگ ان پروسیس کرنا

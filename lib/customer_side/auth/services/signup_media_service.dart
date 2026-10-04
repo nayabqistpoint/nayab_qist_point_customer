@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/services/media_picker_service.dart';
+import 'package:nayab_qist_point_customer/core/services/media_picker_service.dart';
 
 class SignupMediaService {
   String cnicFront = '';

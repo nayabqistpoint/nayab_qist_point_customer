@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 
 enum PayloadDirection { outToCloud, inFromCloud, localHiveWrite, localHiveRead }
 

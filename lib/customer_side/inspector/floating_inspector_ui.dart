@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
 
 // 🎯 ری فیکٹر شدہ نئے بینچ مارک پیج کا امپورٹ
-import '../benchmark/benchmark_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/benchmark_page.dart';
 
 class FloatingInspectorUi extends StatelessWidget {
   const FloatingInspectorUi({super.key});

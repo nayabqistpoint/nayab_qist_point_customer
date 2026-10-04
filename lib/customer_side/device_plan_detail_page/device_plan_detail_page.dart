@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'device_plan_detail_controller.dart';
-import 'components/detail_app_bar_ui.dart';
-import 'components/stock_device_hero_card_ui.dart';
-import 'components/custom_estimate_hero_card_ui.dart';
-import 'components/vip_28_promotional_banner_ui.dart';
-import 'components/plan_filter_section_card_ui.dart';
-import 'components/plan_sorting_toolbar_ui.dart';
-import 'components/bill_style_schedule_header_ui.dart';
-import 'components/individual_plan_row_ui.dart';
-import '../order_receipt_sheet/order_receipt_sheet.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/detail_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/stock_device_hero_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/custom_estimate_hero_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/vip_28_promotional_banner_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/plan_filter_section_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/plan_sorting_toolbar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/bill_style_schedule_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/order_receipt_sheet.dart';
 
 class DevicePlanDetailPage extends StatefulWidget {
   final Map<String, dynamic> device;

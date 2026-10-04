@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'benchmark_controller.dart';
-import 'components/benchmark_sidebar_ui.dart';
-import 'components/benchmark_field_list_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/benchmark_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/components/benchmark_sidebar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/components/benchmark_field_list_ui.dart';
 
 class BenchmarkPage extends StatefulWidget {
   const BenchmarkPage({super.key});

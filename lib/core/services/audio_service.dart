@@ -3,8 +3,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
-import 'local_media_helper.dart';
-import 'app_permission_service.dart';
+import 'package:nayab_qist_point_customer/core/services/local_media_helper.dart';
+import 'package:nayab_qist_point_customer/core/services/app_permission_service.dart';
 
 class GlobalAudioService {
   static final AudioRecorder _recorder = AudioRecorder();

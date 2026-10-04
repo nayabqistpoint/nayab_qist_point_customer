@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'services/stock_box_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/services/stock_box_service.dart';
 
 class PurchaseMarketController extends ChangeNotifier {
   final StockBoxService _stockService = StockBoxService();

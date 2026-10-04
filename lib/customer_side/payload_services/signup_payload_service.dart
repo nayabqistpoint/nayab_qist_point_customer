@@ -1,8 +1,8 @@
-import '../hive_services/hive_box_manager.dart';
-import 'signup_payload_builders/customer_payload_builder.dart';
-import 'signup_payload_builders/guarantor_payload_builder.dart';
-import 'signup_payload_builders/media_payload_builder.dart';
-import 'signup_payload_builders/user_auth_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_builders/customer_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_builders/guarantor_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_builders/media_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_builders/user_auth_payload_builder.dart';
 
 class SignupPayloadService {
   /// فارم کی بنیادی تصدیق

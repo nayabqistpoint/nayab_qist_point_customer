@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import '../../hive_services/hive_box_manager.dart';
-import '../customer_login_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/customer_login_controller.dart';
 
 class LoginBiometricService {
   final LocalAuthentication _auth = LocalAuthentication();

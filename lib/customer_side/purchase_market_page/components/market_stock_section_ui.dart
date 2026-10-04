@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../purchase_market_controller.dart';
-import 'market_stock_list_header_ui.dart';
-import 'stock_phone_card_ui.dart';
-import 'market_empty_stock_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_stock_list_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/stock_phone_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_empty_stock_ui.dart';
 
 class MarketStockSectionUi extends StatelessWidget {
   final PurchaseMarketController controller;

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'services/calculator_config_model.dart';
-import 'services/calculator_config_service.dart';
-import 'services/plan_generator_service.dart';
-import 'services/plan_filter_sort_service.dart';
-import 'services/plan_schedule_service.dart';
-import 'services/plan_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_filter_sort_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_schedule_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
 
 class DevicePlanDetailController extends ChangeNotifier {
   final CalculatorConfigService _configService = CalculatorConfigService();

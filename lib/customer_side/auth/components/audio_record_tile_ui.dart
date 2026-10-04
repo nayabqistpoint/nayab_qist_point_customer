@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/services/audio_service.dart';
-import '../customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
 
 class AudioRecordTileUi extends StatelessWidget {
   final CustomerSignupController controller;

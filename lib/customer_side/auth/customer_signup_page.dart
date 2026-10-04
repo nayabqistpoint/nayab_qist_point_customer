@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../inspector/floating_inspector_ui.dart';
-import 'customer_signup_controller.dart';
-import 'components/signup_app_bar_ui.dart';
-import 'components/signup_step_tracker_ui.dart';
-import 'components/step1_customer_info_ui.dart';
-import 'components/step2_customer_media_ui.dart';
-import 'components/step3_guarantor_and_terms_ui.dart';
-import 'components/signup_bottom_action_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/floating_inspector_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_step_tracker_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step1_customer_info_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step2_customer_media_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step3_guarantor_and_terms_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_bottom_action_bar_ui.dart';
 
 class CustomerSignupPage extends StatefulWidget {
   const CustomerSignupPage({super.key});

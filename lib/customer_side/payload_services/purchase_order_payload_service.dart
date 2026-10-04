@@ -1,5 +1,5 @@
-import '../device_plan_detail_page/services/calculator_config_model.dart';
-import '../device_plan_detail_page/services/plan_schedule_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_schedule_service.dart';
 
 class PurchaseOrderPayloadService {
   static Map<String, dynamic> buildOrderPayload({

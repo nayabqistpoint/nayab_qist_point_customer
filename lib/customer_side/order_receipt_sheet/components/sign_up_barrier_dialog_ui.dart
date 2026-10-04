@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'signup_instruction_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/signup_instruction_card_ui.dart';
 
 class SignUpBarrierDialogUi extends StatelessWidget {
   const SignUpBarrierDialogUi({super.key});

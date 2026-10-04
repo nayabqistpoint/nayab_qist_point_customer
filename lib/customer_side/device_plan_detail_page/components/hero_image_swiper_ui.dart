@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'full_screen_zoom_gallery_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/full_screen_zoom_gallery_ui.dart';
 
 class HeroImageSwiperUi extends StatelessWidget {
   final List<String> images;

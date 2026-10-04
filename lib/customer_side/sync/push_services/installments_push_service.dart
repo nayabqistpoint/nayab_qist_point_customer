@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../../hive_services/hive_box_manager.dart';
-import '../core/sync_status.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
 
 class InstallmentsPushService {
   static const String collectionName = HiveBoxManager.installmentsBoxName;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
 
 class Step1CustomerInfoUi extends StatelessWidget {
   final CustomerSignupController controller;

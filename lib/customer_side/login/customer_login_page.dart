@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/database_page.dart';
-import 'customer_login_controller.dart';
-import 'components/login_header_ui.dart';
-import 'components/login_form_ui.dart';
-import 'components/login_contact_support_ui.dart';
-import 'components/login_footer_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/customer_login_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_form_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_contact_support_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_footer_ui.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../device_plan_detail_page/services/calculator_config_service.dart';
-import '../../device_plan_detail_page/services/plan_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
 
 class StockBoxService {
   static const String boxName = 'stockBox';

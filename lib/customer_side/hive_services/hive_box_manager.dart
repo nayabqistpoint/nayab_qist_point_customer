@@ -1,6 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../inspector/inspector_store.dart';
-import '../sync/master_sync_hub.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
 
 class HiveBoxManager {
   // ۱. پبلک گلوبل باکسز

@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 
-// 🎯 لاگ ان پیج کا نیا ماڈیولر پاتھ
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_page.dart';
-
-import 'package:nayab_qist_point_customer/customer_side/cutomer_ledger/customer_ledger_view.dart';
-import 'package:nayab_qist_point_customer/customer_side/universal_payments/universal_payment_page.dart';
-import 'package:nayab_qist_point_customer/customer_side/service_stock/service_stock_entry_page.dart';
-
-// 🎯 ماڈیولر پیجز کی امپورٹس
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/customer_ledger_view.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
-import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payments/universal_payment_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_section/service_stock_entry_page.dart';
 
 class AppRoutes {
   static const String login = '/';
   static const String customerSignup = '/customer-signup';
   static const String ledger = '/ledger';
-  static const String purchaseMarket = '/purchase-market'; // شو روم پیج
-  static const String planDetail = '/plan-detail';         // 28 اقساط پیج
+  static const String purchaseMarket = '/purchase-market';
+  static const String planDetail = '/plan-detail';
   static const String payment = '/payment';
   static const String serviceStock = '/service-stock';
 
@@ -28,13 +24,11 @@ class AppRoutes {
           builder: (_) => const CustomerLoginPage(),
         );
 
-      // 📝 نیا کسٹمر اقساط کھاتہ رجسٹریشن (Sign Up)
       case customerSignup:
         return MaterialPageRoute(
           builder: (_) => const CustomerSignupPage(),
         );
 
-      // 👤 1. کسٹمر لیجر پیج (لاگ ان کے فوراً بعد)
       case ledger:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(
@@ -43,7 +37,6 @@ class AppRoutes {
           ),
         );
 
-      // 🛒 2. نیا موبائل خریدیں شو روم پیج
       case purchaseMarket:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(
@@ -52,7 +45,6 @@ class AppRoutes {
           ),
         );
 
-      // 📑 3. تفصیلی 28 پلانز پیج
       case planDetail:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return MaterialPageRoute(
@@ -74,11 +66,10 @@ class AppRoutes {
 
       case serviceStock:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
-        final targetAccounts = (args['targetAccounts'] as List<String>?) ??
-            const ['نیا / آزاد کسٹمر کریڈٹ کھاتہ'];
         return MaterialPageRoute(
           builder: (_) => ServiceStockEntryPage(
-            targetAccounts: targetAccounts,
+            customerPhone: args['customerPhone']?.toString() ?? '',
+            customerProducts: (args['customerProducts'] as List?)?.cast<Map<String, dynamic>>() ?? const [],
           ),
         );
 

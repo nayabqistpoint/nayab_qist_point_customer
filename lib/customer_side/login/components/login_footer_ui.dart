@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'luminous_action_button_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/luminous_action_button_ui.dart';
 
 class LoginFooterUi extends StatelessWidget {
   final VoidCallback onSignUpPressed;

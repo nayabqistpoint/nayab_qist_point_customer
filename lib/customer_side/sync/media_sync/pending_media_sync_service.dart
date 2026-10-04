@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../../hive_services/hive_box_manager.dart';
-import '../core/connectivity_service.dart';
-import 'cloudinary_upload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/cloudinary_upload_service.dart';
 
 class PendingMediaSyncService {
   static Future<void> processPendingUploads() async {

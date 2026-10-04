@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'calculator_config_model.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
 
 class CalculatorConfigService {
   static const String boxName = 'appConfigBox';

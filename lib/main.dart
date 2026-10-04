@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 // 🎯 فائر بیس ویب/اینڈرائیڈ آپشنز اور روٹس امپورٹ
-import 'firebase_options.dart';
+import 'package:nayab_qist_point_customer/firebase_options.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
 
 // 🎯 کسٹمر ہائیو باکس منیجر کا امپورٹ

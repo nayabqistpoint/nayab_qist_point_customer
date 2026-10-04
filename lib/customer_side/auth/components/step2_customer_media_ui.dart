@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/services/zoom_handler.dart';
-import '../customer_signup_controller.dart';
-import 'audio_record_tile_ui.dart';
+import 'package:nayab_qist_point_customer/core/services/zoom_handler.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/audio_record_tile_ui.dart';
 
 class Step2CustomerMediaUi extends StatelessWidget {
   final CustomerSignupController controller;

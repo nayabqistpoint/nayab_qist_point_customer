@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../customer_login_controller.dart';
-import 'login_remember_me_ui.dart';
-import 'login_action_button_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/customer_login_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_remember_me_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/components/login_action_button_ui.dart';
 
 class LoginFormUi extends StatelessWidget {
   final CustomerLoginController controller;

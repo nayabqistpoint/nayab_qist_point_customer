@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../device_plan_detail_page/services/calculator_config_service.dart';
-import '../../device_plan_detail_page/services/plan_generator_service.dart';
-import 'estimate_sheet_form_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/estimate_sheet_form_ui.dart';
 
 class CustomEstimateSheetUi extends StatelessWidget {
   final Function(String name, int estimatePrice, int advance) onSubmit;

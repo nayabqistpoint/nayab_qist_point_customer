@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 
 class LoginCloudSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

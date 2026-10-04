@@ -1,11 +1,11 @@
 // lib/customer_side/payload_services/installment_allocation_service.dart
 
 import 'package:flutter/foundation.dart';
-import '../hive_services/hive_box_manager.dart';
-import '../inspector/inspector_store.dart';
-import '../sync/master_sync_hub.dart';
-import 'installment_payload_builders/installment_order_update_builder.dart';
-import 'installment_payload_builders/installment_transaction_history_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/installment_payload_builders/installment_order_update_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/installment_payload_builders/installment_transaction_history_builder.dart';
 
 class InstallmentAllocationService {
   /// مکمل ادائیگی کا پروسیس: قسطوں میں واٹر فال کٹوتی + سنگل ٹرانزیکشن رسید کی انٹری

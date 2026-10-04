@@ -1,5 +1,5 @@
-import '../../payload_services/signup_payload_service.dart';
-import '../../payload_services/login_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/login_payload_service.dart';
 
 class BenchmarkModule {
   final String id;

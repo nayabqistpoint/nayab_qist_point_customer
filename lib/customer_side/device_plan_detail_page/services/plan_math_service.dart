@@ -1,4 +1,4 @@
-import 'calculator_config_model.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
 
 class PlanMathService {
   /// رقم کو طے شدہ یونٹ (مثلاً 100) کے اگلے ملٹیپل پر راؤنڈ (Ceil) کرنا

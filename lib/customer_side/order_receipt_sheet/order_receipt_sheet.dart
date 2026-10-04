@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'order_receipt_sheet_controller.dart';
-import 'components/receipt_token_header_ui.dart';
-import 'components/receipt_summary_rows_ui.dart';
-import 'components/receipt_schedule_table_ui.dart';
-import 'components/bank_cheque_input_box_ui.dart';
-import 'components/grace_period_note_ui.dart';
-import 'components/submit_order_button_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/order_receipt_sheet_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_token_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_summary_rows_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_schedule_table_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/bank_cheque_input_box_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/grace_period_note_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/submit_order_button_ui.dart';
 
 class OrderReceiptSheet extends StatefulWidget {
   final Map<String, dynamic> plan;

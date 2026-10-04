@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../benchmark_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/benchmark_controller.dart';
 
 class BenchmarkSidebarUi extends StatelessWidget {
   final BenchmarkController controller;

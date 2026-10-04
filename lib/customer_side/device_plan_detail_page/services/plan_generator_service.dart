@@ -1,5 +1,5 @@
-import 'calculator_config_model.dart';
-import 'plan_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
 
 class PlanGeneratorService {
   static List<Map<String, dynamic>> generateAllPlans({

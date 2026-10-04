@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'hero_image_swiper_ui.dart';
-import 'device_spec_pills_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/hero_image_swiper_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/device_spec_pills_ui.dart';
 
 class StockDeviceHeroCardUi extends StatelessWidget {
   final Map<String, dynamic> device;

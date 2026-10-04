@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/audio_service.dart';
-import 'services/signup_media_service.dart';
-import 'services/signup_submit_service.dart';
+import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_media_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_submit_service.dart';
 
 class CustomerSignupController extends ChangeNotifier {
   final media = SignupMediaService();

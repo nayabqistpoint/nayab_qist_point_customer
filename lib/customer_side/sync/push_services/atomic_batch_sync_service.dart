@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../../hive_services/hive_box_manager.dart';
-import '../core/sync_status.dart';
-import '../core/connectivity_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
 
 /// بیچ میں بھیجے جانے والے ہر انفرادی ریکارڈ کا ماڈل
 class BatchOperationItem {

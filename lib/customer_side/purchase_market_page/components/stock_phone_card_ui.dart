@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'zero_advance_pill_badge_ui.dart';
-import 'inline_quick_ribbon_trigger_ui.dart';
-import 'inline_two_plan_drawer_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/zero_advance_pill_badge_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/inline_quick_ribbon_trigger_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/inline_two_plan_drawer_ui.dart';
 
 class StockPhoneCardUi extends StatelessWidget {
   final Map<String, dynamic> item;

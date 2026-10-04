@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
-import '../payload_services/login_payload_service.dart';
-import '../hive_services/login_hive_service.dart';
-import 'services/login_cloud_sync_service.dart';
-import 'services/login_biometric_service.dart';
-import 'services/login_contact_service.dart';
-import 'services/login_whatsapp_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/login_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/login_hive_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_cloud_sync_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_biometric_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_contact_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_whatsapp_service.dart';
 
 class CustomerLoginController extends ChangeNotifier {
   final phoneController = TextEditingController();

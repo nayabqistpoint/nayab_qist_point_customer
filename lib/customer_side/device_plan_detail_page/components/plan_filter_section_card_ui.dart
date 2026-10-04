@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../device_plan_detail_controller.dart';
-import 'guarantee_filter_bar_ui.dart';
-import 'advance_option_filter_bar_ui.dart';
-import 'duration_seven_filter_bar_ui.dart';
-import 'custom_advance_input_box_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/guarantee_filter_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/advance_option_filter_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/duration_seven_filter_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/custom_advance_input_box_ui.dart';
 
 class PlanFilterSectionCardUi extends StatelessWidget {
   final DevicePlanDetailController controller;

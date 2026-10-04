@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'services/benchmark_registry_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/services/benchmark_registry_service.dart';
 
 class BenchmarkController extends ChangeNotifier {
   int selectedIndex = 0;

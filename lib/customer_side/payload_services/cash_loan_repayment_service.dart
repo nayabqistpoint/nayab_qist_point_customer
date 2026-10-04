@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../hive_services/hive_box_manager.dart';
-import '../inspector/inspector_store.dart';
-import '../sync/master_sync_hub.dart';
-import 'cash_loan_payload_builders/cash_loan_transaction_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/cash_loan_payload_builders/cash_loan_transaction_builder.dart';
 
 class CashLoanRepaymentService {
   static Future<bool> processRepayment({

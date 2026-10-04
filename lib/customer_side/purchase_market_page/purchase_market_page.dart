@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'purchase_market_controller.dart';
-import 'components/market_app_bar_ui.dart';
-import 'components/luminous_calculator_banner_ui.dart';
-import 'components/custom_estimate_sheet_ui.dart';
-import 'components/market_stock_section_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/luminous_calculator_banner_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/custom_estimate_sheet_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_stock_section_ui.dart';
 
 class PurchaseMarketPage extends StatefulWidget {
   final String? customerPhone;
