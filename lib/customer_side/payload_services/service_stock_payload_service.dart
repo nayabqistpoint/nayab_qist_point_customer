@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_section/service_stock_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/payload_services/service_stock_builders/stock_box_payload_builder.dart';
 import 'package:nayab_qist_point_customer/customer_side/payload_services/service_stock_builders/grocery_transaction_builder.dart';
 import 'package:nayab_qist_point_customer/customer_side/payload_services/service_stock_builders/household_grocery_expense_builder.dart';

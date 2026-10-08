@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_page.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/customer_ledger_view.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/customer_ledger_view.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payments/universal_payment_page.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_section/service_stock_entry_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_entry_page.dart';
 
 class AppRoutes {
   static const String login = '/';
