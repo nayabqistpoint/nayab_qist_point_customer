@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/service_stock_app_bar_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/stock_nature_toggle_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/target_account_chip_selector_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/grocery_items_list_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/grocery_smart_input_row_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/mobile_intent_banner_ui.dart';
@@ -13,12 +12,10 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_
 
 class ServiceStockEntryPage extends StatefulWidget {
   final String customerPhone;
-  final List<Map<String, dynamic>> customerProducts;
 
   const ServiceStockEntryPage({
     super.key,
     this.customerPhone = '',
-    this.customerProducts = const [],
   });
 
   @override
@@ -31,10 +28,7 @@ class _ServiceStockEntryPageState extends State<ServiceStockEntryPage> {
   @override
   void initState() {
     super.initState();
-    controller = ServiceStockController(
-      customerPhone: widget.customerPhone,
-      customerProducts: widget.customerProducts,
-    );
+    controller = ServiceStockController(customerPhone: widget.customerPhone);
   }
 
   @override
@@ -61,10 +55,7 @@ class _ServiceStockEntryPageState extends State<ServiceStockEntryPage> {
                 children: [
                   StockNatureToggleUi(controller: controller),
                   const SizedBox(height: 14),
-
                   if (controller.mainMode == 0) ...[
-                    TargetAccountChipSelectorUi(controller: controller),
-                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -78,7 +69,7 @@ class _ServiceStockEntryPageState extends State<ServiceStockEntryPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('راشن اشیاء کا بل:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                              const Text('راشن اشیاء کا بل (نقد کھاتہ):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                               Text(
                                 'کل بل: Rs. ${controller.formatAmount(controller.groceryTotal)}',
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0D9488)),
@@ -98,7 +89,6 @@ class _ServiceStockEntryPageState extends State<ServiceStockEntryPage> {
                     SupplierMobileFormUi(controller: controller),
                     SupplierStockListUi(controller: controller),
                   ],
-
                   const SizedBox(height: 16),
                   NoteMediaBarUi(controller: controller),
                   const SizedBox(height: 20),

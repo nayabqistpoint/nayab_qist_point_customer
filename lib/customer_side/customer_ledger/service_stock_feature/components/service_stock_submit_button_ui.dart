@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/service_stock_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/grocery_stock_payloads/grocery_cash/grocery_cash_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/payload_services/grocery_stock_payloads/supplier_stock/supplier_stock_payload_service.dart';
 
 class ServiceStockSubmitButtonUi extends StatelessWidget {
   final ServiceStockController controller;
@@ -22,37 +23,19 @@ class ServiceStockSubmitButtonUi extends StatelessWidget {
             return;
           }
 
-          if (!isMobile) {
-            if (controller.groceryService.groceryList.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('برائے مہربانی پہلے راشن آئٹمز شامل کریں')),
-              );
-              return;
-            }
-
-            if (controller.accountType == 0) {
-              if (controller.customerProducts.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('اس کسٹمر کے نام پر کوئی فعال قسط موجود نہیں ہے')),
-                );
-                return;
-              }
-
-              if (controller.isOverMaxLimit) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'راشن کا کل بل (Rs. ${controller.formatAmount(controller.groceryTotal)}) اس پلان کے کل بقایا (Rs. ${controller.formatAmount(controller.maxAllowedLimit)}) سے زیادہ نہیں ہو سکتا۔',
-                    ),
-                    backgroundColor: const Color(0xFFDC2626),
-                  ),
-                );
-                return;
-              }
-            }
+          if (!isMobile && controller.groceryService.groceryList.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('برائے مہربانی پہلے راشن آئٹمز شامل کریں')),
+            );
+            return;
           }
 
-          final success = await ServiceStockPayloadService.executeSubmission(controller);
+          bool success = false;
+          if (isMobile) {
+            success = await SupplierStockPayloadService.submitStock(controller);
+          } else {
+            success = await GroceryCashPayloadService.submitGroceryBill(controller);
+          }
 
           if (success && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

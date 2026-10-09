@@ -5,54 +5,22 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_
 
 class ServiceStockController extends ChangeNotifier {
   final String customerPhone;
-  final List<Map<String, dynamic>> customerProducts;
-
   final groceryService = GroceryEntryService();
   final mobileService = SupplierMobileService();
 
-  int mainMode = 0; // 0 = راشن، 1 = موبائل
-  int accountType = 0; // 0 = فعال قسط، 1 = نقد/پیشگی
-  int selectedProductIndex = 0;
-  int mobileIntent = 1; // 0 = فوری فروخت، 1 = پروموشنل
-
+  int mainMode = 0; // 0 = راشن بل (نقد کھاتہ), 1 = موبائل سپلائر پورٹل
+  int mobileIntent = 1; // 1 = promotional, 0 = direct stock
   final noteCtrl = TextEditingController();
   bool hasPhoto = false;
   bool hasAudio = false;
-
   Timer? _stepperTimer;
 
-  ServiceStockController({
-    this.customerPhone = '',
-    this.customerProducts = const [],
-  });
+  ServiceStockController({this.customerPhone = ''});
 
   bool get isMobileSupplierMode => mainMode == 1;
   int get groceryTotal => groceryService.groceryTotal;
   int get mobileTotal => mobileService.mobileTotal;
   int get totalBill => isMobileSupplierMode ? mobileTotal : groceryTotal;
-
-  Map<String, dynamic>? get selectedProduct {
-    if (customerProducts.isNotEmpty && selectedProductIndex < customerProducts.length) {
-      return customerProducts[selectedProductIndex];
-    }
-    return null;
-  }
-
-  // 🎯 منتخب شدہ موبائل کا کل بقایا (میکس لمٹ)
-  int get maxAllowedLimit {
-    if (accountType == 0 && selectedProduct != null) {
-      return (selectedProduct!['remaining'] as int?) ?? 0;
-    }
-    return 99999999;
-  }
-
-  // 🎯 کیا راشن کا بل میکس حد سے تجاوز کر گیا ہے؟
-  bool get isOverMaxLimit {
-    if (accountType == 0 && selectedProduct != null) {
-      return groceryTotal > maxAllowedLimit;
-    }
-    return false;
-  }
 
   String formatAmount(num amount) {
     return amount.toInt().toString().replaceAllMapped(
@@ -63,16 +31,6 @@ class ServiceStockController extends ChangeNotifier {
 
   void setMainMode(int mode) {
     mainMode = mode;
-    notifyListeners();
-  }
-
-  void setAccountType(int type) {
-    accountType = type;
-    notifyListeners();
-  }
-
-  void setSelectedProductIndex(int index) {
-    selectedProductIndex = index;
     notifyListeners();
   }
 
@@ -91,6 +49,7 @@ class ServiceStockController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // گروسری لاجک
   void selectAutocompleteItem(String val) {
     groceryService.selectAutocompleteItem(val);
     notifyListeners();
@@ -144,6 +103,7 @@ class ServiceStockController extends ChangeNotifier {
     _stepperTimer?.cancel();
   }
 
+  // موبائل سپلائر لاجک
   void setColor(String val) {
     mobileService.selectedColor = val;
     notifyListeners();

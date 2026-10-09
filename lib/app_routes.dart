@@ -69,7 +69,6 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => ServiceStockEntryPage(
             customerPhone: args['customerPhone']?.toString() ?? '',
-            customerProducts: (args['customerProducts'] as List?)?.cast<Map<String, dynamic>>() ?? const [],
           ),
         );
 

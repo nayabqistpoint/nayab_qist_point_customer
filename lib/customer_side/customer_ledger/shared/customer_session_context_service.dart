@@ -44,14 +44,13 @@ class CustomerSessionContextService {
   static Future<dynamic> openServiceStockEntry(
     BuildContext context, {
     required String customerPhone,
-    required List<Map<String, dynamic>> products,
+    List<Map<String, dynamic>>? products,
   }) async {
     return await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ServiceStockEntryPage(
           customerPhone: customerPhone,
-          customerProducts: products,
         ),
       ),
     );
