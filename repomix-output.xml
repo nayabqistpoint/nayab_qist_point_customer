@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/customer_ledger/cash_loan_subview
+- Only files matching these patterns are included: lib/customer_side/hive_services, lib/customer_side/sync
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -47,288 +47,1134 @@ The content is organized as follows:
 <directory_structure>
 lib/
   customer_side/
-    customer_ledger/
-      cash_loan_subview/
-        components/
-          cash_loan_section_ui.dart
-        services/
-          transaction_ledger_service.dart
+    hive_services/
+      hive_box_manager.dart
+      login_hive_service.dart
+    sync/
+      core/
+        connectivity_service.dart
+        sync_status.dart
+      global_sync/
+        app_config_pull_service.dart
+        stock_pull_service.dart
+      media_sync/
+        cloudinary_upload_service.dart
+        pending_media_sync_service.dart
+      pull_services/
+        customer_pull_service.dart
+        guarantor_pull_service.dart
+        installments_pull_service.dart
+        media_pull_service.dart
+        transaction_pull_service.dart
+        users_pull_service.dart
+      push_services/
+        atomic_batch_sync_service.dart
+        customer_push_service.dart
+        guarantor_push_service.dart
+        installments_push_service.dart
+        media_push_service.dart
+        transaction_push_service.dart
+        users_push_service.dart
+      master_sync_hub.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/customer_ledger/cash_loan_subview/components/cash_loan_section_ui.dart">
-import 'package:flutter/material.dart';
-class CashLoanSectionUi extends StatelessWidget {
-  final int cashLoanBalance;
-  final List<Map<String, dynamic>> cashLoanEntries;
-  final String Function(int) formatAmount;
-  final VoidCallback onRepaymentPressed;
-  const CashLoanSectionUi({
-    super.key,
-    required this.cashLoanBalance,
-    required this.cashLoanEntries,
-    required this.formatAmount,
-    required this.onRepaymentPressed,
+<file path="lib/customer_side/sync/core/connectivity_service.dart">
+import 'dart:io' show InternetAddress, SocketException;
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
+class ConnectivityService {
+  static Future<bool> hasInternetConnection() async {
+    try {
+      final connectivityResults = await Connectivity().checkConnectivity();
+      if (connectivityResults.contains(ConnectivityResult.none)) {
+        return false;
+      }
+      if (kIsWeb) {
+        return true;
+      }
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } on SocketException catch (_) {
+      return false;
+    } catch (e) {
+      debugPrint('Connectivity Check Notice: $e');
+      final results = await Connectivity().checkConnectivity();
+      return !results.contains(ConnectivityResult.none);
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/core/sync_status.dart">
+enum SyncStatus {
+  idle,
+  syncing,
+  synced,
+  offline,
+  error,
+}
+class SyncResult {
+  final bool success;
+  final String message;
+  final int recordsProcessed;
+  const SyncResult({
+    required this.success,
+    required this.message,
+    this.recordsProcessed = 0,
   });
-  List<Map<String, dynamic>> _computeRunningBalances() {
-    int current = cashLoanBalance;
-    final List<Map<String, dynamic>> computed = [];
-    for (int i = 0; i < cashLoanEntries.length; i++) {
-      final entry = Map<String, dynamic>.from(cashLoanEntries[i]);
-      final int amt = (entry['amount'] as int?) ?? 0;
-      final String type = (entry['type'] ?? 'DEBIT').toString().toUpperCase();
-      entry['runningBalanceAtThisPoint'] = current;
-      computed.add(entry);
-      if (type == 'DEBIT') {
-        current -= amt;
+  factory SyncResult.success([int count = 0]) => SyncResult(
+        success: true,
+        message: 'کامیابی سے سنک ہو گیا',
+        recordsProcessed: count,
+      );
+  factory SyncResult.failure(String err) => SyncResult(
+        success: false,
+        message: err,
+        recordsProcessed: 0,
+      );
+}
+</file>
+
+<file path="lib/customer_side/sync/media_sync/cloudinary_upload_service.dart">
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+class CloudinaryUploadService {
+  static const String cloudName = 'meuimddu';
+  static const String uploadPreset = 'xaeqcg0u';
+  static Future<String?> uploadFile(String pathOrBlob, {required bool isAudio}) async {
+    if (pathOrBlob.isEmpty) return null;
+    try {
+      final resourceType = isAudio ? 'video' : 'image';
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload');
+      final xFile = XFile(pathOrBlob);
+      final bytes = await xFile.readAsBytes();
+      if (bytes.isEmpty) {
+        debugPrint('❌ بائٹس خالی ہیں: $pathOrBlob');
+        return null;
+      }
+      final request = http.MultipartRequest('POST', url)
+        ..fields['upload_preset'] = uploadPreset
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            bytes,
+            filename: isAudio ? 'recording.m4a' : 'upload.jpg',
+          ),
+        );
+      debugPrint('🚀 کلاؤڈینیری پر بھیج رہے ہیں (${isAudio ? "Audio" : "Image"})...');
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          throw Exception('کلاؤڈینیری ٹائم آؤٹ ہو گیا');
+        },
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final secureUrl = data['secure_url'] as String?;
+        debugPrint('✅ کلاؤڈینیری کامیابی: $secureUrl');
+        return secureUrl;
       } else {
-        current += amt;
+        debugPrint('❌ کلاؤڈینیری فیل (${response.statusCode}): ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ کلاؤڈینیری استثناء: $e');
+      return null;
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/global_sync/app_config_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class AppConfigPullService {
+  static const String collectionName = HiveBoxManager.appConfigBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync() {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = _sanitizeData(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [appConfigBox] مرر ڈیلیٹ: $key');
+          }
+        }
+      }
+      debugPrint('⚡ [appConfigBox] لائیو اپڈیٹ: ${cloudIds.length} دستاویزات');
+    }, onError: (e) => debugPrint('❌ AppConfig Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+  static Map<String, dynamic> _sanitizeData(Map<String, dynamic> raw) {
+    final Map<String, dynamic> clean = {};
+    raw.forEach((key, value) {
+      if (value is Timestamp) {
+        clean[key] = value.toDate().toIso8601String();
+      } else if (value is Map) {
+        clean[key] = _sanitizeData(Map<String, dynamic>.from(value));
+      } else if (value is List) {
+        clean[key] = value.map((item) {
+          if (item is Timestamp) return item.toDate().toIso8601String();
+          if (item is Map) return _sanitizeData(Map<String, dynamic>.from(item));
+          return item;
+        }).toList();
+      } else {
+        clean[key] = value;
+      }
+    });
+    return clean;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/global_sync/stock_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class StockPullService {
+  static const String collectionName = HiveBoxManager.stockBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync() {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.stockBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = _sanitizeData(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [stockBox] مرر ڈیلیٹ: $key');
+          }
+        }
+      }
+      debugPrint('⚡ [stockBox] لائیو اسٹاک اپڈیٹ: ${cloudIds.length} دستاویزات');
+    }, onError: (e) => debugPrint('❌ Stock Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+  static Map<String, dynamic> _sanitizeData(Map<String, dynamic> raw) {
+    final Map<String, dynamic> clean = {};
+    raw.forEach((key, value) {
+      if (value is Timestamp) {
+        clean[key] = value.toDate().toIso8601String();
+      } else if (value is Map) {
+        clean[key] = _sanitizeData(Map<String, dynamic>.from(value));
+      } else if (value is List) {
+        clean[key] = value.map((item) {
+          if (item is Timestamp) return item.toDate().toIso8601String();
+          if (item is Map) return _sanitizeData(Map<String, dynamic>.from(item));
+          return item;
+        }).toList();
+      } else {
+        clean[key] = value;
+      }
+    });
+    return clean;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/media_sync/pending_media_sync_service.dart">
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/cloudinary_upload_service.dart';
+class PendingMediaSyncService {
+  static Future<void> processPendingUploads() async {
+    debugPrint('🚀 [PendingMediaSyncService] میڈیا اپلوڈ کی جانچ شروع...');
+    if (!kIsWeb) {
+      final isOnline = await ConnectivityService.hasInternetConnection();
+      if (!isOnline) {
+        debugPrint('⚠️ انٹرنیٹ موجود نہیں ہے');
+        return;
       }
     }
-    return computed;
+    final box = await HiveBoxManager.openSafeBox(HiveBoxManager.mediaBoxName);
+    for (var key in box.keys) {
+      final raw = box.get(key);
+      if (raw is Map) {
+        final data = Map<String, dynamic>.from(raw);
+        if (data['status'] == 'pending_upload') {
+          bool allSuccess = true;
+          bool needsUpload(dynamic val) {
+            final str = (val ?? '').toString().trim();
+            if (str.isEmpty) return false;
+            if (str.startsWith('https:
+            return str.startsWith('blob:') || str.startsWith('/') || str.startsWith('http');
+          }
+          if (needsUpload(data['customerCnicFront'])) {
+            debugPrint('📤 کلاؤڈینیری: کسٹمر فرنٹ کارڈ جا رہا ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['customerCnicFront'], isAudio: false);
+            if (url != null) {
+              data['customerCnicFront'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (needsUpload(data['customerCnicBack'])) {
+            debugPrint('📤 کلاؤڈینیری: کسٹمر بیک کارڈ جا رہا ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['customerCnicBack'], isAudio: false);
+            if (url != null) {
+              data['customerCnicBack'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (needsUpload(data['customerSelfie'])) {
+            debugPrint('📤 کلاؤڈینیری: کسٹمر سیلفی جا رہی ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['customerSelfie'], isAudio: false);
+            if (url != null) {
+              data['customerSelfie'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (needsUpload(data['customerAudio'])) {
+            debugPrint('📤 کلاؤڈینیری: کسٹمر آڈیو جا رہی ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['customerAudio'], isAudio: true);
+            if (url != null) {
+              data['customerAudio'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (needsUpload(data['guarantorCnicFront'])) {
+            debugPrint('📤 کلاؤڈینیری: ضامن فرنٹ کارڈ جا رہا ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['guarantorCnicFront'], isAudio: false);
+            if (url != null) {
+              data['guarantorCnicFront'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (needsUpload(data['guarantorCnicBack'])) {
+            debugPrint('📤 کلاؤڈینیری: ضامن بیک کارڈ جا رہا ہے...');
+            final url = await CloudinaryUploadService.uploadFile(data['guarantorCnicBack'], isAudio: false);
+            if (url != null) {
+              data['guarantorCnicBack'] = url;
+            } else {
+              allSuccess = false;
+            }
+          }
+          if (allSuccess) {
+            data['status'] = 'ready_to_push';
+            data['isSynced'] = false;
+            await box.put(key, data);
+            debugPrint('✅ تمام میڈیا کلاؤڈینیری پر چڑھ گیا، اب فائر اسٹور کے لیے ریڈی ہے!');
+          } else {
+            debugPrint('❌ کچھ فائلیں اپلوڈ نہیں ہو سکیں، اسٹیٹس پینڈنگ ہی رہے گا');
+          }
+        }
+      }
+    }
   }
-  @override
-  Widget build(BuildContext context) {
-    final bool isCustomerAdvance = cashLoanBalance < 0;
-    final bool hasDues = cashLoanBalance > 0;
-    final entriesWithBalance = _computeRunningBalances();
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isCustomerAdvance ? 'آپ کی پیشگی جمع شدہ رقم (ایڈوانس):' : 'کل نقد دستی ادھار واجب الادا:',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 3),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${isCustomerAdvance ? '-' : ''}Rs. ${formatAmount(cashLoanBalance.abs())}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: isCustomerAdvance ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (hasDues)
-                Flexible(
-                  fit: FlexFit.loose,
-                  child: ElevatedButton.icon(
-                    onPressed: onRepaymentPressed,
-                    icon: const Icon(Icons.payment_rounded, size: 14),
-                    label: const Text(
-                      'قرض واپس کریں',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E293B),
-                      foregroundColor: Colors.white,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (entriesWithBalance.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Text(
-                'کوئی نقد لین دین موجود نہیں ہے۔',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-              ),
-            ),
-          )
-        else
-          ...entriesWithBalance.map((e) {
-            final String type = (e['type'] ?? 'DEBIT').toString().toUpperCase();
-            final bool isRepayment = type == 'CREDIT';
-            final int amt = (e['amount'] as int?) ?? 0;
-            final int runBal = (e['runningBalanceAtThisPoint'] as int?) ?? 0;
-            final bool isBalDebit = runBal > 0;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: isRepayment ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                isRepayment ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                                size: 12,
-                                color: isRepayment ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                e['title']?.toString() ?? (isRepayment ? 'دستی قرض واپسی ادا کی' : 'نقد دستی کیش لیا'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          e['date']?.toString() ?? 'آج',
-                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${isRepayment ? '-' : '+'}Rs. ${formatAmount(amt)}',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w900,
-                          color: isRepayment ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isBalDebit ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: isBalDebit ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          'بقیہ: Rs. ${formatAmount(runBal.abs())}',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: isBalDebit ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          }),
-      ],
+}
+</file>
+
+<file path="lib/customer_side/sync/pull_services/guarantor_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class GuarantorPullService {
+  static const String collectionName = HiveBoxManager.guarantorBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync(String phone) {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .where('customerPhone', isEqualTo: phone)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.guarantorBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = Map<String, dynamic>.from(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      if (snapshot.metadata.isFromCache) return;
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [guarantorBox] لائیو مرر ڈیلیٹ ہوا: $key');
+          }
+        }
+      }
+      debugPrint('⚡ [guarantorBox] لائیو سنک اپڈیٹ: ${cloudIds.length} ریکارڈز');
+    }, onError: (e) => debugPrint('❌ Guarantor Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/pull_services/installments_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class InstallmentsPullService {
+  static const String collectionName = HiveBoxManager.installmentsBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync(String phone) {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .where('customerPhone', isEqualTo: phone)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = Map<String, dynamic>.from(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      if (snapshot.metadata.isFromCache) return;
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [installmentsBox] مرر ڈیلیٹ: $key');
+          }
+        }
+      }
+    }, onError: (e) => debugPrint('❌ Installments Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/pull_services/media_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class MediaPullService {
+  static const String collectionName = HiveBoxManager.mediaBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync(String phone) {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .where('customerPhone', isEqualTo: phone)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.mediaBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = Map<String, dynamic>.from(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      if (snapshot.metadata.isFromCache) return;
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [mediaBox] لائیو مرر ڈیلیٹ ہوا: $key');
+          }
+        }
+      }
+      debugPrint('⚡ [mediaBox] لائیو سنک اپڈیٹ: ${cloudIds.length} ریکارڈز');
+    }, onError: (e) => debugPrint('❌ Media Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/pull_services/transaction_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class TransactionPullService {
+  static const String collectionName = HiveBoxManager.transactionBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync(String phone) {
+    _subscription?.cancel();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .where('customerPhone', isEqualTo: phone)
+        .snapshots()
+        .listen((snapshot) async {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
+      final Set<String> cloudIds = {};
+      for (var doc in snapshot.docs) {
+        cloudIds.add(doc.id);
+        final data = Map<String, dynamic>.from(doc.data());
+        data['isSynced'] = true;
+        await box.put(doc.id, data);
+      }
+      if (snapshot.metadata.isFromCache) return;
+      for (var key in box.keys) {
+        if (!cloudIds.contains(key.toString())) {
+          final local = box.get(key);
+          if (local is Map && local['isSynced'] == true) {
+            await box.delete(key);
+            debugPrint('🗑️ [transactionBox] مرر ڈیلیٹ: $key');
+          }
+        }
+      }
+    }, onError: (e) => debugPrint('❌ Transaction Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/atomic_batch_sync_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
+class BatchOperationItem {
+  final String firestoreCollection;
+  final String hiveBoxName;
+  final String docId;
+  final Map<String, dynamic> data;
+  const BatchOperationItem({
+    required this.firestoreCollection,
+    required this.hiveBoxName,
+    required this.docId,
+    required this.data,
+  });
+}
+class AtomicBatchSyncService {
+  static Future<SyncResult> executeBatch(List<BatchOperationItem> operations) async {
+    if (operations.isEmpty) {
+      return SyncResult.failure('بیچ کے لیے کوئی آپریشن فراہم نہیں کیا گیا');
+    }
+    try {
+      for (final op in operations) {
+        final box = await HiveBoxManager.openSafeBox(op.hiveBoxName);
+        final localRecord = Map<String, dynamic>.from(op.data);
+        localRecord['isSynced'] = false;
+        await box.put(op.docId, localRecord);
+      }
+      debugPrint('💾 لوکل ہائیو میں تمام ${operations.length} ریکارڈز (isSynced: false) محفوظ ہو گئے۔');
+      final hasNet = await ConnectivityService.hasInternetConnection();
+      if (!hasNet) {
+        debugPrint('🌐 انٹرنیٹ دستیاب نہیں: ڈیٹا آف لائن ہائیو میں محفوظ ہو چکا ہے، بعد میں خودکار سنک ہوگا۔');
+        return SyncResult.success(operations.length);
+      }
+      final firestore = FirebaseFirestore.instance;
+      final WriteBatch batch = firestore.batch();
+      for (final op in operations) {
+        final docRef = firestore.collection(op.firestoreCollection).doc(op.docId);
+        final cloudData = Map<String, dynamic>.from(op.data);
+        cloudData['isSynced'] = true;
+        batch.set(docRef, cloudData, SetOptions(merge: true));
+      }
+      await batch.commit();
+      debugPrint('☁ فائر اسٹور پر تمام ${operations.length} ڈاکومنٹس ایک ساتھ کمٹ ہو گئے۔');
+      for (final op in operations) {
+        final box = await HiveBoxManager.openSafeBox(op.hiveBoxName);
+        final syncedRecord = Map<String, dynamic>.from(op.data);
+        syncedRecord['isSynced'] = true;
+        await box.put(op.docId, syncedRecord);
+      }
+      return SyncResult.success(operations.length);
+    } catch (e) {
+      debugPrint('❌ اٹامک رائٹ بیچ فیل ہو گیا: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/guarantor_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class GuarantorPushService {
+  static const String collectionName = HiveBoxManager.guarantorBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.guarantorBoxName);
+      int count = 0;
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final data = Map<String, dynamic>.from(raw);
+          if (data['isSynced'] != true) {
+            final docId = key.toString();
+            final payload = Map<String, dynamic>.from(data);
+            payload['isSynced'] = true;
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(docId)
+                .set(payload, SetOptions(merge: true));
+            data['isSynced'] = true;
+            await box.put(key, data);
+            count++;
+          }
+        }
+      }
+      return SyncResult.success(count);
+    } catch (e) {
+      debugPrint('❌ GuarantorPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/installments_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class InstallmentsPushService {
+  static const String collectionName = HiveBoxManager.installmentsBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
+      int count = 0;
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final data = Map<String, dynamic>.from(raw);
+          if (data['isSynced'] != true) {
+            final docId = key.toString();
+            final payload = Map<String, dynamic>.from(data);
+            payload['isSynced'] = true;
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(docId)
+                .set(payload, SetOptions(merge: true));
+            data['isSynced'] = true;
+            await box.put(key, data);
+            count++;
+          }
+        }
+      }
+      return SyncResult.success(count);
+    } catch (e) {
+      debugPrint('❌ InstallmentsPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/transaction_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class TransactionPushService {
+  static const String collectionName = HiveBoxManager.transactionBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
+      int count = 0;
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final data = Map<String, dynamic>.from(raw);
+          if (data['isSynced'] != true) {
+            final docId = key.toString();
+            final payload = Map<String, dynamic>.from(data);
+            payload['isSynced'] = true;
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(docId)
+                .set(payload, SetOptions(merge: true));
+            data['isSynced'] = true;
+            await box.put(key, data);
+            count++;
+          }
+        }
+      }
+      return SyncResult.success(count);
+    } catch (e) {
+      debugPrint('❌ TransactionPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/hive_services/login_hive_service.dart">
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+class LoginHiveService {
+  static Future<Map<String, dynamic>> verifyAndExecuteLogin({
+    required String phone,
+    required String enteredPin,
+    required Map<String, dynamic> sessionPayload,
+  }) async {
+    final usersBox = await HiveBoxManager.openSafeBox(HiveBoxManager.usersBoxName);
+    final userCredentials = usersBox.get(phone);
+    if (userCredentials == null) {
+      return {'success': false, 'message': 'یہ موبائل نمبر رجسٹرڈ نہیں ہے'};
+    }
+    final storedPin = (userCredentials['pin'] ?? userCredentials['pinCode'])?.toString().trim();
+    final cleanEnteredPin = enteredPin.trim();
+    if (storedPin != cleanEnteredPin) {
+      return {'success': false, 'message': 'درج کردہ پن کوڈ غلط ہے'};
+    }
+    final status = (userCredentials['status'] ?? '').toString().trim().toLowerCase();
+    if (status != 'approved') {
+      return {'success': false, 'message': 'آپ کا اکاؤنٹ ابھی ایڈمن کی منظوری کا منتظر ہے'};
+    }
+    await HiveBoxManager.openSessionBoxes();
+    final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+    for (final entry in sessionPayload.entries) {
+      await settingsBox.put(entry.key, entry.value);
+    }
+    InspectorStore.instance.logPayload(
+      title: 'کسٹمر لاگ ان کامیاب ($phone)',
+      direction: PayloadDirection.localHiveWrite,
+      data: sessionPayload,
+    );
+    return {'success': true};
+  }
+  static Future<Map<String, String>?> getRememberedCredentials() async {
+    final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+    final isRemembered = settingsBox.get('is_remember_me', defaultValue: false) as bool;
+    if (isRemembered) {
+      final phone = settingsBox.get('remembered_phone', defaultValue: '') as String;
+      final pin = settingsBox.get('remembered_pin', defaultValue: '') as String;
+      if (phone.isNotEmpty && pin.isNotEmpty) {
+        return {'phone': phone, 'pin': pin};
+      }
+    }
+    return null;
+  }
+  static Future<void> executeLogout() async {
+    final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+    await settingsBox.put('isLoggedIn', false);
+    final isRemembered = settingsBox.get('is_remember_me', defaultValue: false) as bool;
+    if (!isRemembered) {
+      await settingsBox.delete('activePhone');
+      await settingsBox.delete('remembered_phone');
+      await settingsBox.delete('remembered_pin');
+    }
+    await HiveBoxManager.closeSessionBoxes();
+    InspectorStore.instance.logPayload(
+      title: 'کسٹمر لاگ آؤٹ مکمل',
+      direction: PayloadDirection.localHiveWrite,
+      data: {'isLoggedIn': false},
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/customer_ledger/cash_loan_subview/services/transaction_ledger_service.dart">
+<file path="lib/customer_side/sync/pull_services/customer_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-class TransactionLedgerService {
-  static Future<Box> ensureBoxOpen() async {
-    return await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
-  }
-  static ValueListenable<Box>? get boxListenable {
-    if (Hive.isBoxOpen(HiveBoxManager.transactionBoxName)) {
-      return Hive.box(HiveBoxManager.transactionBoxName).listenable();
+class CustomerPullService {
+  static StreamSubscription<DocumentSnapshot>? _liveSubscription;
+  static void startLiveSync(String phone) {
+    if (phone.isEmpty) return;
+    stopLiveSync();
+    try {
+      _liveSubscription = FirebaseFirestore.instance
+          .collection(HiveBoxManager.customerBoxName)
+          .doc(phone)
+          .snapshots()
+          .listen((snapshot) async {
+        if (snapshot.exists && snapshot.data() != null) {
+          final data = Map<String, dynamic>.from(snapshot.data()!);
+          data['isSynced'] = true;
+          final box = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
+          await box.clear();
+          await box.put(phone, data);
+          debugPrint('✅ Customer Live Sync Updated for: $phone');
+        }
+      }, onError: (error) {
+        debugPrint('❌ Customer Live Sync Error: $error');
+      });
+    } catch (e) {
+      debugPrint('❌ Customer startLiveSync Error: $e');
     }
-    return null;
   }
-  static Future<List<Map<String, dynamic>>> getCustomerTransactions(String customerPhone) async {
-    final box = await ensureBoxOpen();
-    final cleanPhone = customerPhone.replaceAll(RegExp(r'\s+'), '').trim();
-    final List<Map<String, dynamic>> results = [];
-    for (var key in box.keys) {
-      final rawData = box.get(key);
-      if (rawData is Map) {
-        final orderPhone = (rawData['customerPhone'] ?? '')
-            .toString()
-            .replaceAll(RegExp(r'\s+'), '')
-            .trim();
-        final bool isMatch = cleanPhone.isNotEmpty &&
-            (orderPhone == cleanPhone ||
-                (cleanPhone.length >= 10 && orderPhone.endsWith(cleanPhone.substring(cleanPhone.length - 10))));
-        if (isMatch) {
-          final Map<String, dynamic> entry = Map<String, dynamic>.from(rawData);
-          entry['key'] = key;
-          results.add(entry);
+  static void stopLiveSync() {
+    _liveSubscription?.cancel();
+    _liveSubscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/pull_services/users_pull_service.dart">
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class UsersPullService {
+  static const String collectionName = HiveBoxManager.usersBoxName;
+  static StreamSubscription? _subscription;
+  static void startLiveSync(String phone) {
+    if (phone.isEmpty) return;
+    stopLiveSync();
+    _subscription = FirebaseFirestore.instance
+        .collection(collectionName)
+        .doc(phone)
+        .snapshots()
+        .listen((doc) async {
+      if (doc.metadata.isFromCache) return;
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.usersBoxName);
+      if (doc.exists && doc.data() != null) {
+        final data = Map<String, dynamic>.from(doc.data()!);
+        data['isSynced'] = true;
+        await box.clear();
+        await box.put(phone, data);
+        debugPrint('⚡ [usersBox] لائیو یوزر اپڈیٹ برائے: $phone');
+      } else if (!doc.exists) {
+        await box.delete(phone);
+      }
+    }, onError: (e) => debugPrint('❌ Users Live Error: $e'));
+  }
+  static void stopLiveSync() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/customer_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class CustomerPushService {
+  static const String collectionName = HiveBoxManager.customerBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+      final activePhone = settingsBox.get('activePhone', defaultValue: '') as String;
+      if (activePhone.isEmpty) {
+        return SyncResult.success(0);
+      }
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
+      final raw = box.get(activePhone);
+      // صرف فعال لاگ ان شدہ کسٹمر کو پش کرنا
+      if (raw is Map) {
+        final data = Map<String, dynamic>.from(raw);
+        if (data['isSynced'] != true) {
+          final payload = Map<String, dynamic>.from(data);
+          payload['isSynced'] = true;
+          await FirebaseFirestore.instance
+              .collection(collectionName)
+              .doc(activePhone)
+              .set(payload, SetOptions(merge: true));
+          data['isSynced'] = true;
+          await box.put(activePhone, data);
+          return SyncResult.success(1);
         }
       }
+      return SyncResult.success(0);
+    } catch (e) {
+      debugPrint('❌ CustomerPushService Error: $e');
+      return SyncResult.failure(e.toString());
     }
-    results.sort((a, b) {
-      final String dateA = (a['date'] ?? a['paymentDate'] ?? '').toString();
-      final String dateB = (b['date'] ?? b['paymentDate'] ?? '').toString();
-      return dateB.compareTo(dateA);
-    });
-    return results;
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/media_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class MediaPushService {
+  static const String collectionName = HiveBoxManager.mediaBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.mediaBoxName);
+      int count = 0;
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final data = Map<String, dynamic>.from(raw);
+          if (data['isSynced'] != true && data['status'] == 'ready_to_push') {
+            final docId = key.toString();
+            final payload = Map<String, dynamic>.from(data);
+            payload['isSynced'] = true;
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(docId)
+                .set(payload, SetOptions(merge: true));
+            data['isSynced'] = true;
+            await box.put(key, data);
+            count++;
+            debugPrint('🚀 [mediaBox] کامیابی سے فائر اسٹور پر سنک ہو گیا: $docId');
+          }
+        }
+      }
+      return SyncResult.success(count);
+    } catch (e) {
+      debugPrint('❌ MediaPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/push_services/users_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class UsersPushService {
+  static const String collectionName = HiveBoxManager.usersBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+      final activePhone = settingsBox.get('activePhone', defaultValue: '') as String;
+      if (activePhone.isEmpty) {
+        return SyncResult.success(0);
+      }
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.usersBoxName);
+      final raw = box.get(activePhone);
+      // صرف فعال لاگ ان شدہ یوزر کا ڈیٹا پش کرنا
+      if (raw is Map) {
+        final data = Map<String, dynamic>.from(raw);
+        if (data['isSynced'] != true) {
+          final payload = Map<String, dynamic>.from(data);
+          payload['isSynced'] = true;
+          await FirebaseFirestore.instance
+              .collection(collectionName)
+              .doc(activePhone)
+              .set(payload, SetOptions(merge: true));
+          data['isSynced'] = true;
+          await box.put(activePhone, data);
+          return SyncResult.success(1);
+        }
+      }
+      return SyncResult.success(0);
+    } catch (e) {
+      debugPrint('❌ UsersPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/master_sync_hub.dart">
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/app_config_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/users_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/customer_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/guarantor_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/installments_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/transaction_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/media_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/users_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/customer_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/guarantor_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/installments_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/transaction_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/media_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/atomic_batch_sync_service.dart';
+export 'push_services/atomic_batch_sync_service.dart' show BatchOperationItem;
+export 'core/sync_status.dart';
+class MasterSyncHub {
+  static Future<SyncResult> executeBatch(List<BatchOperationItem> operations) async {
+    return await AtomicBatchSyncService.executeBatch(operations);
+  }
+  static Future<void> syncGlobalDataOnBoot() async {
+    if (!await ConnectivityService.hasInternetConnection()) return;
+    debugPrint('🚀 گلوبل ڈیٹا لائیو سنک شروع...');
+    AppConfigPullService.startLiveSync();
+    StockPullService.startLiveSync();
+  }
+  static Future<void> syncCustomerSession({required String customerPhone}) async {
+    if (!await ConnectivityService.hasInternetConnection()) {
+      debugPrint('🌐 آف لائن موڈ: لوکل ہائیو ڈسک ڈیٹا محفوظ اور فعال ہے۔');
+      return;
+    }
+    await pushAllPendingRecords();
+    UsersPullService.startLiveSync(customerPhone);
+    CustomerPullService.startLiveSync(customerPhone);
+    GuarantorPullService.startLiveSync(customerPhone);
+    InstallmentsPullService.startLiveSync(customerPhone);
+    TransactionPullService.startLiveSync(customerPhone);
+    MediaPullService.startLiveSync(customerPhone);
+    debugPrint('⚡ کسٹمر سیشن کے تمام لائیو لسنرز فعال ہو گئے برائے: $customerPhone');
+  }
+  static Future<void> pushAllPendingRecords() async {
+    if (!await ConnectivityService.hasInternetConnection()) return;
+    debugPrint('📤 پینڈنگ ریکارڈز پش ہو رہے ہیں...');
+    await PendingMediaSyncService.processPendingUploads();
+    await Future.wait([
+      UsersPushService.pushPending(),
+      CustomerPushService.pushPending(),
+      GuarantorPushService.pushPending(),
+      InstallmentsPushService.pushPending(),
+      TransactionPushService.pushPending(),
+      MediaPushService.pushPending(),
+    ]);
+  }
+  static void stopAllLiveSyncs() {
+    AppConfigPullService.stopLiveSync();
+    StockPullService.stopLiveSync();
+    UsersPullService.stopLiveSync();
+    CustomerPullService.stopLiveSync();
+    GuarantorPullService.stopLiveSync();
+    InstallmentsPullService.stopLiveSync();
+    TransactionPullService.stopLiveSync();
+    MediaPullService.stopLiveSync();
+    debugPrint('🛑 تمام لائیو لسنرز بند کر دیے گئے۔');
+  }
+}
+</file>
+
+<file path="lib/customer_side/hive_services/hive_box_manager.dart">
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
+class HiveBoxManager {
+  static const String settingsBoxName = 'settingsBox';
+  static const String usersBoxName = 'usersBox';
+  static const String stockBoxName = 'stockBox';
+  static const String appConfigBoxName = 'appConfigBox';
+  static const String customerBoxName = 'customerBox';
+  static const String guarantorBoxName = 'guarantorBox';
+  static const String mediaBoxName = 'mediaBox';
+  static const String installmentsBoxName = 'installmentsBox';
+  static const String transactionBoxName = 'transactionBox';
+  static Future<void> initGlobalBoxes() async {
+    await Hive.initFlutter();
+    await Future.wait([
+      openSafeBox(settingsBoxName),
+      openSafeBox(usersBoxName),
+      openSafeBox(stockBoxName),
+      openSafeBox(appConfigBoxName),
+    ]);
+  }
+  static Future<void> openSessionBoxes() async {
+    await Future.wait([
+      openSafeBox(customerBoxName),
+      openSafeBox(guarantorBoxName),
+      openSafeBox(mediaBoxName),
+      openSafeBox(installmentsBoxName),
+      openSafeBox(transactionBoxName),
+    ]);
+  }
+  static Future<void> closeSessionBoxes() async {
+    await Future.wait([
+      _closeSafeBox(customerBoxName),
+      _closeSafeBox(guarantorBoxName),
+      _closeSafeBox(mediaBoxName),
+      _closeSafeBox(installmentsBoxName),
+      _closeSafeBox(transactionBoxName),
+    ]);
+  }
+  static Future<Box> openSafeBox(String boxName) async {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box(boxName);
+    }
+    return await Hive.openBox(boxName);
+  }
+  static Future<void> _closeSafeBox(String boxName) async {
+    if (Hive.isBoxOpen(boxName)) {
+      await Hive.box(boxName).close();
+    }
+  }
+  static Future<bool> writeBatchPayloads({
+    required String docId,
+    required Map<String, Map<String, dynamic>> payloads,
+    String logTitle = 'ڈیٹا لوکل محفوظ ہوا',
+  }) async {
+    try {
+      for (final entry in payloads.entries) {
+        final boxName = entry.key;
+        final data = entry.value;
+        final box = await openSafeBox(boxName);
+        if (boxName == customerBoxName || boxName == guarantorBoxName || boxName == mediaBoxName) {
+          await box.clear();
+        }
+        await box.put(docId, data);
+      }
+      InspectorStore.instance.logPayload(
+        title: '$logTitle (Phone: $docId)',
+        direction: PayloadDirection.localHiveWrite,
+        data: payloads,
+      );
+      MasterSyncHub.pushAllPendingRecords().catchError((_) {});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  static List<String> getAllActiveBoxNames() {
+    return [
+      settingsBoxName,
+      usersBoxName,
+      stockBoxName,
+      appConfigBoxName,
+      if (Hive.isBoxOpen(customerBoxName)) customerBoxName,
+      if (Hive.isBoxOpen(guarantorBoxName)) guarantorBoxName,
+      if (Hive.isBoxOpen(mediaBoxName)) mediaBoxName,
+      if (Hive.isBoxOpen(installmentsBoxName)) installmentsBoxName,
+      if (Hive.isBoxOpen(transactionBoxName)) transactionBoxName,
+    ];
   }
 }
 </file>

@@ -13,6 +13,7 @@ class GroceryEntryPayloadService {
     final customerBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
     final customerData = customerBox.get(customerPhone);
     final int currentBal = (customerData is Map ? customerData['cashLoanBalance'] : 0) ?? 0;
+    final int currentInstDue = (customerData is Map ? customerData['installmentDueBalance'] : 0) ?? 0;
 
     final txData = GroceryTransactionBoxBuilder.build(
       customerPhone: customerPhone,
@@ -24,6 +25,7 @@ class GroceryEntryPayloadService {
 
     final custUpdate = GroceryCustomerBoxBuilder.build(
       currentCashLoanBalance: currentBal,
+      currentInstallmentDue: currentInstDue,
       grandTotal: grandTotal,
     );
 

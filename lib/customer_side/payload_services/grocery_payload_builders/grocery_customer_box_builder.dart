@@ -1,12 +1,20 @@
 class GroceryCustomerBoxBuilder {
-  /// customerBox کے اندر نقد ادھار اپ ڈیٹ کرنا
   static Map<String, dynamic> build({
     required int currentCashLoanBalance,
+    required int currentInstallmentDue,
     required int grandTotal,
   }) {
+    final int newCashBal = currentCashLoanBalance - grandTotal;
+    final int newNetTotal = newCashBal + currentInstallmentDue;
+    final nowIso = DateTime.now().toIso8601String();
+
     return {
-      'cashLoanBalance': currentCashLoanBalance - grandTotal,
-      'lastUpdated': DateTime.now().toIso8601String(),
+      'cashLoanBalance': newCashBal,
+      'installmentDueBalance': currentInstallmentDue,
+      'grandNetTotal': newNetTotal,
+      'updatedAt': nowIso,
+      'lastUpdated': nowIso,
+      'isSynced': false, // ☁️ سنک ٹریگر
     };
   }
 }

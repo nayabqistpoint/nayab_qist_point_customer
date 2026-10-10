@@ -20,7 +20,8 @@ class CashLoanBalanceSummaryUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCustomerAdvance = cashLoanBalance < 0;
+    // 🌟 بنیادی سیکیورٹی بیریئر: صرف اس وقت ایڈوانس مانا جائے گا جب بیلنس منفی ہو
+    final bool hasGreenAdvance = cashLoanBalance < 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -39,7 +40,6 @@ class CashLoanBalanceSummaryUi extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. اوپر والا حصہ: بیلنس اور ایڈجسٹ بٹن (Wrap تاکہ چھوٹی اسکرین پر خود نیچے آ جائے)
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -49,45 +49,48 @@ class CashLoanBalanceSummaryUi extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isCustomerAdvance ? 'پیشگی جمع رقم (ایڈوانس):' : 'خالص نقد ادھار واجب الادا:',
+                    hasGreenAdvance ? 'پیشگی جمع رقم (سبز ایڈوانس):' : 'خالص نقد ادھار واجب الادا:',
                     style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      '${isCustomerAdvance ? '-' : ''}Rs. ${formatAmount(cashLoanBalance.abs())}',
+                      '${hasGreenAdvance ? '-' : ''}Rs. ${formatAmount(cashLoanBalance.abs())}',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: isCustomerAdvance ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                        color: hasGreenAdvance ? const Color(0xFF059669) : const Color(0xFFDC2626),
                       ),
                     ),
                   ),
                 ],
               ),
-              ElevatedButton.icon(
-                onPressed: onTransferPressed,
-                icon: const Icon(Icons.sync_alt_rounded, size: 14),
-                label: const Text('قسط میں ایڈجسٹ کریں', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F766E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 1,
-                  visualDensity: VisualDensity.compact,
+              // 🔒 حفاظتی بٹن: اگر نقد رقم جمع نہیں ہے تو بٹن لاک رہے گا
+              Tooltip(
+                message: hasGreenAdvance ? 'ایڈوانس سے قسط کلیئر کریں' : 'قسط میں ایڈجسٹمنٹ کے لیے پہلے نقد ایڈوانس ہونا ضروری ہے',
+                child: ElevatedButton.icon(
+                  onPressed: hasGreenAdvance ? onTransferPressed : null,
+                  icon: const Icon(Icons.sync_alt_rounded, size: 14),
+                  label: const Text('قسط میں ایڈجسٹ کریں', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hasGreenAdvance ? const Color(0xFF0F766E) : const Color(0xFF94A3B8),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFE2E8F0),
+                    disabledForegroundColor: const Color(0xFF94A3B8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: hasGreenAdvance ? 1 : 0,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ),
             ],
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: Color(0xFFF1F5F9)),
           ),
-
-          // 2. نیچے والے 3 ایکشن بٹنز (FittedBox کے ساتھ تاکہ 280px پر بھی کٹیں نہیں)
           Row(
             children: [
               Expanded(

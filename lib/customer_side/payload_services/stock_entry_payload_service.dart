@@ -54,8 +54,12 @@ class StockEntryPayloadService {
       final customerBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
       final customerData = customerBox.get(customerPhone);
       if (customerData is Map) {
+        final int currentCashBal = (customerData['cashLoanBalance'] as num?)?.toInt() ?? 0;
+        final int currentInstDue = (customerData['installmentDueBalance'] as num?)?.toInt() ?? 0;
+
         final custUpdate = StockEntryCustomerBoxBuilder.build(
-          currentCashLoanBalance: (customerData['cashLoanBalance'] as num?)?.toInt() ?? 0,
+          currentCashLoanBalance: currentCashBal,
+          currentInstallmentDue: currentInstDue,
           purchasePrice: purchasePrice,
           isPromotionalOnOrder: false,
         );

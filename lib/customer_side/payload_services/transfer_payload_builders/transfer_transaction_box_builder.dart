@@ -1,20 +1,27 @@
 class TransferTransactionBoxBuilder {
-  /// transactionBox میں واؤچر کا نیا یونیک ڈاکومنٹ بنانا
   static Map<String, dynamic> build({
     required String customerPhone,
     required String productName,
     required int transferAmount,
   }) {
     final now = DateTime.now();
+    final String nowIso = now.toIso8601String();
+    final String txId = 'TX-TRANSFER-${now.millisecondsSinceEpoch}';
+
     return {
-      'txId': 'TX-TRANSFER-${now.millisecondsSinceEpoch}',
+      'docId': txId,
+      'txId': txId,
       'customerPhone': customerPhone,
       'txType': 'TRANSFER_TO_INSTALLMENT',
-      'title': 'نقد کھاتے سے قسط منتقلی ($productName)',
+      'title': 'نقد ایڈوانس سے قسط منتقلی ($productName)',
       'amount': transferAmount,
-      'type': 'CREDIT',
+      'type': 'DEBIT',
+      'txColor': 'RED', // 🔴 نقد کھاتے سے کٹوتی
+      'status': 'PENDING',
       'date': '${now.day} اکتوبر ${now.year}',
-      'timestamp': now.toIso8601String(),
+      'createdAt': nowIso,
+      'updatedAt': nowIso,
+      'isSynced': false, // ☁️ سنک ٹریگر
       'hasPhoto': false,
       'hasAudio': false,
     };

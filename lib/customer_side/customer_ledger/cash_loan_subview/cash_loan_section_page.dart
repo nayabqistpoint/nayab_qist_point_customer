@@ -33,14 +33,19 @@ class CashLoanSectionPage extends StatelessWidget {
             );
           },
           onTransferPressed: () {
+            // 🌟 منفی ایڈوانس کو مثبت عدد بنا کر پاس کیا گیا ہے
+            final int greenAdvance = controller.cashLoanBalance < 0
+                ? controller.cashLoanBalance.abs()
+                : 0;
+
             TransferToInstallmentSheetUi.show(
               context: context,
               customerPhone: controller.customerPhone,
+              availableGreenAdvance: greenAdvance,
               customerProducts: customerProducts,
               formatAmount: controller.formatAmount,
             );
           },
-          // 🌟 اب کسی ریٹرن رزلٹ کا انتظار نہیں، پیج خود ہائیو میں سیو کرے گا
           onGroceryPressed: () {
             Navigator.push(
               context,

@@ -1,5 +1,4 @@
 class StockEntryStockBoxBuilder {
-  /// stockBox کے لیے نیا منفرد ڈاکومنٹ بنانا
   static Map<String, dynamic> build({
     required String model,
     required String ramRom,
@@ -15,9 +14,11 @@ class StockEntryStockBoxBuilder {
     required String customerPhone,
   }) {
     final now = DateTime.now();
+    final String nowIso = now.toIso8601String();
     final String itemId = 'STK-${now.millisecondsSinceEpoch.toString().substring(7)}';
 
     return {
+      'docId': itemId,
       'itemId': itemId,
       'itemName': model,
       'ramRom': ramRom,
@@ -33,7 +34,9 @@ class StockEntryStockBoxBuilder {
       'customerPhone': customerPhone,
       'supplier': 'zetoon',
       'images': images.join(','),
-      'createdAt': now.toIso8601String(),
+      'createdAt': nowIso,
+      'updatedAt': nowIso,
+      'isSynced': false, // ☁️ سنک ٹریگر
     };
   }
 }
