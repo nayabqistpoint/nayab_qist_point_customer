@@ -3,6 +3,7 @@ import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_s
 import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/app_config_pull_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_push_service.dart'; // 👈 گلوبل اسٹاک پش سروس
 import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart'; // 👈 کلاؤڈنری میڈیا اپ لوڈ ورکر
 import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/users_pull_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/customer_pull_service.dart';
@@ -72,6 +73,7 @@ class MasterSyncHub {
       GuarantorPushService.pushPending(),
       InstallmentsPushService.pushPending(),
       TransactionPushService.pushPending(),
+      StockPushService.pushPending(), // 👈 گلوبل اسٹاک کو فائر اسٹور پر بیک گراؤنڈ پش کرنا
       MediaPushService.pushPending(),
     ]);
   }

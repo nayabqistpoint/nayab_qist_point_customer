@@ -1,4 +1,5 @@
 import '../hive_services/hive_box_manager.dart';
+import '../sync/master_sync_hub.dart';
 import 'stock_entry_payload_builders/stock_entry_stock_box_builder.dart';
 import 'stock_entry_payload_builders/stock_entry_transaction_box_builder.dart';
 import 'stock_entry_payload_builders/stock_entry_customer_box_builder.dart';
@@ -44,12 +45,15 @@ class StockEntryPayloadService {
       images: images,
     );
 
+    // 1. stockBox
     final stockBox = await HiveBoxManager.openSafeBox(HiveBoxManager.stockBoxName);
     await stockBox.put(stockBoxPayload['itemId'], stockBoxPayload);
 
+    // 2. transactionBox
     final txBox = await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
     await txBox.put(txData['txId'], txData);
 
+    // 3. customerBox
     if (!isPromotionalOnOrder) {
       final customerBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
       final customerData = customerBox.get(customerPhone);
@@ -69,5 +73,8 @@ class StockEntryPayloadService {
         });
       }
     }
+
+    // ☁️ بیک گراؤنڈ میں فائر اسٹور پر فوری پش ٹریگر
+    MasterSyncHub.pushAllPendingRecords().catchError((_) {});
   }
 }
