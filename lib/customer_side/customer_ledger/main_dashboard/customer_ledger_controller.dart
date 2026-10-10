@@ -90,13 +90,4 @@ class CustomerLedgerController extends ChangeNotifier {
     final ok = await LedgerActionHandlerService.payCashLoan(context, this);
     if (ok) notifyListeners();
   }
-
-  // 4. سروس و راشن اندراج کا ہینڈلر
-  Future<void> handleNewServiceTransaction(BuildContext context) async {
-    final newTx = await LedgerActionHandlerService.addNewService(context, customerPhone, customerProducts);
-    if (newTx != null) {
-      serviceTransactions.insert(0, newTx);
-      await loadCustomerData();
-    }
-  }
 }

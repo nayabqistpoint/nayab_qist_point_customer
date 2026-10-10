@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/customer_ledger/service_stock_feature
+- Only files matching these patterns are included: lib/customer_side/customer_ledger/cash_loan_subview
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -48,826 +48,127 @@ The content is organized as follows:
 lib/
   customer_side/
     customer_ledger/
-      service_stock_feature/
+      cash_loan_subview/
         components/
-          grocery_items_list_ui.dart
-          grocery_smart_input_row_ui.dart
-          mobile_intent_banner_ui.dart
-          note_media_bar_ui.dart
-          service_stock_app_bar_ui.dart
-          service_stock_submit_button_ui.dart
-          service_transaction_card_ui.dart
-          service_transactions_section_ui.dart
-          stock_nature_toggle_ui.dart
-          supplier_mobile_form_ui.dart
-          supplier_stock_list_ui.dart
-          target_account_chip_selector_ui.dart
+          cash_loan_section_ui.dart
         services/
-          grocery_entry_service.dart
-          grocery_price_history_service.dart
-          supplier_mobile_service.dart
-        service_stock_controller.dart
-        service_stock_entry_page.dart
+          transaction_ledger_service.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/grocery_items_list_ui.dart">
+<file path="lib/customer_side/customer_ledger/cash_loan_subview/components/cash_loan_section_ui.dart">
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class GroceryItemsListUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const GroceryItemsListUi({super.key, required this.controller});
+class CashLoanSectionUi extends StatelessWidget {
+  final int cashLoanBalance;
+  final List<Map<String, dynamic>> cashLoanEntries;
+  final String Function(int) formatAmount;
+  final VoidCallback onRepaymentPressed;
+  const CashLoanSectionUi({
+    super.key,
+    required this.cashLoanBalance,
+    required this.cashLoanEntries,
+    required this.formatAmount,
+    required this.onRepaymentPressed,
+  });
+  List<Map<String, dynamic>> _computeRunningBalances() {
+    int current = cashLoanBalance;
+    final List<Map<String, dynamic>> computed = [];
+    for (int i = 0; i < cashLoanEntries.length; i++) {
+      final entry = Map<String, dynamic>.from(cashLoanEntries[i]);
+      final int amt = (entry['amount'] as int?) ?? 0;
+      final String type = (entry['type'] ?? 'DEBIT').toString().toUpperCase();
+      entry['runningBalanceAtThisPoint'] = current;
+      computed.add(entry);
+      if (type == 'DEBIT') {
+        current -= amt;
+      } else {
+        current += amt;
+      }
+    }
+    return computed;
+  }
   @override
   Widget build(BuildContext context) {
-    final list = controller.groceryService.groceryList;
+    final bool isCustomerAdvance = cashLoanBalance < 0;
+    final bool hasDues = cashLoanBalance > 0;
+    final entriesWithBalance = _computeRunningBalances();
     return Column(
-      children: list.asMap().entries.map((e) {
-        final item = e.value;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                flex: 4,
-                child: Text('${e.key + 1}. ${item['name']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text('تعداد: ${item['qty']}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-              ),
-              Text('Rs. ${controller.formatAmount(item['amount'])}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.close, size: 16, color: Colors.red),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () => controller.removeGroceryItem(e.key),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/grocery_smart_input_row_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class GrocerySmartInputRowUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const GrocerySmartInputRowUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final gService = controller.groceryService;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          flex: 4,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('چیز کا نام', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              SizedBox(
-                height: 42,
-                child: Autocomplete<String>(
-                  optionsBuilder: (textVal) {
-                    return gService.priceHistoryService.searchItems(textVal.text);
-                  },
-                  onSelected: (selection) => controller.selectAutocompleteItem(selection),
-                  fieldViewBuilder: (ctx, textCtrl, focusNode, _) {
-                    textCtrl.addListener(() {
-                      gService.itemNameCtrl.text = textCtrl.text;
-                    });
-                    return TextFormField(
-                      controller: textCtrl,
-                      focusNode: focusNode,
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        hintText: 'چیز لکھیں...',
-                        hintStyle: const TextStyle(fontSize: 11),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('تعداد', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Container(
-                height: 42,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                  borderRadius: BorderRadius.circular(9),
-                  color: Colors.white,
-                ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onLongPressStart: (_) => controller.startFastStepper(onTick: controller.decrementQty),
-                      onLongPressEnd: (_) => controller.stopFastStepper(),
-                      onTap: controller.decrementQty,
-                      child: Container(
-                        width: 28,
-                        height: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
-                        ),
-                        child: const Icon(Icons.remove, size: 16, color: Color(0xFF334155)),
-                      ),
+                    Text(
+                      isCustomerAdvance ? 'آپ کی پیشگی جمع شدہ رقم (ایڈوانس):' : 'کل نقد دستی ادھار واجب الادا:',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
                     ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          '${gService.currentQty}',
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    const SizedBox(height: 3),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${isCustomerAdvance ? '-' : ''}Rs. ${formatAmount(cashLoanBalance.abs())}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: isCustomerAdvance ? const Color(0xFF059669) : const Color(0xFFDC2626),
                         ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onLongPressStart: (_) => controller.startFastStepper(onTick: controller.incrementQty),
-                      onLongPressEnd: (_) => controller.stopFastStepper(),
-                      onTap: controller.incrementQty,
-                      child: Container(
-                        width: 28,
-                        height: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8)),
-                        ),
-                        child: const Icon(Icons.add, size: 16, color: Color(0xFF0D9488)),
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 4,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('ریٹ (روپے)', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Container(
-                height: 42,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                  borderRadius: BorderRadius.circular(9),
-                  color: Colors.white,
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onLongPressStart: (_) => controller.startFastStepper(onTick: controller.decrementPrice),
-                      onLongPressEnd: (_) => controller.stopFastStepper(),
-                      onTap: controller.decrementPrice,
-                      child: Container(
-                        width: 28,
-                        height: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
-                        ),
-                        child: const Icon(Icons.remove, size: 16, color: Color(0xFFDC2626)),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextFormField(
-                        controller: gService.itemPriceCtrl,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                        ),
-                        onChanged: controller.setManualPrice,
-                      ),
-                    ),
-                    GestureDetector(
-                      onLongPressStart: (_) => controller.startFastStepper(onTick: controller.incrementPrice),
-                      onLongPressEnd: (_) => controller.stopFastStepper(),
-                      onTap: controller.incrementPrice,
-                      child: Container(
-                        width: 28,
-                        height: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFCCFBF1),
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8)),
-                        ),
-                        child: const Icon(Icons.add, size: 16, color: Color(0xFF0D9488)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        InkWell(
-          onTap: controller.addGroceryItem,
-          borderRadius: BorderRadius.circular(9),
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D9488),
-              borderRadius: BorderRadius.circular(9),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.add, color: Colors.white, size: 16),
-                SizedBox(width: 2),
-                Text('شامل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/mobile_intent_banner_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class MobileIntentBannerUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const MobileIntentBannerUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final isPromo = controller.mobileIntent == 1;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDFA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF99F6E4), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'موبائل کا مقصد منتخب کریں:',
-            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF134E4A)),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => controller.setMobileIntent(1),
-                  borderRadius: BorderRadius.circular(9),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: isPromo ? const Color(0xFF0D9488) : Colors.white,
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: isPromo ? const Color(0xFF0D9488) : const Color(0xFFCBD5E1)),
-                      boxShadow: isPromo
-                          ? [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (isPromo) ...[
-                          const Icon(Icons.check_circle_rounded, size: 15, color: Colors.white),
-                          const SizedBox(width: 5),
-                        ],
-                        Text(
-                          'پروموشنل (آن آرڈر ڈسپلے)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isPromo ? Colors.white : const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () => controller.setMobileIntent(0),
-                  borderRadius: BorderRadius.circular(9),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: !isPromo ? const Color(0xFF0D9488) : Colors.white,
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: !isPromo ? const Color(0xFF0D9488) : const Color(0xFFCBD5E1)),
-                      boxShadow: !isPromo
-                          ? [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!isPromo) ...[
-                          const Icon(Icons.check_circle_rounded, size: 15, color: Colors.white),
-                          const SizedBox(width: 5),
-                        ],
-                        Text(
-                          'فوری فروخت (دکان اسٹاک)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: !isPromo ? Colors.white : const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0F766E)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  isPromo
-                      ? 'یہ موبائل نایاب قسط پوائنٹ ایپ پر "طلب پر دستیاب" شو ہوگا اور قسط کیلکولیٹر میں نظر آئے گا۔'
-                      : 'یہ موبائل نایاب قسط پوائنٹ کی اصل انوینٹری میں براہ راست ایڈ ہونے کے لیے جائے گا۔',
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF0F766E), fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/note_media_bar_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class NoteMediaBarUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const NoteMediaBarUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: controller.noteCtrl,
-            style: const TextStyle(fontSize: 12),
-            decoration: InputDecoration(
-              hintText: 'کوئی خاص تفصیل، معاہدہ یا نوٹ درج کریں...',
-              hintStyle: const TextStyle(fontSize: 11.5),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        InkWell(
-          onTap: controller.togglePhoto,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: controller.hasPhoto ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: controller.hasPhoto ? const Color(0xFFA7F3D0) : const Color(0xFF99F6E4), width: 1.2),
-            ),
-            child: Icon(
-              controller.hasPhoto ? Icons.check_circle_rounded : Icons.camera_alt_rounded,
-              size: 22,
-              color: controller.hasPhoto ? const Color(0xFF059669) : const Color(0xFF0D9488),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        InkWell(
-          onTap: controller.toggleAudio,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: controller.hasAudio ? const Color(0xFFECFDF5) : const Color(0xFFF0FDFA),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: controller.hasAudio ? const Color(0xFFA7F3D0) : const Color(0xFF99F6E4), width: 1.2),
-            ),
-            child: Icon(
-              controller.hasAudio ? Icons.check_circle_rounded : Icons.mic_rounded,
-              size: 22,
-              color: controller.hasAudio ? const Color(0xFF059669) : const Color(0xFF0D9488),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/service_stock_app_bar_ui.dart">
-import 'package:flutter/material.dart';
-class ServiceStockAppBarUi extends StatelessWidget implements PreferredSizeWidget {
-  const ServiceStockAppBarUi({super.key});
-  @override
-  Size get preferredSize => const Size.fromHeight(66);
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'خدمات و راشن / اسٹاک اندراج',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'نایاب قسط پوائنٹ کسٹمر پورٹل',
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFFDE68A)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/service_stock_submit_button_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/service_stock_payload_service.dart';
-class ServiceStockSubmitButtonUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const ServiceStockSubmitButtonUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: () async {
-          final isMobile = controller.isMobileSupplierMode;
-          if (isMobile && controller.mobileService.supplierStockList.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('برائے مہربانی پہلے کم از کم ایک موبائل درج کریں')),
-            );
-            return;
-          }
-          if (!isMobile) {
-            if (controller.groceryService.groceryList.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('برائے مہربانی پہلے راشن آئٹمز شامل کریں')),
-              );
-              return;
-            }
-            if (controller.accountType == 0) {
-              if (controller.customerProducts.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('اس کسٹمر کے نام پر کوئی فعال قسط موجود نہیں ہے')),
-                );
-                return;
-              }
-              if (controller.isOverMaxLimit) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'راشن کا کل بل (Rs. ${controller.formatAmount(controller.groceryTotal)}) اس پلان کے کل بقایا (Rs. ${controller.formatAmount(controller.maxAllowedLimit)}) سے زیادہ نہیں ہو سکتا۔',
-                    ),
-                    backgroundColor: const Color(0xFFDC2626),
-                  ),
-                );
-                return;
-              }
-            }
-          }
-          final success = await ServiceStockPayloadService.executeSubmission(controller);
-          if (success && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('اندراج کامیابی سے محفوظ ہو گیا'), backgroundColor: Color(0xFF0D9488)),
-            );
-            Navigator.pop(context, true);
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0D9488),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 3,
-        ),
-        child: Text(
-          controller.isMobileSupplierMode
-              ? 'موبائل اسٹاک جمع کریں (کل فونز: ${controller.mobileService.supplierStockList.length})'
-              : 'راشن بل جمع کریں (کل رقم: Rs. ${controller.formatAmount(controller.groceryTotal)})',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/service_transaction_card_ui.dart">
-import 'package:flutter/material.dart';
-class ServiceTransactionCardUi extends StatelessWidget {
-  final Map<String, dynamic> tx;
-  final String Function(int) formatAmount;
-  final VoidCallback onToggleExpand;
-  const ServiceTransactionCardUi({
-    super.key,
-    required this.tx,
-    required this.formatAmount,
-    required this.onToggleExpand,
-  });
-  Widget _buildSyncBadge() {
-    final bool isApproved = (tx['status'] ?? '').toString().toUpperCase() == 'APPROVED';
-    final bool isSynced = tx['isSynced'] ?? true;
-    if (isApproved) {
-      return _tag(Icons.check_circle_rounded, 'منظور شدہ', const Color(0xFF16A34A), const Color(0xFFDCFCE7), const Color(0xFF86EFAC));
-    }
-    return isSynced
-        ? _tag(Icons.done_all_rounded, 'ایڈمن موصول', const Color(0xFF2563EB), const Color(0xFFEFF6FF), const Color(0xFFBFDBFE))
-        : _tag(Icons.check_rounded, 'ہائیو باکس', const Color(0xFF64748B), const Color(0xFFF1F5F9), const Color(0xFFCBD5E1));
-  }
-  Widget _tag(IconData icon, String text, Color c, Color bg, Color border) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6), border: Border.all(color: border)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: c),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: c)),
-        ],
-      ),
-    );
-  }
-  TableRow _buildRow(List<Widget> cells, {Color? bg}) {
-    return TableRow(
-      decoration: BoxDecoration(color: bg),
-      children: cells.map((w) => Padding(padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 5), child: w)).toList(),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    final bool isExpanded = tx['isExpanded'] ?? false;
-    final int grandTotal = (tx['totalAmount'] as int?) ?? 0;
-    final List itemsList = (tx['items'] as List?) ?? [];
-    final int totalQty = itemsList.fold(0, (sum, itm) => sum + ((itm['qty'] as num? ?? 1).toInt()));
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: onToggleExpand,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          tx['title']?.toString() ?? 'خدمت / اسٹاک تبادلہ',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('Rs. ${formatAmount(grandTotal)}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0D9488))),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'تاریخ: ${tx['date'] ?? 'آج'} | کھاتہ: ${tx['targetAccount'] ?? 'عمومی'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      _buildSyncBadge(),
-                      const SizedBox(width: 4),
-                      Icon(isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 20, color: const Color(0xFF64748B)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) ...[
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (itemsList.isNotEmpty) ...[
-                    Table(
-                      border: TableBorder.all(color: const Color(0xFFE2E8F0), width: 0.8),
-                      columnWidths: const {0: FlexColumnWidth(2.5), 1: FlexColumnWidth(0.9), 2: FlexColumnWidth(1.4), 3: FlexColumnWidth(1.6)},
-                      children: [
-                        _buildRow([
-                          const Text('تفصیل / خدمت', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                          const Text('تعداد', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                          const Text('ریٹ', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                          const Text('کل رقم', textAlign: TextAlign.center, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                        ], bg: const Color(0xFFF8FAFC)),
-                        ...itemsList.map((itm) {
-                          final int qty = (itm['qty'] as num? ?? 1).toInt();
-                          final int rate = (itm['rate'] as num? ?? 0).toInt();
-                          return _buildRow([
-                            Text(itm['name']?.toString() ?? itm['title']?.toString() ?? '-', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                            Text('$qty', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
-                            Text(formatAmount(rate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
-                            Text(formatAmount(qty * rate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                          ]);
-                        }),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF1F5F9),
-                        border: Border(left: BorderSide(color: Color(0xFFE2E8F0)), right: BorderSide(color: Color(0xFFE2E8F0)), bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('مدات: ${itemsList.length} | کل مقدار: $totalQty', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
-                          Text('ٹوٹل: Rs. ${formatAmount(grandTotal)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF0D9488))),
-                        ],
-                      ),
-                    ),
-                  ],
-                  if (tx['note'] != null && tx['note'].toString().trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFFDE68A))),
-                      child: Text('کیفیت: ${tx['note']}', style: const TextStyle(fontSize: 10.5, color: Color(0xFF92400E))),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/service_transactions_section_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/service_transaction_card_ui.dart';
-class ServiceTransactionsSectionUi extends StatelessWidget {
-  final List<Map<String, dynamic>> serviceTransactions;
-  final String Function(int) formatAmount;
-  final VoidCallback onNewServicePressed;
-  final ValueChanged<Map<String, dynamic>> onToggleExpand;
-  const ServiceTransactionsSectionUi({
-    super.key,
-    required this.serviceTransactions,
-    required this.formatAmount,
-    required this.onNewServicePressed,
-    required this.onToggleExpand,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: onNewServicePressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.post_add_rounded, color: Colors.white, size: 19),
-                SizedBox(width: 8),
+              if (hasDues)
                 Flexible(
-                  child: Text(
-                    'نئی خدمات، راشن یا اسٹاک تبادلہ درج کریں (مکمل فارم)',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold),
+                  fit: FlexFit.loose,
+                  child: ElevatedButton.icon(
+                    onPressed: onRepaymentPressed,
+                    icon: const Icon(Icons.payment_rounded, size: 14),
+                    label: const Text(
+                      'قرض واپس کریں',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B),
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-        if (serviceTransactions.isEmpty)
+        const SizedBox(height: 12),
+        if (entriesWithBalance.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -875,956 +176,159 @@ class ServiceTransactionsSectionUi extends StatelessWidget {
             ),
             child: const Center(
               child: Text(
-                'کوئی سروس یا اسٹاک ٹرانزیکشن موجود نہیں ہے۔',
-                style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                'کوئی نقد لین دین موجود نہیں ہے۔',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
               ),
             ),
           )
         else
-          ...serviceTransactions.map(
-            (tx) => ServiceTransactionCardUi(
-              tx: tx,
-              formatAmount: formatAmount,
-              onToggleExpand: () => onToggleExpand(tx),
-            ),
-          ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/stock_nature_toggle_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class StockNatureToggleUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const StockNatureToggleUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final isGrocery = controller.mainMode == 0;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => controller.setMainMode(0),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
-                decoration: BoxDecoration(
-                  color: isGrocery ? const Color(0xFF0D9488) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: isGrocery
-                      ? [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2))]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isGrocery ? Icons.check_circle_rounded : Icons.shopping_cart_rounded,
-                      size: 16,
-                      color: isGrocery ? Colors.white : const Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'کریانہ راشن بل (ایڈجسٹمنٹ)',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: isGrocery ? Colors.white : const Color(0xFF475569),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: InkWell(
-              onTap: () => controller.setMainMode(1),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
-                decoration: BoxDecoration(
-                  color: !isGrocery ? const Color(0xFF0D9488) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: !isGrocery
-                      ? [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2))]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      !isGrocery ? Icons.check_circle_rounded : Icons.phone_android_rounded,
-                      size: 16,
-                      color: !isGrocery ? Colors.white : const Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'موبائل سپلائر پورٹل',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: !isGrocery ? Colors.white : const Color(0xFF475569),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/supplier_mobile_form_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class SupplierMobileFormUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const SupplierMobileFormUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final mService = controller.mobileService;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: mService.mobileModelCtrl,
-            decoration: InputDecoration(
-              labelText: 'موبائل ماڈل کا نام (itemName)',
-              labelStyle: const TextStyle(fontSize: 11),
-              hintText: 'Google Pixel 7A, Vivo Y20',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: mService.selectedColor,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'رنگ (color)',
-                    labelStyle: const TextStyle(fontSize: 10.5),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ...entriesWithBalance.map((e) {
+            final String type = (e['type'] ?? 'DEBIT').toString().toUpperCase();
+            final bool isRepayment = type == 'CREDIT';
+            final int amt = (e['amount'] as int?) ?? 0;
+            final int runBal = (e['runningBalanceAtThisPoint'] as int?) ?? 0;
+            final bool isBalDebit = runBal > 0;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
-                  items: mService.colorOptions
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 11))))
-                      .toList(),
-                  onChanged: (v) => controller.setColor(v!),
-                ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: mService.selectedConditionType,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'حالت (conditionType)',
-                    labelStyle: const TextStyle(fontSize: 10.5),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'used', child: Text('استعمال شدہ (used)', style: TextStyle(fontSize: 11))),
-                    DropdownMenuItem(value: 'new', child: Text('نیا ڈبہ پیک (new)', style: TextStyle(fontSize: 11))),
-                  ],
-                  onChanged: (v) => controller.setConditionType(v!),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: mService.selectedConditionRating,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'ریٹنگ (conditionRating)',
-                    labelStyle: const TextStyle(fontSize: 10.5),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  items: mService.ratingOptions
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 11))))
-                      .toList(),
-                  onChanged: mService.selectedConditionType == 'new' ? null : (v) => controller.setConditionRating(v!),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: mService.selectedRamRom,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'ریم و روم (ramRom)',
-                    labelStyle: const TextStyle(fontSize: 10.5),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  items: mService.ramRomOptions
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 11))))
-                      .toList(),
-                  onChanged: (v) => controller.setRamRom(v!),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: mService.purchasePriceCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'خریداری لاگت (purchasePrice)',
-                    labelStyle: const TextStyle(fontSize: 10, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
-                    prefixText: 'Rs. ',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: mService.salePriceCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'فروخت / انوائس ریٹ (salePrice)',
-                    labelStyle: const TextStyle(fontSize: 10, color: Color(0xFF0D9488), fontWeight: FontWeight.bold),
-                    prefixText: 'Rs. ',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: mService.selectedWarranty,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'وارنٹی (warranty)',
-                    labelStyle: const TextStyle(fontSize: 10.5),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  items: mService.warrantyOptions
-                      .map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 10.5))))
-                      .toList(),
-                  onChanged: (v) => controller.setWarranty(v!),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: mService.imeiNoCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: '15 ہندسوں کا IMEI (اختیاری)',
-                    labelStyle: const TextStyle(fontSize: 10),
-                    hintText: '353617355443023',
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                bool ok = controller.addSupplierMobile();
-                if (!ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('ماڈل کا نام اور خریداری قیمت درج کرنا لازمی ہے')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
-              label: const Text('یہ موبائل لسٹ میں جوڑیں', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0D9488),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/supplier_stock_list_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class SupplierStockListUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const SupplierStockListUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final list = controller.mobileService.supplierStockList;
-    if (list.isEmpty) return const SizedBox.shrink();
-    return Column(
-      children: [
-        const SizedBox(height: 10),
-        ...list.asMap().entries.map((entry) {
-          final m = entry.value;
-          return Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.phone_android, color: Color(0xFF0D9488), size: 22),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text('${m['itemName']} (${m['ramRom']})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFCCFBF1),
-                              borderRadius: BorderRadius.circular(4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: isRepayment ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                isRepayment ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                                size: 12,
+                                color: isRepayment ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                              ),
                             ),
-                            child: Text(
-                              m['status'] == 'available_on_order' ? 'طلب پر دستیاب' : 'دکان اسٹاک',
-                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF0F766E)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                e['title']?.toString() ?? (isRepayment ? 'دستی قرض واپسی ادا کی' : 'نقد دستی کیش لیا'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'کوڈ: ${m['itemId']} | حالت: ${m['conditionRating']} | وارنٹی: ${m['warranty']} | لاگت: Rs. ${controller.formatAmount(m['purchasePrice'])} | سیل ریٹ: Rs. ${controller.formatAmount(m['salePrice'])}',
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                  onPressed: () => controller.removeSupplierMobile(entry.key),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/components/target_account_chip_selector_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-class TargetAccountChipSelectorUi extends StatelessWidget {
-  final ServiceStockController controller;
-  const TargetAccountChipSelectorUi({super.key, required this.controller});
-  @override
-  Widget build(BuildContext context) {
-    final products = controller.customerProducts;
-    final selectedProduct = controller.selectedProduct;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'رقم کس کھاتے میں ایڈجسٹ کرنی ہے؟',
-            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ChoiceChip(
-                  label: const Center(
-                    child: Text('فعال قسط میں کٹوتی', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  ),
-                  selected: controller.accountType == 0,
-                  selectedColor: const Color(0xFFCCFBF1),
-                  onSelected: (_) => controller.setAccountType(0),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ChoiceChip(
-                  label: const Center(
-                    child: Text('نقد / دستی پیشگی کھاتہ', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                  ),
-                  selected: controller.accountType == 1,
-                  selectedColor: const Color(0xFFCCFBF1),
-                  onSelected: (_) => controller.setAccountType(1),
-                ),
-              ),
-            ],
-          ),
-          if (controller.accountType == 0) ...[
-            const SizedBox(height: 10),
-            if (products.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFECACA)),
-                ),
-                child: const Text(
-                  'اس کسٹمر کے نام پر کوئی فعال قسط موجود نہیں ہے۔ برائے مہربانی نقد کھاتہ منتخب کریں۔',
-                  style: TextStyle(fontSize: 10.5, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
-                ),
-              )
-            else ...[
-              const Text(
-                'مطلوبہ موبائل فون کا پلان منتخب کریں:',
-                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 4),
-              DropdownButtonFormField<int>(
-                initialValue: controller.selectedProductIndex,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                ),
-                items: List.generate(
-                  products.length,
-                  (i) => DropdownMenuItem(
-                    value: i,
-                    child: Text(
-                      '${products[i]['name']} (${products[i]['plan']}) - بقایا: Rs. ${controller.formatAmount(products[i]['remaining'] ?? 0)}',
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                onChanged: (v) => controller.setSelectedProductIndex(v ?? 0),
-              ),
-              const SizedBox(height: 8),
-              if (selectedProduct != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: controller.isOverMaxLimit ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: controller.isOverMaxLimit ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'اس کھاتے کی زیادہ سے زیادہ حد (بقایا):',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
-                          color: controller.isOverMaxLimit ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          e['date']?.toString() ?? 'آج',
+                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        'Rs. ${controller.formatAmount(controller.maxAllowedLimit)}',
+                        '${isRepayment ? '-' : '+'}Rs. ${formatAmount(amt)}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w900,
-                          color: controller.isOverMaxLimit ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                          color: isRepayment ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isBalDebit ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isBalDebit ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'بقیہ: Rs. ${formatAmount(runBal.abs())}',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: isBalDebit ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-            ],
-          ],
-        ],
-      ),
+                ],
+              ),
+            );
+          }),
+      ],
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/customer_ledger/service_stock_feature/services/grocery_entry_service.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/services/grocery_price_history_service.dart';
-class GroceryEntryService {
-  final priceHistoryService = GroceryPriceHistoryService();
-  final itemNameCtrl = TextEditingController();
-  final itemPriceCtrl = TextEditingController(text: '0');
-  int currentQty = 1;
-  int currentPrice = 0;
-  List<Map<String, dynamic>> groceryList = [];
-  int get groceryTotal => groceryList.fold(0, (sum, i) => sum + (i['amount'] as int));
-  void selectAutocompleteItem(String selection) {
-    itemNameCtrl.text = selection;
-    final lastPrice = priceHistoryService.getLastPrice(selection);
-    currentPrice = lastPrice;
-    itemPriceCtrl.text = lastPrice.toString();
+<file path="lib/customer_side/customer_ledger/cash_loan_subview/services/transaction_ledger_service.dart">
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class TransactionLedgerService {
+  static Future<Box> ensureBoxOpen() async {
+    return await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
   }
-  void incrementQty() => currentQty++;
-  void decrementQty() {
-    if (currentQty > 1) currentQty--;
-  }
-  void incrementPrice() {
-    currentPrice++;
-    itemPriceCtrl.text = currentPrice.toString();
-  }
-  void decrementPrice() {
-    if (currentPrice > 0) {
-      currentPrice--;
-      itemPriceCtrl.text = currentPrice.toString();
-    }
-  }
-  void setManualPrice(String text) {
-    currentPrice = int.tryParse(text) ?? 0;
-  }
-  bool addGroceryItem() {
-    final name = itemNameCtrl.text.trim();
-    final price = int.tryParse(itemPriceCtrl.text.trim().replaceAll(',', '')) ?? currentPrice;
-    if (name.isNotEmpty && price > 0) {
-      groceryList.add({
-        'name': name,
-        'qty': currentQty,
-        'amount': price * currentQty,
-        'unitPrice': price,
-      });
-      priceHistoryService.recordPrice(name, price);
-      itemNameCtrl.clear();
-      currentQty = 1;
-      currentPrice = 0;
-      itemPriceCtrl.text = '0';
-      return true;
-    }
-    return false;
-  }
-  void removeGroceryItem(int index) {
-    groceryList.removeAt(index);
-  }
-  void dispose() {
-    itemNameCtrl.dispose();
-    itemPriceCtrl.dispose();
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/services/grocery_price_history_service.dart">
-class GroceryPriceHistoryService {
-  final Map<String, int> _itemHistoryPriceMap = {
-    'چینی': 150,
-    'گھی ڈالڈا': 550,
-    'دال چنا': 260,
-    'آٹا (10 کلو)': 1100,
-    'چاول باسمتی': 320,
-    'کوکنگ آئل': 580,
-    'صابن لکس': 115,
-    'پتی لپٹن': 340,
-  };
-  Iterable<String> searchItems(String query) {
-    if (query.isEmpty) return const Iterable<String>.empty();
-    return _itemHistoryPriceMap.keys.where((item) => item.contains(query));
-  }
-  int getLastPrice(String itemName) {
-    return _itemHistoryPriceMap[itemName] ?? 0;
-  }
-  void recordPrice(String itemName, int price) {
-    if (itemName.isNotEmpty && price > 0) {
-      _itemHistoryPriceMap[itemName] = price;
-    }
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/services/supplier_mobile_service.dart">
-import 'dart:math';
-import 'package:flutter/material.dart';
-class SupplierMobileService {
-  final mobileModelCtrl = TextEditingController();
-  final purchasePriceCtrl = TextEditingController();
-  final salePriceCtrl = TextEditingController();
-  final imeiNoCtrl = TextEditingController();
-  String selectedConditionType = 'used';
-  String selectedConditionRating = '07/10';
-  String selectedColor = 'بلیک (Black)';
-  String selectedRamRom = '8GB / 128GB';
-  String selectedWarranty = '3 دن چیکنگ وارنٹی';
-  List<Map<String, dynamic>> supplierStockList = [];
-  final List<String> colorOptions = [
-    'بلیک (Black)', 'بلیو (Blue)', 'سلور / وائٹ (White)',
-    'گولڈ (Gold)', 'گرین (Green)', 'گرے (Gray)'
-  ];
-  final List<String> ratingOptions = [
-    '10/10', '09/10', '08/10', '07/10', '06/10', '05/10', '04/10'
-  ];
-  final List<String> ramRomOptions = [
-    '3GB / 32GB', '4GB / 64GB', '4GB / 128GB',
-    '6GB / 128GB', '8GB / 128GB', '8GB / 256GB', '12GB / 256GB'
-  ];
-  final List<String> warrantyOptions = [
-    'کوئی وارنٹی نہیں (0 ماہ)',
-    '3 دن چیکنگ وارنٹی',
-    '1 ماہ وارنٹی',
-    '2 ماہ وارنٹی',
-    '3 ماہ دکان وارنٹی',
-    '6 ماہ وارنٹی',
-    '8 ماہ وارنٹی',
-    '10 ماہ وارنٹی',
-    '12 ماہ کمپنی وارنٹی',
-  ];
-  int get mobileTotal =>
-      supplierStockList.fold(0, (sum, i) => sum + (i['purchasePrice'] as int));
-  bool addSupplierMobile({required int mobileIntent}) {
-    if (mobileModelCtrl.text.trim().isEmpty || purchasePriceCtrl.text.trim().isEmpty) {
-      return false;
-    }
-    int purchase = int.tryParse(purchasePriceCtrl.text.trim().replaceAll(',', '')) ?? 0;
-    double sale = double.tryParse(salePriceCtrl.text.trim().replaceAll(',', '')) ?? purchase.toDouble();
-    String generatedItemId = 'STK-${100 + Random().nextInt(900)}';
-    supplierStockList.add({
-      'itemId': generatedItemId,
-      'itemName': mobileModelCtrl.text.trim(),
-      'color': selectedColor,
-      'conditionType': selectedConditionType,
-      'conditionRating': selectedConditionType == 'new' ? '10/10' : selectedConditionRating,
-      'ramRom': selectedRamRom,
-      'imeiNo': imeiNoCtrl.text.trim().isEmpty ? '353617355443023' : imeiNoCtrl.text.trim(),
-      'purchasePrice': purchase,
-      'salePrice': sale,
-      'quantity': 1,
-      'warranty': selectedWarranty,
-      'images': '',
-      'status': mobileIntent == 1 ? 'available_on_order' : 'available',
-      'intent': mobileIntent == 1 ? 'PROMOTIONAL_ON_ORDER' : 'DIRECT_SALE',
-    });
-    mobileModelCtrl.clear();
-    purchasePriceCtrl.clear();
-    salePriceCtrl.clear();
-    imeiNoCtrl.clear();
-    return true;
-  }
-  void removeSupplierMobile(int index) {
-    supplierStockList.removeAt(index);
-  }
-  void dispose() {
-    mobileModelCtrl.dispose();
-    purchasePriceCtrl.dispose();
-    salePriceCtrl.dispose();
-    imeiNoCtrl.dispose();
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart">
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/services/grocery_entry_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/services/supplier_mobile_service.dart';
-class ServiceStockController extends ChangeNotifier {
-  final String customerPhone;
-  final List<Map<String, dynamic>> customerProducts;
-  final groceryService = GroceryEntryService();
-  final mobileService = SupplierMobileService();
-  int mainMode = 0;
-  int accountType = 0;
-  int selectedProductIndex = 0;
-  int mobileIntent = 1;
-  final noteCtrl = TextEditingController();
-  bool hasPhoto = false;
-  bool hasAudio = false;
-  Timer? _stepperTimer;
-  ServiceStockController({
-    this.customerPhone = '',
-    this.customerProducts = const [],
-  });
-  bool get isMobileSupplierMode => mainMode == 1;
-  int get groceryTotal => groceryService.groceryTotal;
-  int get mobileTotal => mobileService.mobileTotal;
-  int get totalBill => isMobileSupplierMode ? mobileTotal : groceryTotal;
-  Map<String, dynamic>? get selectedProduct {
-    if (customerProducts.isNotEmpty && selectedProductIndex < customerProducts.length) {
-      return customerProducts[selectedProductIndex];
+  static ValueListenable<Box>? get boxListenable {
+    if (Hive.isBoxOpen(HiveBoxManager.transactionBoxName)) {
+      return Hive.box(HiveBoxManager.transactionBoxName).listenable();
     }
     return null;
   }
-  // 🎯 منتخب شدہ موبائل کا کل بقایا (میکس لمٹ)
-  int get maxAllowedLimit {
-    if (accountType == 0 && selectedProduct != null) {
-      return (selectedProduct!['remaining'] as int?) ?? 0;
+  static Future<List<Map<String, dynamic>>> getCustomerTransactions(String customerPhone) async {
+    final box = await ensureBoxOpen();
+    final cleanPhone = customerPhone.replaceAll(RegExp(r'\s+'), '').trim();
+    final List<Map<String, dynamic>> results = [];
+    for (var key in box.keys) {
+      final rawData = box.get(key);
+      if (rawData is Map) {
+        final orderPhone = (rawData['customerPhone'] ?? '')
+            .toString()
+            .replaceAll(RegExp(r'\s+'), '')
+            .trim();
+        final bool isMatch = cleanPhone.isNotEmpty &&
+            (orderPhone == cleanPhone ||
+                (cleanPhone.length >= 10 && orderPhone.endsWith(cleanPhone.substring(cleanPhone.length - 10))));
+        if (isMatch) {
+          final Map<String, dynamic> entry = Map<String, dynamic>.from(rawData);
+          entry['key'] = key;
+          results.add(entry);
+        }
+      }
     }
-    return 99999999;
-  }
-  bool get isOverMaxLimit {
-    if (accountType == 0 && selectedProduct != null) {
-      return groceryTotal > maxAllowedLimit;
-    }
-    return false;
-  }
-  String formatAmount(num amount) {
-    return amount.toInt().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
-  void setMainMode(int mode) {
-    mainMode = mode;
-    notifyListeners();
-  }
-  void setAccountType(int type) {
-    accountType = type;
-    notifyListeners();
-  }
-  void setSelectedProductIndex(int index) {
-    selectedProductIndex = index;
-    notifyListeners();
-  }
-  void setMobileIntent(int intent) {
-    mobileIntent = intent;
-    notifyListeners();
-  }
-  void togglePhoto() {
-    hasPhoto = !hasPhoto;
-    notifyListeners();
-  }
-  void toggleAudio() {
-    hasAudio = !hasAudio;
-    notifyListeners();
-  }
-  void selectAutocompleteItem(String val) {
-    groceryService.selectAutocompleteItem(val);
-    notifyListeners();
-  }
-  void incrementQty() {
-    groceryService.incrementQty();
-    notifyListeners();
-  }
-  void decrementQty() {
-    groceryService.decrementQty();
-    notifyListeners();
-  }
-  void incrementPrice() {
-    groceryService.incrementPrice();
-    notifyListeners();
-  }
-  void decrementPrice() {
-    groceryService.decrementPrice();
-    notifyListeners();
-  }
-  void setManualPrice(String text) {
-    groceryService.setManualPrice(text);
-    notifyListeners();
-  }
-  void addGroceryItem() {
-    if (groceryService.addGroceryItem()) {
-      notifyListeners();
-    }
-  }
-  void removeGroceryItem(int index) {
-    groceryService.removeGroceryItem(index);
-    notifyListeners();
-  }
-  void startFastStepper({required VoidCallback onTick}) {
-    onTick();
-    _stepperTimer?.cancel();
-    _stepperTimer = Timer.periodic(const Duration(milliseconds: 70), (_) {
-      onTick();
+    results.sort((a, b) {
+      final String dateA = (a['date'] ?? a['paymentDate'] ?? '').toString();
+      final String dateB = (b['date'] ?? b['paymentDate'] ?? '').toString();
+      return dateB.compareTo(dateA);
     });
-  }
-  void stopFastStepper() {
-    _stepperTimer?.cancel();
-  }
-  void setColor(String val) {
-    mobileService.selectedColor = val;
-    notifyListeners();
-  }
-  void setConditionType(String val) {
-    mobileService.selectedConditionType = val;
-    notifyListeners();
-  }
-  void setConditionRating(String val) {
-    mobileService.selectedConditionRating = val;
-    notifyListeners();
-  }
-  void setRamRom(String val) {
-    mobileService.selectedRamRom = val;
-    notifyListeners();
-  }
-  void setWarranty(String val) {
-    mobileService.selectedWarranty = val;
-    notifyListeners();
-  }
-  bool addSupplierMobile() {
-    final ok = mobileService.addSupplierMobile(mobileIntent: mobileIntent);
-    if (ok) notifyListeners();
-    return ok;
-  }
-  void removeSupplierMobile(int index) {
-    mobileService.removeSupplierMobile(index);
-    notifyListeners();
-  }
-  @override
-  void dispose() {
-    _stepperTimer?.cancel();
-    noteCtrl.dispose();
-    groceryService.dispose();
-    mobileService.dispose();
-    super.dispose();
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/service_stock_feature/service_stock_entry_page.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/service_stock_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/service_stock_app_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/stock_nature_toggle_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/target_account_chip_selector_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/grocery_items_list_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/grocery_smart_input_row_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/mobile_intent_banner_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/supplier_mobile_form_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/supplier_stock_list_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/note_media_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/service_stock_submit_button_ui.dart';
-class ServiceStockEntryPage extends StatefulWidget {
-  final String customerPhone;
-  final List<Map<String, dynamic>> customerProducts;
-  const ServiceStockEntryPage({
-    super.key,
-    this.customerPhone = '',
-    this.customerProducts = const [],
-  });
-  @override
-  State<ServiceStockEntryPage> createState() => _ServiceStockEntryPageState();
-}
-class _ServiceStockEntryPageState extends State<ServiceStockEntryPage> {
-  late ServiceStockController controller;
-  @override
-  void initState() {
-    super.initState();
-    controller = ServiceStockController(
-      customerPhone: widget.customerPhone,
-      customerProducts: widget.customerProducts,
-    );
-  }
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
-            appBar: const ServiceStockAppBarUi(),
-            body: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  StockNatureToggleUi(controller: controller),
-                  const SizedBox(height: 14),
-                  if (controller.mainMode == 0) ...[
-                    TargetAccountChipSelectorUi(controller: controller),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('راشن اشیاء کا بل:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                              Text(
-                                'کل بل: Rs. ${controller.formatAmount(controller.groceryTotal)}',
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0D9488)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          GroceryItemsListUi(controller: controller),
-                          const SizedBox(height: 12),
-                          GrocerySmartInputRowUi(controller: controller),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    MobileIntentBannerUi(controller: controller),
-                    const SizedBox(height: 12),
-                    SupplierMobileFormUi(controller: controller),
-                    SupplierStockListUi(controller: controller),
-                  ],
-                  const SizedBox(height: 16),
-                  NoteMediaBarUi(controller: controller),
-                  const SizedBox(height: 20),
-                  ServiceStockSubmitButtonUi(controller: controller),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    return results;
   }
 }
 </file>

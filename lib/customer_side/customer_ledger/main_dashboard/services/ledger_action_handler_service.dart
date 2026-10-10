@@ -161,20 +161,6 @@ class LedgerActionHandlerService {
     return false;
   }
 
-  // سروس و اسٹاک اندراج نیویگیشن
-  static Future<Map<String, dynamic>?> addNewService(
-    BuildContext context,
-    String phone,
-    List<Map<String, dynamic>> products,
-  ) async {
-    final res = await CustomerSessionContextService.openServiceStockEntry(
-      context,
-      customerPhone: phone,
-      products: products,
-    );
-    return (res is Map<String, dynamic>) ? res : null;
-  }
-
   static void _showMsg(BuildContext context, String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

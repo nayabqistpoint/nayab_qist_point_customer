@@ -1,28 +1,30 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
 
-// کنٹرولر و سیشن
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/customer_ledger_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
+import 'customer_ledger_controller.dart';
+import '../shared/customer_session_context_service.dart';
+import 'components/ledger_app_bar_ui.dart';
+import 'components/wallet_master_card_ui.dart';
+import 'components/category_tabs_ui.dart';
+import '../installment_subview/components/installment_section_ui.dart';
+import '../cash_loan_subview/cash_loan_section_controller.dart';
+import '../cash_loan_subview/cash_loan_section_page.dart';
+import '../../inspector/floating_inspector_ui.dart';
 
-// مین ڈیش بورڈ کمپوننٹس
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/ledger_app_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/wallet_master_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/category_tabs_ui.dart';
-
-// سب-ویوز کمپوننٹس
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_section_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/components/cash_loan_section_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/service_stock_feature/components/service_transactions_section_ui.dart';
-
-import 'package:nayab_qist_point_customer/customer_side/inspector/floating_inspector_ui.dart';
+class WebAndMobileScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
 
 class CustomerLedgerView extends StatefulWidget {
   final String? customerPhone;
-  const CustomerLedgerView({
-    super.key,
-    this.customerPhone,
-  });
+  const CustomerLedgerView({super.key, this.customerPhone});
 
   @override
   State<CustomerLedgerView> createState() => _CustomerLedgerViewState();
@@ -30,12 +32,20 @@ class CustomerLedgerView extends StatefulWidget {
 
 class _CustomerLedgerViewState extends State<CustomerLedgerView> {
   late final CustomerLedgerController controller;
+  late final PageController _pageController;
+  late final CashLoanSectionController _cashLoanController;
 
   @override
   void initState() {
     super.initState();
-    controller = CustomerLedgerController(
-      customerPhone: widget.customerPhone ?? '',
+    final initialPhone = widget.customerPhone ?? '';
+    controller = CustomerLedgerController(customerPhone: initialPhone);
+    _pageController = PageController(initialPage: controller.selectedTabIndex);
+    
+    // Hive रिएक्टिव कंट्रोलर को केवल फोन और फॉर्मेटर की आवश्यकता है
+    _cashLoanController = CashLoanSectionController(
+      customerPhone: initialPhone,
+      formatAmount: controller.formatAmount,
     );
   }
 
@@ -49,12 +59,15 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
         controller.customerPhone = phone;
         CustomerSessionContextService.setActivePhone(phone);
         controller.loadCustomerData();
+        _cashLoanController.loadFromHive();
       }
     }
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
+    _cashLoanController.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -73,9 +86,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                 Navigator.pushNamed(
                   context,
                   AppRoutes.purchaseMarket,
-                  arguments: {
-                    'customerPhone': controller.customerPhone,
-                  },
+                  arguments: {'customerPhone': controller.customerPhone},
                 );
               },
               onStatementPressed: () => controller.openCustomerStatement(context),
@@ -86,11 +97,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
               icon: const Icon(Icons.bug_report_rounded, color: Colors.white, size: 22),
               label: const Text(
                 'انسپکٹر',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               onPressed: () => FloatingInspectorUi.show(context),
             ),
@@ -114,25 +121,46 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                     cashLoanBalance: controller.cashLoanBalance,
                     approvedServiceCredit: controller.approvedServiceCredit,
                     formatAmount: controller.formatAmount,
-                    onTabSelected: (idx) => controller.setTabIndex(idx),
+                    onTabSelected: (idx) {
+                      if (controller.selectedTabIndex != idx) {
+                        controller.setTabIndex(idx);
+                        _pageController.animateToPage(
+                          idx,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.fastOutSlowIn,
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 12),
-                  if (controller.selectedTabIndex == 0)
-                    InstallmentSectionUi(controller: controller),
-                  if (controller.selectedTabIndex == 1)
-                    CashLoanSectionUi(
-                      cashLoanBalance: controller.cashLoanBalance,
-                      cashLoanEntries: controller.cashLoanEntries,
-                      formatAmount: controller.formatAmount,
-                      onRepaymentPressed: () => controller.handleCashLoanRepayment(context),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.72,
+                    child: ScrollConfiguration(
+                      behavior: WebAndMobileScrollBehavior(),
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                        onPageChanged: (idx) {
+                          if (controller.selectedTabIndex != idx) {
+                            controller.setTabIndex(idx);
+                          }
+                        },
+                        children: [
+                          SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: InstallmentSectionUi(controller: controller),
+                          ),
+                          SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: CashLoanSectionPage(
+                              controller: _cashLoanController,
+                              customerProducts: controller.customerProducts,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  if (controller.selectedTabIndex == 2)
-                    ServiceTransactionsSectionUi(
-                      serviceTransactions: controller.serviceTransactions,
-                      formatAmount: controller.formatAmount,
-                      onNewServicePressed: () => controller.handleNewServiceTransaction(context),
-                      onToggleExpand: controller.toggleTransactionExpand,
-                    ),
+                  ),
                 ],
               ),
             ),

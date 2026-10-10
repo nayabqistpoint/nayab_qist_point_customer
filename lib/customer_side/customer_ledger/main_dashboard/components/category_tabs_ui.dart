@@ -4,7 +4,7 @@ class CategoryTabsUi extends StatelessWidget {
   final int selectedTabIndex;
   final int totalInstallmentDue;
   final int cashLoanBalance;
-  final int approvedServiceCredit;
+  final int? approvedServiceCredit;
   final String Function(int) formatAmount;
   final ValueChanged<int> onTabSelected;
 
@@ -13,7 +13,7 @@ class CategoryTabsUi extends StatelessWidget {
     required this.selectedTabIndex,
     required this.totalInstallmentDue,
     required this.cashLoanBalance,
-    required this.approvedServiceCredit,
+    this.approvedServiceCredit,
     required this.formatAmount,
     required this.onTabSelected,
   });
@@ -21,41 +21,106 @@ class CategoryTabsUi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        color: const Color(0xFFF1F5F9), // کلین سافٹ بیک گراؤنڈ
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
-          _categoryTab(0, 'اقساط کھاتہ', 'Rs. ${formatAmount(totalInstallmentDue)}'),
-          _categoryTab(1, 'نقد دستی ادھار', 'Rs. ${formatAmount(cashLoanBalance)}'),
-          _categoryTab(2, 'خدمات و راشن', '- Rs. ${formatAmount(approvedServiceCredit)}'),
+          // 📱 ٹیب 1: اقساط کھاتہ
+          Expanded(
+            child: _buildTab(
+              index: 0,
+              title: 'اقساط کھاتہ',
+              amount: 'Rs. ${formatAmount(totalInstallmentDue)}',
+              icon: Icons.phone_android_rounded,
+              isSelected: selectedTabIndex == 0,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // 💵 ٹیب 2: نقد کھاتہ
+          Expanded(
+            child: _buildTab(
+              index: 1,
+              title: 'نقد کھاتہ',
+              amount: 'Rs. ${formatAmount(cashLoanBalance.abs())}',
+              icon: Icons.account_balance_wallet_rounded,
+              isSelected: selectedTabIndex == 1,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _categoryTab(int index, String title, String badge) {
-    final bool isSel = selectedTabIndex == index;
-    return Expanded(
-      child: InkWell(
-        onTap: () => onTabSelected(index),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: isSel ? const Color(0xFF1E293B) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+  Widget _buildTab({
+    required int index,
+    required String title,
+    required String amount,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () => onTabSelected(index),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          // منتخب شدہ اصل گہرا کلاسک بلیک اور غیر منتخب خالص سفید کارڈ
+          color: isSelected ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+            width: 1.2,
           ),
-          child: Column(
-            children: [
-              Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSel ? Colors.white : const Color(0xFF334155))),
-              const SizedBox(height: 3),
-              Text(badge, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: isSel ? const Color(0xFFFDE68A) : const Color(0xFF64748B))),
-            ],
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0xFF0F172A).withValues(alpha: 0.22)
+                  : Colors.black.withValues(alpha: 0.03),
+              blurRadius: isSelected ? 6 : 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // عنوان اور آئیکن (چھوٹا اور متوازن)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected ? const Color(0xFF2DD4BF) : const Color(0xFF475569),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.5, // عنوان کا سائز بالکل متوازن
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : const Color(0xFF334155),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // رقوم کے ہندسے (بڑے، نمایاں اور بولڈ)
+            Text(
+              amount,
+              style: TextStyle(
+                fontSize: 17, // رقوم کے ہندسے بڑے اور واضح
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+                color: isSelected ? const Color(0xFFFDE68A) : const Color(0xFF0D9488),
+              ),
+            ),
+          ],
         ),
       ),
     );

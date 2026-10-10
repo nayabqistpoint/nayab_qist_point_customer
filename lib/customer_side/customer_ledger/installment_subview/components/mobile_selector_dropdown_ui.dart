@@ -22,9 +22,7 @@ class MobileSelectorDropdownUi extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 24,
-        ),
+        width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
@@ -37,27 +35,28 @@ class MobileSelectorDropdownUi extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.phone_iphone_rounded, size: 16, color: Color(0xFF0D9488)),
-            const SizedBox(width: 6),
+            const Icon(Icons.phone_iphone_rounded, size: 15, color: Color(0xFF0D9488)),
+            const SizedBox(width: 4),
             const Text(
-              'موبائل کھاتہ:',
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+              'کھاتہ:',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
             ),
-            const SizedBox(width: 8),
-            Flexible(
+            const SizedBox(width: 6),
+            // 🌟 Expanded کے اندر Dropdown تاکہ جتنی بھی تنگ اسکرین ہو ٹیکسٹ اندر ہی سمٹ جائے
+            Expanded(
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
                   value: safeIndex,
                   isDense: true,
+                  isExpanded: true,
                   dropdownColor: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   elevation: 6,
-                  icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF1E293B)),
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF1E293B), size: 20),
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                   items: List.generate(
                     products.length,
                     (i) => DropdownMenuItem(
@@ -73,21 +72,24 @@ class MobileSelectorDropdownUi extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            // 🎯 کسٹمر کے کل موبائلز کا متحرک بیج
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFFCA5A5)),
-              ),
-              child: Text(
-                '${safeIndex + 1} از ${products.length} فون',
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFDC2626),
+            const SizedBox(width: 6),
+            // 🎯 کسٹمر کے کل موبائلز کا بیج (FittedBox تاکہ اوور فلو نہ ہو)
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: const Color(0xFFFCA5A5), width: 0.8),
+                ),
+                child: Text(
+                  '${safeIndex + 1}/${products.length}',
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC2626),
+                  ),
                 ),
               ),
             ),
