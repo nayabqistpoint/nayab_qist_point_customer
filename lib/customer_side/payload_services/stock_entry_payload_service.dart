@@ -7,6 +7,7 @@ import 'stock_entry_payload_builders/stock_entry_customer_box_builder.dart';
 class StockEntryPayloadService {
   static Future<void> saveStockEntry({
     required String customerPhone,
+    required String category,
     required String model,
     required String ramRom,
     required String color,
@@ -14,12 +15,15 @@ class StockEntryPayloadService {
     required String conditionRating,
     required String imeiNo,
     required String warranty,
+    required String generalSpecs,
     required int purchasePrice,
     required double salePrice,
     required bool isPromotionalOnOrder,
     required List<String> images,
   }) async {
+    // ۱. stockBox پے لوڈ کی تیاری
     final stockBoxPayload = StockEntryStockBoxBuilder.build(
+      category: category,
       model: model,
       ramRom: ramRom,
       color: color,
@@ -27,6 +31,7 @@ class StockEntryPayloadService {
       conditionRating: conditionRating,
       imeiNo: imeiNo,
       warranty: warranty,
+      generalSpecs: generalSpecs,
       purchasePrice: purchasePrice,
       salePrice: salePrice,
       isPromotionalOnOrder: isPromotionalOnOrder,
@@ -34,6 +39,7 @@ class StockEntryPayloadService {
       customerPhone: customerPhone,
     );
 
+    // ۲. transactionBox پے لوڈ کی تیاری
     final txData = StockEntryTransactionBoxBuilder.build(
       customerPhone: customerPhone,
       model: model,
@@ -45,15 +51,15 @@ class StockEntryPayloadService {
       images: images,
     );
 
-    // 1. stockBox
+    // ۳. اسٹاک باکس میں محفوظ کرنا
     final stockBox = await HiveBoxManager.openSafeBox(HiveBoxManager.stockBoxName);
     await stockBox.put(stockBoxPayload['itemId'], stockBoxPayload);
 
-    // 2. transactionBox
+    // ۴. ٹرانزیکشن باکس میں محفوظ کرنا
     final txBox = await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
     await txBox.put(txData['txId'], txData);
 
-    // 3. customerBox
+    // ۵. کسٹمر کھاتے پر نقد کٹوتی (اگر پروموشنل نہ ہو)
     if (!isPromotionalOnOrder) {
       final customerBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
       final customerData = customerBox.get(customerPhone);
@@ -74,7 +80,7 @@ class StockEntryPayloadService {
       }
     }
 
-    // ☁️ بیک گراؤنڈ میں فائر اسٹور پر فوری پش ٹریگر
+    // ۶. فائر اسٹور پر پش ٹریگر
     MasterSyncHub.pushAllPendingRecords().catchError((_) {});
   }
 }

@@ -1,5 +1,6 @@
 class StockEntryStockBoxBuilder {
   static Map<String, dynamic> build({
+    required String category,
     required String model,
     required String ramRom,
     required String color,
@@ -7,6 +8,7 @@ class StockEntryStockBoxBuilder {
     required String conditionRating,
     required String imeiNo,
     required String warranty,
+    required String generalSpecs,
     required int purchasePrice,
     required double salePrice,
     required bool isPromotionalOnOrder,
@@ -20,23 +22,26 @@ class StockEntryStockBoxBuilder {
     return {
       'docId': itemId,
       'itemId': itemId,
+      'category': category,
       'itemName': model,
+      'model': model,
       'ramRom': ramRom,
       'color': color,
       'conditionType': conditionType,
       'conditionRating': conditionRating,
       'imeiNo': imeiNo,
       'warranty': warranty,
+      'generalSpecs': generalSpecs,
       'purchasePrice': purchasePrice,
       'salePrice': salePrice,
       'quantity': 1,
       'status': isPromotionalOnOrder ? 'available_on_order' : 'available',
       'customerPhone': customerPhone,
-      'supplier': 'zetoon',
+      'supplier': 'nayab_point',
       'images': images.join(','),
       'createdAt': nowIso,
       'updatedAt': nowIso,
-      'isSynced': false, // ☁️ سنک ٹریگر
+      'isSynced': false,
     };
   }
 }

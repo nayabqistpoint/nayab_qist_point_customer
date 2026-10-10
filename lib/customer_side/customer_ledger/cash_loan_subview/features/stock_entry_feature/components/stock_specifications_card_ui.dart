@@ -3,151 +3,124 @@ import '../stock_entry_controller.dart';
 
 class StockSpecificationsCardUi extends StatelessWidget {
   final StockEntryController controller;
-
   const StockSpecificationsCardUi({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('موبائل برانڈ و ماڈل (itemName):', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-          const SizedBox(height: 6),
-          TextField(
-            controller: controller.modelCtrl,
-            decoration: const InputDecoration(
-              hintText: 'مثلاً Vivo Y20، Google Pixel 7A، Redmi Note 12',
-              helperText: 'برانڈ اور مکمل ماڈل ایک ساتھ لکھیں',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('موبائل کی تفصیلات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 12),
+
+            // ماڈل نام
+            TextField(
+              controller: controller.modelCtrl,
+              decoration: InputDecoration(
+                labelText: 'موبائل ماڈل / نام',
+                hintText: 'مثلاً: Samsung Galaxy A15',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                prefixIcon: const Icon(Icons.phone_android),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('ریم / روم (ramRom):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: controller.selectedRamRom,
-                      isExpanded: true,
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: controller.ramRomOptions.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 12)))).toList(),
-                      onChanged: (v) => controller.selectedRamRom = v!,
+            const SizedBox(height: 12),
+
+            // ریم/روم اور رنگ
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: controller.ramRomOptions.contains(controller.selectedRamRom)
+                        ? controller.selectedRamRom
+                        : controller.ramRomOptions.first,
+                    decoration: InputDecoration(
+                      labelText: 'ریم / روم',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                  ],
+                    items: controller.ramRomOptions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                    onChanged: (v) { if (v != null) controller.setRamRom(v); },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('رنگ (color):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: controller.selectedColor,
-                      isExpanded: true,
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: controller.colorOptions.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 12)))).toList(),
-                      onChanged: (v) => controller.selectedColor = v!,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: controller.colorOptions.contains(controller.selectedColor)
+                        ? controller.selectedColor
+                        : controller.colorOptions.first,
+                    decoration: InputDecoration(
+                      labelText: 'رنگ',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                  ],
+                    items: controller.colorOptions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                    onChanged: (v) { if (v != null) controller.setColor(v); },
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // حالت (ڈبہ پیک یا استعمال شدہ)
+            DropdownButtonFormField<String>(
+              initialValue: (controller.selectedConditionType == 'USED' || controller.selectedConditionType == 'NEW')
+                  ? controller.selectedConditionType
+                  : 'USED',
+              decoration: InputDecoration(
+                labelText: 'حالت (Condition)',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('کنڈیشن قسم (conditionType):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: controller.selectedConditionType,
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: const [
-                        DropdownMenuItem(value: 'used', child: Text('یوزڈ (Used)', style: TextStyle(fontSize: 12))),
-                        DropdownMenuItem(value: 'new', child: Text('نیا (New / Box Pack)', style: TextStyle(fontSize: 12))),
-                      ],
-                      onChanged: (v) => controller.selectedConditionType = v!,
-                    ),
-                  ],
-                ),
+              items: const [
+                DropdownMenuItem(value: 'NEW', child: Text('نیا (Brand New / ڈبہ پیک)')),
+                DropdownMenuItem(value: 'USED', child: Text('استعمال شدہ (Used)')),
+              ],
+              onChanged: (v) { if (v != null) controller.setConditionType(v); },
+            ),
+            const SizedBox(height: 12),
+
+            // کنڈیشن ریٹنگ
+            DropdownButtonFormField<String>(
+              initialValue: controller.conditionRatings.contains(controller.selectedConditionRating)
+                  ? controller.selectedConditionRating
+                  : controller.conditionRatings.first,
+              decoration: InputDecoration(
+                labelText: 'کنڈیشن ریٹنگ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('ریٹنگ (conditionRating):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: controller.selectedConditionRating,
-                      isExpanded: true,
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: controller.conditionRatings.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 12)))).toList(),
-                      onChanged: (v) => controller.selectedConditionRating = v!,
-                    ),
-                  ],
-                ),
+              items: controller.conditionRatings.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (v) { if (v != null) controller.setConditionRating(v); },
+            ),
+            const SizedBox(height: 12),
+
+            // IMEI
+            TextField(
+              controller: controller.imeiCtrl,
+              decoration: InputDecoration(
+                labelText: 'IMEI نمبر',
+                hintText: '15 ہندسوں کا کوڈ درج کریں',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                prefixIcon: const Icon(Icons.qr_code),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('IMEI نمبر (اختیاری):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    TextField(
-                      controller: controller.imeiCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: '15 ہندسوں کا IMEI',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 12),
+
+            // وارنٹی ڈراپ ڈاؤن (1 سے 12 ماہ تک مکمل لسٹ)
+            DropdownButtonFormField<String>(
+              initialValue: controller.warrantyOptions.contains(controller.selectedWarranty)
+                  ? controller.selectedWarranty
+                  : controller.warrantyOptions.first,
+              decoration: InputDecoration(
+                labelText: 'وارنٹی کی تفصیل',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('وارنٹی مدت (warranty):', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: controller.selectedWarranty,
-                      isExpanded: true,
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: controller.warrantyOptions.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 11.5)))).toList(),
-                      onChanged: (v) => controller.selectedWarranty = v!,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+              items: controller.warrantyOptions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (v) { if (v != null) controller.setWarranty(v); },
+            ),
+          ],
+        ),
       ),
     );
   }
