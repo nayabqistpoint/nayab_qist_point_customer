@@ -6,6 +6,7 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_das
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart';
 
 class AppRoutes {
   static const String login = '/';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const String purchaseMarket = '/purchase-market';
   static const String planDetail = '/plan-detail';
   static const String payment = '/payment';
+  static const String shopShowcase = '/shop-showcase';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -60,6 +62,11 @@ class AppRoutes {
             baseAmount: args['baseAmount'] ?? 0,
             isInstallment: args['isInstallment'] ?? false,
           ),
+        );
+
+      case shopShowcase:
+        return MaterialPageRoute(
+          builder: (_) => const ShopShowcasePortalPage(),
         );
 
       default:

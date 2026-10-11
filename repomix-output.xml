@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/hive_services, lib/customer_side/sync
+- Only files matching these patterns are included: lib/customer_side/sync, lib/customer_side/hive_services
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -57,6 +57,7 @@ lib/
       global_sync/
         app_config_pull_service.dart
         stock_pull_service.dart
+        stock_push_service.dart
       media_sync/
         cloudinary_upload_service.dart
         pending_media_sync_service.dart
@@ -135,6 +136,45 @@ class SyncResult {
         message: err,
         recordsProcessed: 0,
       );
+}
+</file>
+
+<file path="lib/customer_side/sync/global_sync/stock_push_service.dart">
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+class StockPushService {
+  static const String collectionName = HiveBoxManager.stockBoxName;
+  static Future<SyncResult> pushPending() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.stockBoxName);
+      int count = 0;
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final data = Map<String, dynamic>.from(raw);
+          if (data['isSynced'] != true) {
+            final docId = key.toString();
+            final payload = Map<String, dynamic>.from(data);
+            payload['isSynced'] = true;
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(docId)
+                .set(payload, SetOptions(merge: true));
+            data['isSynced'] = true;
+            await box.put(key, data);
+            count++;
+            debugPrint('🚀 [stockBox] کامیابی سے فائر اسٹور پر سنک ہو گیا: $docId');
+          }
+        }
+      }
+      return SyncResult.success(count);
+    } catch (e) {
+      debugPrint('❌ StockPushService Error: $e');
+      return SyncResult.failure(e.toString());
+    }
+  }
 }
 </file>
 
@@ -1012,79 +1052,6 @@ class UsersPushService {
 }
 </file>
 
-<file path="lib/customer_side/sync/master_sync_hub.dart">
-import 'package:flutter/foundation.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/app_config_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/users_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/customer_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/guarantor_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/installments_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/transaction_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/media_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/users_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/customer_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/guarantor_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/installments_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/transaction_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/media_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/atomic_batch_sync_service.dart';
-export 'push_services/atomic_batch_sync_service.dart' show BatchOperationItem;
-export 'core/sync_status.dart';
-class MasterSyncHub {
-  static Future<SyncResult> executeBatch(List<BatchOperationItem> operations) async {
-    return await AtomicBatchSyncService.executeBatch(operations);
-  }
-  static Future<void> syncGlobalDataOnBoot() async {
-    if (!await ConnectivityService.hasInternetConnection()) return;
-    debugPrint('🚀 گلوبل ڈیٹا لائیو سنک شروع...');
-    AppConfigPullService.startLiveSync();
-    StockPullService.startLiveSync();
-  }
-  static Future<void> syncCustomerSession({required String customerPhone}) async {
-    if (!await ConnectivityService.hasInternetConnection()) {
-      debugPrint('🌐 آف لائن موڈ: لوکل ہائیو ڈسک ڈیٹا محفوظ اور فعال ہے۔');
-      return;
-    }
-    await pushAllPendingRecords();
-    UsersPullService.startLiveSync(customerPhone);
-    CustomerPullService.startLiveSync(customerPhone);
-    GuarantorPullService.startLiveSync(customerPhone);
-    InstallmentsPullService.startLiveSync(customerPhone);
-    TransactionPullService.startLiveSync(customerPhone);
-    MediaPullService.startLiveSync(customerPhone);
-    debugPrint('⚡ کسٹمر سیشن کے تمام لائیو لسنرز فعال ہو گئے برائے: $customerPhone');
-  }
-  static Future<void> pushAllPendingRecords() async {
-    if (!await ConnectivityService.hasInternetConnection()) return;
-    debugPrint('📤 پینڈنگ ریکارڈز پش ہو رہے ہیں...');
-    await PendingMediaSyncService.processPendingUploads();
-    await Future.wait([
-      UsersPushService.pushPending(),
-      CustomerPushService.pushPending(),
-      GuarantorPushService.pushPending(),
-      InstallmentsPushService.pushPending(),
-      TransactionPushService.pushPending(),
-      MediaPushService.pushPending(),
-    ]);
-  }
-  static void stopAllLiveSyncs() {
-    AppConfigPullService.stopLiveSync();
-    StockPullService.stopLiveSync();
-    UsersPullService.stopLiveSync();
-    CustomerPullService.stopLiveSync();
-    GuarantorPullService.stopLiveSync();
-    InstallmentsPullService.stopLiveSync();
-    TransactionPullService.stopLiveSync();
-    MediaPullService.stopLiveSync();
-    debugPrint('🛑 تمام لائیو لسنرز بند کر دیے گئے۔');
-  }
-}
-</file>
-
 <file path="lib/customer_side/hive_services/hive_box_manager.dart">
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
@@ -1175,6 +1142,81 @@ class HiveBoxManager {
       if (Hive.isBoxOpen(installmentsBoxName)) installmentsBoxName,
       if (Hive.isBoxOpen(transactionBoxName)) transactionBoxName,
     ];
+  }
+}
+</file>
+
+<file path="lib/customer_side/sync/master_sync_hub.dart">
+import 'package:flutter/foundation.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/app_config_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/users_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/customer_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/guarantor_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/installments_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/transaction_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/media_pull_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/users_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/customer_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/guarantor_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/installments_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/transaction_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/media_push_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/push_services/atomic_batch_sync_service.dart';
+export 'push_services/atomic_batch_sync_service.dart' show BatchOperationItem;
+export 'core/sync_status.dart';
+class MasterSyncHub {
+  static Future<SyncResult> executeBatch(List<BatchOperationItem> operations) async {
+    return await AtomicBatchSyncService.executeBatch(operations);
+  }
+  static Future<void> syncGlobalDataOnBoot() async {
+    if (!await ConnectivityService.hasInternetConnection()) return;
+    debugPrint('🚀 گلوبل ڈیٹا لائیو سنک شروع...');
+    AppConfigPullService.startLiveSync();
+    StockPullService.startLiveSync();
+  }
+  static Future<void> syncCustomerSession({required String customerPhone}) async {
+    if (!await ConnectivityService.hasInternetConnection()) {
+      debugPrint('🌐 آف لائن موڈ: لوکل ہائیو ڈسک ڈیٹا محفوظ اور فعال ہے۔');
+      return;
+    }
+    await pushAllPendingRecords();
+    UsersPullService.startLiveSync(customerPhone);
+    CustomerPullService.startLiveSync(customerPhone);
+    GuarantorPullService.startLiveSync(customerPhone);
+    InstallmentsPullService.startLiveSync(customerPhone);
+    TransactionPullService.startLiveSync(customerPhone);
+    MediaPullService.startLiveSync(customerPhone);
+    debugPrint('⚡ کسٹمر سیشن کے تمام لائیو لسنرز فعال ہو گئے برائے: $customerPhone');
+  }
+  static Future<void> pushAllPendingRecords() async {
+    if (!await ConnectivityService.hasInternetConnection()) return;
+    debugPrint('📤 پینڈنگ ریکارڈز پش ہو رہے ہیں...');
+    await PendingMediaSyncService.processPendingUploads();
+    await Future.wait([
+      UsersPushService.pushPending(),
+      CustomerPushService.pushPending(),
+      GuarantorPushService.pushPending(),
+      InstallmentsPushService.pushPending(),
+      TransactionPushService.pushPending(),
+      StockPushService.pushPending(),
+      MediaPushService.pushPending(),
+    ]);
+  }
+  static void stopAllLiveSyncs() {
+    AppConfigPullService.stopLiveSync();
+    StockPullService.stopLiveSync();
+    UsersPullService.stopLiveSync();
+    CustomerPullService.stopLiveSync();
+    GuarantorPullService.stopLiveSync();
+    InstallmentsPullService.stopLiveSync();
+    TransactionPullService.stopLiveSync();
+    MediaPullService.stopLiveSync();
+    debugPrint('🛑 تمام لائیو لسنرز بند کر دیے گئے۔');
   }
 }
 </file>

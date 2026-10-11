@@ -7,6 +7,7 @@ import '../shared/customer_session_context_service.dart';
 import 'components/ledger_app_bar_ui.dart';
 import 'components/wallet_master_card_ui.dart';
 import 'components/category_tabs_ui.dart';
+import 'components/shop_notice_ticker_ui.dart';
 import '../installment_subview/components/installment_section_ui.dart';
 import '../cash_loan_subview/cash_loan_section_controller.dart';
 import '../cash_loan_subview/cash_loan_section_page.dart';
@@ -106,6 +107,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
+                  const ShopNoticeTickerUi(),
                   WalletMasterCardUi(
                     net: controller.grandNetTotal,
                     isDebtor: controller.grandNetTotal >= 0,
