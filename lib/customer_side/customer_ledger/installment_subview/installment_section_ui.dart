@@ -5,10 +5,10 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_das
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_header_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_row_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_pending_freeze_banner_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
 
 class InstallmentSectionUi extends StatelessWidget {
   final CustomerLedgerController controller;
+
   const InstallmentSectionUi({
     super.key,
     required this.controller,
@@ -43,7 +43,18 @@ class InstallmentSectionUi extends StatelessWidget {
     final scheduleList = (currentProduct['schedule'] as List?)
             ?.cast<Map<String, dynamic>>() ??
         [];
-    final overdueSummary = LedgerMathService.calculateOverdueSummary(scheduleList);
+
+    int overdueCount = 0;
+    int overdueAmount = 0;
+    for (final item in scheduleList) {
+      final String st = item['status']?.toString() ?? '';
+      final int rem = (item['remainingAmount'] as int?) ?? 0;
+      if (st == 'DUE' && rem > 0) {
+        overdueCount++;
+        overdueAmount += rem;
+      }
+    }
+
     final bool hasPendingReview = currentProduct['hasPendingReview'] == true;
     final int pendingAmount = (currentProduct['pendingAmount'] as int?) ?? 0;
 
@@ -99,14 +110,14 @@ class InstallmentSectionUi extends StatelessWidget {
               InstallmentTableHeaderUi(
                 planName: currentProduct['plan']?.toString() ?? '',
                 orderStatus: currentProduct['orderStatus']?.toString() ?? 'PENDING',
-                overdueCount: overdueSummary['count'] as int,
-                overdueAmount: overdueSummary['amount'] as int,
+                overdueCount: overdueCount,
+                overdueAmount: overdueAmount,
                 formatAmount: controller.formatAmount,
               ),
               const Divider(height: 1, color: Color(0xFFE2E8F0)),
               Table(
-                border: TableBorder.symmetric(
-                  inside: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                border: const TableBorder.symmetric(
+                  inside: BorderSide(color: Color(0xFFE2E8F0), width: 1),
                 ),
                 columnWidths: const {
                   0: FlexColumnWidth(0.6),

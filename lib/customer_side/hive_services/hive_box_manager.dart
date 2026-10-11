@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
@@ -59,34 +60,50 @@ class HiveBoxManager {
     }
   }
 
-  /// 💾 سنگل کلائنٹ پرائیویٹ سیشن رائٹ
+  // ---------------------------------------------------------------------------
+  // 🎯 یونیورسل لائیو لسنر گیٹ وے (تمام 9 باکسز کے لیے مستقل حل)
+  // ---------------------------------------------------------------------------
+  /// کسی بھی باکس کے لیے ValueListenable حاصل کرنے کا واحد گیٹ وے
+  static ValueListenable<Box>? listenBox(String boxName) {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box(boxName).listenable();
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 💾 یونیورسل ایٹامک بیچ رائٹ (تمام باکسز کے لیے خودکار سنک کے ساتھ)
+  // ---------------------------------------------------------------------------
   static Future<bool> writeBatchPayloads({
-    required String docId, // 🎯 یہ صارف کا موبائل نمبر ہی ہے
+    required String docId,
     required Map<String, Map<String, dynamic>> payloads,
     String logTitle = 'ڈیٹا لوکل محفوظ ہوا',
   }) async {
     try {
       for (final entry in payloads.entries) {
         final boxName = entry.key;
-        final data = entry.value;
+        final innerMap = entry.value;
         final box = await openSafeBox(boxName);
 
-        // اگر پروفائل باکس ہے تو پرانا ڈیٹا ہٹا کر صرف ایکٹو یوزر کی سنگل کی رکھنا
+        // اگر پروفائل باکس ہے تو پرانا ڈیٹا ہٹا کر صرف سنگل یوزر رکھنا
         if (boxName == customerBoxName || boxName == guarantorBoxName || boxName == mediaBoxName) {
           await box.clear();
+          await box.put(docId, innerMap);
+        } else {
+          // باقی تمام باکسز (installments, transaction وغیرہ) میں ان کی اصل کیز پر ڈیٹا رکھنا
+          for (final record in innerMap.entries) {
+            await box.put(record.key, record.value);
+          }
         }
-
-        // کی ہمیشہ صارف کا موبائل نمبر رہے گی
-        await box.put(docId, data);
       }
 
       InspectorStore.instance.logPayload(
-        title: '$logTitle (Phone: $docId)',
+        title: '$logTitle (DocId: $docId)',
         direction: PayloadDirection.localHiveWrite,
         data: payloads,
       );
 
-      // بیک گراؤنڈ میں فوری پش
+      // بیک گراؤنڈ میں فوری سنک پش
       MasterSyncHub.pushAllPendingRecords().catchError((_) {});
 
       return true;

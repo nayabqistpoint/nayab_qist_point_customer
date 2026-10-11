@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/cash_loan_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/transaction_ledger_service.dart';
@@ -88,7 +88,7 @@ class LedgerActionHandlerService {
     );
 
     if (result != null && result is Map<String, dynamic>) {
-      final success = await InstallmentAllocationService.processPaymentAllocation(
+      final success = await InstallmentStorageHandler.executeBatchAllocation(
         customerPhone: controller.customerPhone,
         orderKey: currentProduct['orderKey'],
         rawOrder: currentProduct['rawOrder'],

@@ -8,7 +8,7 @@ import 'components/ledger_app_bar_ui.dart';
 import 'components/wallet_master_card_ui.dart';
 import 'components/category_tabs_ui.dart';
 import 'components/shop_notice_ticker_ui.dart';
-import '../installment_subview/components/installment_section_ui.dart';
+import '../installment_subview/installment_section_ui.dart';
 import '../cash_loan_subview/cash_loan_section_controller.dart';
 import '../cash_loan_subview/cash_loan_section_page.dart';
 import '../../inspector/floating_inspector_ui.dart';
