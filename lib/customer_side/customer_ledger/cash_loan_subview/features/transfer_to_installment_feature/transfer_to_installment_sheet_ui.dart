@@ -1,17 +1,16 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'transfer_to_installment_controller.dart';
-import 'services/transfer_to_installment_payload_service.dart';
 
 class TransferToInstallmentSheetUi {
   static void show({
     required BuildContext context,
     required String customerPhone,
-    required int availableGreenAdvance, // دستیاب منفی کیش ایڈوانس (مثبت عدد کی صورت میں، جیسے 5000)
+    required int availableGreenAdvance,
     required List<Map<String, dynamic>> customerProducts,
     required String Function(int) formatAmount,
   }) {
-    final controller = TransferToInstallmentController(products: customerProducts);
+    final controller = TransferToInstallmentController(customerPhone: customerPhone, products: customerProducts);
 
     showModalBottomSheet(
       context: context,
@@ -39,20 +38,14 @@ class TransferToInstallmentSheetUi {
                     ],
                   ),
                   const Divider(),
-                  Text(
-                    'دستیاب نقد ایڈوانس رقم: Rs. ${formatAmount(availableGreenAdvance)}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
-                  ),
+                  Text('دستیاب نقد ایڈوانس رقم: Rs. ${formatAmount(availableGreenAdvance)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<int>(
                     initialValue: controller.selectedIndex,
-                    items: List.generate(
-                      customerProducts.length,
-                      (i) => DropdownMenuItem(
-                        value: i,
-                        child: Text('${customerProducts[i]['name']} - بقایا: Rs. ${formatAmount(customerProducts[i]['remaining'] ?? 0)}', style: const TextStyle(fontSize: 12)),
-                      ),
-                    ),
+                    items: List.generate(customerProducts.length, (i) => DropdownMenuItem(
+                      value: i,
+                      child: Text('${customerProducts[i]['name']} - بقایا: Rs. ${formatAmount(customerProducts[i]['remaining'] ?? 0)}', style: const TextStyle(fontSize: 12)),
+                    )),
                     onChanged: (v) => v != null ? controller.selectProduct(v) : null,
                   ),
                   const SizedBox(height: 12),
@@ -75,19 +68,14 @@ class TransferToInstallmentSheetUi {
                         final inputAmt = controller.parsedAmount;
                         if (inputAmt <= 0) return;
                         if (inputAmt > maxAllowed) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('رقم دستیاب ایڈوانس (Rs. ${formatAmount(maxAllowed)}) سے زیادہ نہیں ہو سکتی'), backgroundColor: const Color(0xFFDC2626)),
-                          );
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('رقم دستیاب ایڈوانس (Rs. ${formatAmount(maxAllowed)}) سے زیادہ نہیں ہو سکتی'),
+                            backgroundColor: const Color(0xFFDC2626),
+                          ));
                           return;
                         }
-
                         Navigator.pop(ctx);
-                        await TransferToInstallmentPayloadService.executeTransfer(
-                          customerPhone: customerPhone,
-                          contractDocId: controller.currentProduct?['docId']?.toString() ?? '',
-                          productName: controller.currentProduct?['name']?.toString() ?? 'موبائل فون',
-                          transferAmount: inputAmt,
-                        );
+                        await controller.submitTransfer();
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
                       child: const Text('واٹر فال منتقلی کریں', style: TextStyle(fontWeight: FontWeight.bold)),

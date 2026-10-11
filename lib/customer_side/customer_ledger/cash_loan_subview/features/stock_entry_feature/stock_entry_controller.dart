@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/features/stock_entry_feature/services/stock_entry_payload_service.dart';
+import 'services/stock_storage_handler.dart';
 
 enum StockCategoryType {
   mobile('موبائل فون'),
@@ -15,30 +15,19 @@ class StockEntryController extends ChangeNotifier {
 
   StockCategoryType selectedCategory = StockCategoryType.mobile;
 
-  // ٹیکسٹ کنٹرولرز
   final modelCtrl = TextEditingController();
   final purchasePriceCtrl = TextEditingController();
   final salePriceCtrl = TextEditingController();
   final imeiCtrl = TextEditingController();
   final generalSpecsCtrl = TextEditingController();
 
-  // ڈراپ ڈاؤن لسٹیں اور منتخب ویلیوز
   String selectedRamRom = '4/64';
-  final List<String> ramRomOptions = const [
-    '2/32', '3/32', '4/64', '4/128', '6/128', '8/128', '8/256', '12/256'
-  ];
-
+  final List<String> ramRomOptions = const ['2/32', '3/32', '4/64', '4/128', '6/128', '8/128', '8/256', '12/256'];
   String selectedColor = 'Black';
-  final List<String> colorOptions = const [
-    'Black', 'Blue', 'Green', 'Silver', 'Gold', 'White', 'Other'
-  ];
-
+  final List<String> colorOptions = const ['Black', 'Blue', 'Green', 'Silver', 'Gold', 'White', 'Other'];
   String selectedConditionType = 'USED';
   String selectedConditionRating = '10/10';
-  final List<String> conditionRatings = const [
-    '10/10', '9.5/10', '9/10', '8.5/10', '8/10', '7/10'
-  ];
-
+  final List<String> conditionRatings = const ['10/10', '9.5/10', '9/10', '8.5/10', '8/10', '7/10'];
   String selectedWarranty = 'No Warranty';
   final List<String> warrantyOptions = [
     'No Warranty',
@@ -51,7 +40,6 @@ class StockEntryController extends ChangeNotifier {
 
   bool get isMobile => selectedCategory == StockCategoryType.mobile;
 
-  // مختصر سیٹرز تاکہ UI میں ایرر نہ آئے
   void setCategory(StockCategoryType val) { selectedCategory = val; notifyListeners(); }
   void setRamRom(String val) { selectedRamRom = val; notifyListeners(); }
   void setColor(String val) { selectedColor = val; notifyListeners(); }
@@ -69,7 +57,7 @@ class StockEntryController extends ChangeNotifier {
 
     if (title.isEmpty || sale <= 0) return false;
 
-    await StockEntryPayloadService.saveStockEntry(
+    return await StockStorageHandler.saveStockEntry(
       customerPhone: customerPhone,
       category: selectedCategory.name,
       model: title,
@@ -85,7 +73,6 @@ class StockEntryController extends ChangeNotifier {
       isPromotionalOnOrder: isPromotionalOnOrder,
       images: images,
     );
-    return true;
   }
 
   @override

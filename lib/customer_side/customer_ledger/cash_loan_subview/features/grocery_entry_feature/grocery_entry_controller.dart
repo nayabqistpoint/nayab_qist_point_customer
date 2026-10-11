@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/grocery_storage_handler.dart';
 
 class GroceryEntryController extends ChangeNotifier {
   final String customerPhone;
@@ -50,6 +51,18 @@ class GroceryEntryController extends ChangeNotifier {
   void toggleAudio(bool? val) {
     hasAudio = val ?? false;
     notifyListeners();
+  }
+
+  Future<bool> submitEntry() async {
+    if (items.isEmpty) return false;
+
+    return await GroceryStorageHandler.saveGrocery(
+      customerPhone: customerPhone,
+      grandTotal: grandTotal,
+      items: items,
+      hasPhoto: hasPhoto,
+      hasAudio: hasAudio,
+    );
   }
 
   @override

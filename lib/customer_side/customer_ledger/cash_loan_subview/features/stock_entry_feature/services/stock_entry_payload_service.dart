@@ -1,11 +1,9 @@
-import '../../../../../hive_services/hive_box_manager.dart';
-import '../../../../../sync/master_sync_hub.dart';
 import 'payload_builders/stock_entry_stock_box_builder.dart';
 import 'payload_builders/stock_entry_transaction_box_builder.dart';
 import 'payload_builders/stock_entry_customer_box_builder.dart';
 
 class StockEntryPayloadService {
-  static Future<void> saveStockEntry({
+  static Map<String, dynamic> buildPayloads({
     required String customerPhone,
     required String category,
     required String model,
@@ -20,8 +18,9 @@ class StockEntryPayloadService {
     required double salePrice,
     required bool isPromotionalOnOrder,
     required List<String> images,
-  }) async {
-    // ۱. stockBox پے لوڈ کی تیاری
+    required int currentCashBal,
+    required int currentInstDue,
+  }) {
     final stockBoxPayload = StockEntryStockBoxBuilder.build(
       category: category,
       model: model,
@@ -39,7 +38,6 @@ class StockEntryPayloadService {
       customerPhone: customerPhone,
     );
 
-    // ۲. transactionBox پے لوڈ کی تیاری
     final txData = StockEntryTransactionBoxBuilder.build(
       customerPhone: customerPhone,
       model: model,
@@ -51,36 +49,20 @@ class StockEntryPayloadService {
       images: images,
     );
 
-    // ۳. اسٹاک باکس میں محفوظ کرنا
-    final stockBox = await HiveBoxManager.openSafeBox(HiveBoxManager.stockBoxName);
-    await stockBox.put(stockBoxPayload['itemId'], stockBoxPayload);
-
-    // ۴. ٹرانزیکشن باکس میں محفوظ کرنا
-    final txBox = await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
-    await txBox.put(txData['txId'], txData);
-
-    // ۵. کسٹمر کھاتے پر نقد کٹوتی (اگر پروموشنل نہ ہو)
+    Map<String, dynamic>? custUpdate;
     if (!isPromotionalOnOrder) {
-      final customerBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
-      final customerData = customerBox.get(customerPhone);
-      if (customerData is Map) {
-        final int currentCashBal = (customerData['cashLoanBalance'] as num?)?.toInt() ?? 0;
-        final int currentInstDue = (customerData['installmentDueBalance'] as num?)?.toInt() ?? 0;
-
-        final custUpdate = StockEntryCustomerBoxBuilder.build(
-          currentCashLoanBalance: currentCashBal,
-          currentInstallmentDue: currentInstDue,
-          purchasePrice: purchasePrice,
-          isPromotionalOnOrder: false,
-        );
-        await customerBox.put(customerPhone, {
-          ...Map<String, dynamic>.from(customerData),
-          ...custUpdate,
-        });
-      }
+      custUpdate = StockEntryCustomerBoxBuilder.build(
+        currentCashLoanBalance: currentCashBal,
+        currentInstallmentDue: currentInstDue,
+        purchasePrice: purchasePrice,
+        isPromotionalOnOrder: false,
+      );
     }
 
-    // ۶. فائر اسٹور پر پش ٹریگر
-    MasterSyncHub.pushAllPendingRecords().catchError((_) {});
+    return {
+      'stockPayload': stockBoxPayload,
+      'txPayload': txData,
+      'custUpdate': custUpdate,
+    };
   }
 }

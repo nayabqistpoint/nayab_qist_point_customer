@@ -3,7 +3,6 @@ import 'grocery_entry_controller.dart';
 import 'components/grocery_item_input_card_ui.dart';
 import 'components/grocery_items_table_ui.dart';
 import 'components/grocery_media_toggles_ui.dart';
-import 'services/grocery_entry_payload_service.dart';
 
 class GroceryEntryPage extends StatefulWidget {
   final String customerPhone;
@@ -30,16 +29,17 @@ class _GroceryEntryPageState extends State<GroceryEntryPage> {
   }
 
   Future<void> _submit() async {
-    if (controller.items.isEmpty) return;
+    if (controller.items.isEmpty || _isSaving) return;
     setState(() => _isSaving = true);
-    await GroceryEntryPayloadService.saveGroceryEntry(
-      customerPhone: widget.customerPhone,
-      grandTotal: controller.grandTotal,
-      items: controller.items,
-      hasPhoto: controller.hasPhoto,
-      hasAudio: controller.hasAudio,
-    );
-    if (mounted) Navigator.pop(context);
+
+    final isSuccess = await controller.submitEntry();
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      if (isSuccess) {
+        Navigator.pop(context, true);
+      }
+    }
   }
 
   @override
