@@ -1,8 +1,8 @@
-import '../hive_services/hive_box_manager.dart';
-import '../sync/master_sync_hub.dart';
-import 'stock_entry_payload_builders/stock_entry_stock_box_builder.dart';
-import 'stock_entry_payload_builders/stock_entry_transaction_box_builder.dart';
-import 'stock_entry_payload_builders/stock_entry_customer_box_builder.dart';
+import '../../../../../hive_services/hive_box_manager.dart';
+import '../../../../../sync/master_sync_hub.dart';
+import 'payload_builders/stock_entry_stock_box_builder.dart';
+import 'payload_builders/stock_entry_transaction_box_builder.dart';
+import 'payload_builders/stock_entry_customer_box_builder.dart';
 
 class StockEntryPayloadService {
   static Future<void> saveStockEntry({

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/stock_entry_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/features/stock_entry_feature/services/stock_entry_payload_service.dart';
 
 enum StockCategoryType {
   mobile('موبائل فون'),

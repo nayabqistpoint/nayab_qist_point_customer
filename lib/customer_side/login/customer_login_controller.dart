@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/login_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_payload_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/login_hive_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/services/login_cloud_sync_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/services/login_biometric_service.dart';

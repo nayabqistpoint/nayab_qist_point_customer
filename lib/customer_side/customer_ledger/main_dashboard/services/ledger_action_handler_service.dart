@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/installment_allocation_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/cash_loan_repayment_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/cash_loan_repayment_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/transaction_ledger_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/customer_statement_sheet_ui.dart';

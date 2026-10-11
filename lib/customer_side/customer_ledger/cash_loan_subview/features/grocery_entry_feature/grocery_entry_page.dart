@@ -3,7 +3,7 @@ import 'grocery_entry_controller.dart';
 import 'components/grocery_item_input_card_ui.dart';
 import 'components/grocery_items_table_ui.dart';
 import 'components/grocery_media_toggles_ui.dart';
-import '../../../../payload_services/grocery_entry_payload_service.dart';
+import 'services/grocery_entry_payload_service.dart';
 
 class GroceryEntryPage extends StatefulWidget {
   final String customerPhone;

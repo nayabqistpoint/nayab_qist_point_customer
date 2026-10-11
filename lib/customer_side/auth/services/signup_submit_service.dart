@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 import 'package:nayab_qist_point_customer/customer_side/inspector/submission_receipt_sheet_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/signup_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_payload_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
 
 class SignupSubmitService {

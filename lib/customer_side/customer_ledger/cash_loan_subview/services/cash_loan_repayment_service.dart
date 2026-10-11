@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/cash_loan_payload_builders/cash_loan_transaction_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/payload_builders/cash_loan_transaction_builder.dart';
 
 class CashLoanRepaymentService {
   static Future<bool> processRepayment({

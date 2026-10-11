@@ -1,6 +1,6 @@
-import '../hive_services/hive_box_manager.dart';
-import 'transfer_payload_builders/transfer_installments_box_builder.dart';
-import 'transfer_payload_builders/transfer_transaction_box_builder.dart';
+import '../../../../../hive_services/hive_box_manager.dart';
+import 'payload_builders/transfer_installments_box_builder.dart';
+import 'payload_builders/transfer_transaction_box_builder.dart';
 
 class TransferToInstallmentPayloadService {
   static Future<void> executeTransfer({

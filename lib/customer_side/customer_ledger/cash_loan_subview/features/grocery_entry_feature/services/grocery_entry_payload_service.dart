@@ -1,6 +1,6 @@
-import '../hive_services/hive_box_manager.dart';
-import 'grocery_payload_builders/grocery_transaction_box_builder.dart';
-import 'grocery_payload_builders/grocery_customer_box_builder.dart';
+import '../../../../../hive_services/hive_box_manager.dart';
+import 'payload_builders/grocery_transaction_box_builder.dart';
+import 'payload_builders/grocery_customer_box_builder.dart';
 
 class GroceryEntryPayloadService {
   static Future<void> saveGroceryEntry({

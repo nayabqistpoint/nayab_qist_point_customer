@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'transfer_to_installment_controller.dart';
-import '../../../../payload_services/transfer_to_installment_payload_service.dart';
+import 'services/transfer_to_installment_payload_service.dart';
 
 class TransferToInstallmentSheetUi {
   static void show({

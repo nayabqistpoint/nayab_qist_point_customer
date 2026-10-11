@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/payload_services/purchase_order_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/services/purchase_order_payload_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
 import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/sign_up_barrier_dialog_ui.dart';
 
