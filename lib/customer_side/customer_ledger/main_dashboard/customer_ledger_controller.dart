@@ -68,24 +68,7 @@ class CustomerLedgerController extends ChangeNotifier {
   Future<void> openCustomerStatement(BuildContext context) =>
       LedgerActionHandlerService.openCustomerStatement(context, customerPhone, formatAmount);
 
-  // 2. قسط کی ادائیگی کا ہینڈلر
-  Future<void> handleInstallmentPayment(
-    BuildContext context,
-    Map<String, dynamic> schedItem, {
-    String? itemName,
-    String? planTitle,
-  }) async {
-    final ok = await LedgerActionHandlerService.payInstallment(
-      context,
-      this,
-      schedItem,
-      itemName: itemName,
-      planTitle: planTitle,
-    );
-    if (ok) await loadCustomerData();
-  }
-
-  // 3. نقد ادھار واپسی کا ہینڈلر
+  // 2. نقد ادھار واپسی کا ہینڈلر
   Future<void> handleCashLoanRepayment(BuildContext context) async {
     final ok = await LedgerActionHandlerService.payCashLoan(context, this);
     if (ok) notifyListeners();

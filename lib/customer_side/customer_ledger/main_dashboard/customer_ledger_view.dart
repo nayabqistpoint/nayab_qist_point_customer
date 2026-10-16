@@ -8,6 +8,8 @@ import 'components/ledger_app_bar_ui.dart';
 import 'components/wallet_master_card_ui.dart';
 import 'components/category_tabs_ui.dart';
 import 'components/shop_notice_ticker_ui.dart';
+import '../installment_subview/installment_args.dart';
+import '../installment_subview/installment_section_controller.dart';
 import '../installment_subview/installment_section_ui.dart';
 import '../cash_loan_subview/cash_loan_section_controller.dart';
 import '../cash_loan_subview/cash_loan_section_page.dart';
@@ -35,6 +37,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
   late final CustomerLedgerController controller;
   late final PageController _pageController;
   late final CashLoanSectionController _cashLoanController;
+  late final InstallmentSectionController _installmentController;
 
   @override
   void initState() {
@@ -43,10 +46,15 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
     controller = CustomerLedgerController(customerPhone: initialPhone);
     _pageController = PageController(initialPage: controller.selectedTabIndex);
     
-    // Hive रिएक्टिव कंट्रोलर को केवल फोन और फॉर्मेटर की आवश्यकता है
+    // کیش لون کا خود مختار کنٹرولر
     _cashLoanController = CashLoanSectionController(
       customerPhone: initialPhone,
       formatAmount: controller.formatAmount,
+    );
+
+    // انسٹالمنٹ سب ویو کا خود مختار کنٹرولر (100% آزاد)
+    _installmentController = InstallmentSectionController(
+      args: InstallmentArgs(customerPhone: initialPhone),
     );
   }
 
@@ -61,6 +69,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
         CustomerSessionContextService.setActivePhone(phone);
         controller.loadCustomerData();
         _cashLoanController.loadFromHive();
+        _installmentController.loadInstallmentData();
       }
     }
   }
@@ -69,6 +78,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
   void dispose() {
     _pageController.dispose();
     _cashLoanController.dispose();
+    _installmentController.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -150,7 +160,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
                         children: [
                           SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),
-                            child: InstallmentSectionUi(controller: controller),
+                            child: InstallmentSectionUi(controller: _installmentController),
                           ),
                           SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),

@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_ledger_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
 
 class InstallmentSectionController extends ChangeNotifier {
   final InstallmentArgs args;
@@ -13,6 +17,8 @@ class InstallmentSectionController extends ChangeNotifier {
   bool isLoading = false;
   int selectedProductIndex = 0;
   List<Map<String, dynamic>> customerProducts = [];
+
+  ValueListenable<Box>? get boxListenable => InstallmentStorageHandler.installmentsListenable;
 
   Future<void> loadInstallmentData() async {
     isLoading = true;
@@ -68,12 +74,26 @@ class InstallmentSectionController extends ChangeNotifier {
 
   String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
 
-  void handleInstallmentPayment(
+  Future<void> handleInstallmentPayment(
     BuildContext context,
     Map<String, dynamic> item, {
     required String itemName,
     required String planTitle,
-  }) {
-    // یونیورسل پیمنٹ ماڈل کنٹریکٹ کال
+  }) async {
+    final prod = currentProduct;
+    final int remaining = (item['remainingAmount'] as int?) ?? (item['amount'] as int? ?? 0);
+    final int totalRemaining = (prod['remaining'] as int?) ?? remaining;
+
+    // آزاد نیویگیشن: صرف پیمنٹ شیٹ کھلے گی اور بند ہوگی، واپسی کے رزلٹ کا کوئی انتظار نہیں
+    await CustomerSessionContextService.openUniversalPayment(
+      context,
+      title: 'قسط نمبر ${item['no']} کی ادائیگی',
+      baseAmount: remaining,
+      isInstallment: true,
+      itemName: itemName,
+      planTitle: planTitle,
+      installmentNo: item['no'] as int?,
+      maxAllowedAmount: totalRemaining,
+    );
   }
 }

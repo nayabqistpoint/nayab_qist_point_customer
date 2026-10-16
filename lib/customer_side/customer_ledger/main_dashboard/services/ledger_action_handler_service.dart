@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/cash_loan_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/services/transaction_ledger_service.dart';
@@ -51,65 +50,6 @@ class LedgerActionHandlerService {
         formatAmount: format,
       );
     }
-  }
-
-  // قسط کی ادائیگی کا مکمل ہینڈلر
-  static Future<bool> payInstallment(
-    BuildContext context,
-    CustomerLedgerController controller,
-    Map<String, dynamic> schedItem, {
-    String? itemName,
-    String? planTitle,
-  }) async {
-    if (controller.customerProducts.isEmpty) return false;
-    final currentProduct = controller.customerProducts[controller.selectedProductIndex];
-
-    if (currentProduct['hasPendingReview'] == true) {
-      _showMsg(
-        context,
-        'پچھلی ادائیگی ایڈمن کی زیرِ تصدیق ہے۔ مزید ادائیگی مقفل ہے',
-        isError: true,
-      );
-      return false;
-    }
-
-    final remaining = (schedItem['remainingAmount'] as int?) ?? (schedItem['amount'] as int);
-    final totalRemaining = (currentProduct['remaining'] as int?) ?? remaining;
-
-    final result = await CustomerSessionContextService.openUniversalPayment(
-      context,
-      title: 'قسط نمبر ${schedItem['no']} کی ادائیگی',
-      baseAmount: remaining,
-      isInstallment: true,
-      itemName: itemName ?? currentProduct['name']?.toString() ?? 'موبائل فون',
-      planTitle: planTitle ?? currentProduct['plan']?.toString() ?? 'اقساط پلان',
-      installmentNo: schedItem['no'] as int?,
-      maxAllowedAmount: totalRemaining,
-    );
-
-    if (result != null && result is Map<String, dynamic>) {
-      final success = await InstallmentStorageHandler.executeBatchAllocation(
-        customerPhone: controller.customerPhone,
-        orderKey: currentProduct['orderKey'],
-        rawOrder: currentProduct['rawOrder'],
-        totalPaidAmount: (result['paid'] as num?)?.toInt() ?? 0,
-        discountAmount: (result['discount'] as num?)?.toInt() ?? 0,
-        extraAmount: (result['extra'] as num?)?.toInt() ?? 0,
-        splits: (result['splits'] as List?)?.cast<Map<String, dynamic>>() ?? [],
-        note: (result['note'] ?? '').toString(),
-        receiptImagePath: (result['receiptImagePath'] ?? '').toString(),
-        voiceNotePath: (result['voiceNotePath'] ?? '').toString(),
-      );
-
-      if (success && context.mounted) {
-        _showMsg(
-          context,
-          'وصولی تصدیق کے لیے جمع ہو گئی: Rs. ${controller.formatAmount(result['paid'])}',
-        );
-        return true;
-      }
-    }
-    return false;
   }
 
   // نقد ادھار واپسی کا مکمل ہینڈلر
