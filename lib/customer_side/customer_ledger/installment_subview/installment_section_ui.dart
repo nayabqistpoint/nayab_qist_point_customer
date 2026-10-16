@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_section_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/mobile_selector_dropdown_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/active_order_summary_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/active_order_summary_card_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_header_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_row_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_pending_freeze_banner_ui.dart';
 
 class InstallmentSectionUi extends StatelessWidget {
   final InstallmentSectionController controller;
-
   const InstallmentSectionUi({
     super.key,
     required this.controller,
@@ -110,7 +109,6 @@ class InstallmentSectionUi extends StatelessWidget {
                       final bool isPaid = item['isApproved'] == true && ((item['remainingAmount'] as int?) ?? 0) <= 0;
                       final bool isUnderReview = item['isUnderReview'] == true;
                       final bool isLocked = !isPaid && !isUnderReview && (hasPendingReview || itemNo != activePayableNo);
-
                       return InstallmentTableRowUi.build(
                         context: context,
                         item: item,
@@ -139,8 +137,6 @@ class InstallmentSectionUi extends StatelessWidget {
         builder: (context, _) => renderBody(),
       );
     }
-
-    // ہائیو باکس کو لائیو لسن کرنا: جیسے ہی ڈیٹا بدلے گا، یہ خود تازہ ڈیٹا لوڈ کرے گا
     return ValueListenableBuilder<Box>(
       valueListenable: listenable,
       builder: (context, _, __) {

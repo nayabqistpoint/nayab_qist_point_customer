@@ -42,7 +42,6 @@ class ActiveOrderSummaryCardUi extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ऊपरी पंक्ति: डिवाइस नाम, प्लान अवधि और कुल रिकवरी प्रतिशत
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -94,8 +93,6 @@ class ActiveOrderSummaryCardUi extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-
-          // निचली पट्टी: कुल बिल, अदा शुदा, और कुल बकाया
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
@@ -105,7 +102,6 @@ class ActiveOrderSummaryCardUi extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // 1. कुल अनुबंध बिल
                 Expanded(
                   child: _metricColumn(
                     title: 'کل بل',
@@ -114,8 +110,6 @@ class ActiveOrderSummaryCardUi extends StatelessWidget {
                   ),
                 ),
                 Container(width: 1, height: 22, color: const Color(0xFFE2E8F0)),
-
-                // 2. कुल अदा शुदा
                 Expanded(
                   child: _metricColumn(
                     title: 'کل ادا شدہ',
@@ -124,8 +118,6 @@ class ActiveOrderSummaryCardUi extends StatelessWidget {
                   ),
                 ),
                 Container(width: 1, height: 22, color: const Color(0xFFE2E8F0)),
-
-                // 3. कुल बकाया (इस मोबाइल का)
                 Expanded(
                   child: _metricColumn(
                     title: 'کل بقایا',

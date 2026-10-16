@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/customer_session_context_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
 
 class TransferToInstallmentService {
   static Future<void> executeTransfer({
@@ -7,14 +7,18 @@ class TransferToInstallmentService {
     required Map<String, dynamic> targetProduct,
     required int amount,
   }) async {
-    await CustomerSessionContextService.openUniversalPayment(
+    await Navigator.push(
       context,
-      title: 'نقد کھاتے سے قسط منتقلی (${targetProduct['name']})',
-      baseAmount: amount,
-      isInstallment: true,
-      itemName: targetProduct['name']?.toString() ?? 'موبائل فون',
-      planTitle: targetProduct['plan']?.toString() ?? 'اقساط پلان',
-      maxAllowedAmount: (targetProduct['remaining'] as int?) ?? 0,
+      MaterialPageRoute(
+        builder: (_) => UniversalPaymentPage(
+          title: 'نقد کھاتے سے قسط منتقلی (${targetProduct['name']})',
+          baseAmount: amount,
+          isInstallment: true,
+          itemName: targetProduct['name']?.toString() ?? 'موبائل فون',
+          planTitle: targetProduct['plan']?.toString() ?? 'اقساط پلان',
+          maxAllowedAmount: (targetProduct['remaining'] as int?) ?? 0,
+        ),
+      ),
     );
   }
 }

@@ -5,11 +5,10 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installm
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_ledger_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/shared/customer_session_context_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
 
 class InstallmentSectionController extends ChangeNotifier {
   final InstallmentArgs args;
-
   InstallmentSectionController({required this.args}) {
     loadInstallmentData();
   }
@@ -61,7 +60,6 @@ class InstallmentSectionController extends ChangeNotifier {
     final prod = currentProduct;
     final bool hasPendingReview = prod['hasPendingReview'] == true;
     if (hasPendingReview) return null;
-
     for (final item in currentSchedule) {
       final int remaining = (item['remainingAmount'] as int?) ?? 0;
       final bool isPaid = item['isApproved'] == true && remaining <= 0;
@@ -84,16 +82,19 @@ class InstallmentSectionController extends ChangeNotifier {
     final int remaining = (item['remainingAmount'] as int?) ?? (item['amount'] as int? ?? 0);
     final int totalRemaining = (prod['remaining'] as int?) ?? remaining;
 
-    // آزاد نیویگیشن: صرف پیمنٹ شیٹ کھلے گی اور بند ہوگی، واپسی کے رزلٹ کا کوئی انتظار نہیں
-    await CustomerSessionContextService.openUniversalPayment(
+    await Navigator.push(
       context,
-      title: 'قسط نمبر ${item['no']} کی ادائیگی',
-      baseAmount: remaining,
-      isInstallment: true,
-      itemName: itemName,
-      planTitle: planTitle,
-      installmentNo: item['no'] as int?,
-      maxAllowedAmount: totalRemaining,
+      MaterialPageRoute(
+        builder: (_) => UniversalPaymentPage(
+          title: 'قسط نمبر ${item['no']} کی ادائیگی',
+          baseAmount: remaining,
+          isInstallment: true,
+          itemName: itemName,
+          planTitle: planTitle,
+          installmentNo: item['no'] as int?,
+          maxAllowedAmount: totalRemaining,
+        ),
+      ),
     );
   }
 }

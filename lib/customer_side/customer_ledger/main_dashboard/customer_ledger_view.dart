@@ -1,33 +1,21 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 import 'customer_ledger_controller.dart';
-import '../shared/customer_session_context_service.dart';
 import 'components/ledger_app_bar_ui.dart';
-import 'components/wallet_master_card_ui.dart';
-import 'components/category_tabs_ui.dart';
 import 'components/shop_notice_ticker_ui.dart';
-import '../installment_subview/installment_args.dart';
-import '../installment_subview/installment_section_controller.dart';
-import '../installment_subview/installment_section_ui.dart';
-import '../cash_loan_subview/cash_loan_section_controller.dart';
-import '../cash_loan_subview/cash_loan_section_page.dart';
-import '../../inspector/floating_inspector_ui.dart';
-
-class WebAndMobileScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-      };
-}
+import 'components/wallet_master_card_ui.dart';
+import 'components/installment_gateway_card_ui.dart';
+import 'components/cash_account_gateway_card_ui.dart';
+import 'components/frozen_bottom_action_bar_ui.dart';
 
 class CustomerLedgerView extends StatefulWidget {
   final String? customerPhone;
-  const CustomerLedgerView({super.key, this.customerPhone});
+
+  const CustomerLedgerView({
+    super.key,
+    this.customerPhone,
+  });
 
   @override
   State<CustomerLedgerView> createState() => _CustomerLedgerViewState();
@@ -35,27 +23,11 @@ class CustomerLedgerView extends StatefulWidget {
 
 class _CustomerLedgerViewState extends State<CustomerLedgerView> {
   late final CustomerLedgerController controller;
-  late final PageController _pageController;
-  late final CashLoanSectionController _cashLoanController;
-  late final InstallmentSectionController _installmentController;
 
   @override
   void initState() {
     super.initState();
-    final initialPhone = widget.customerPhone ?? '';
-    controller = CustomerLedgerController(customerPhone: initialPhone);
-    _pageController = PageController(initialPage: controller.selectedTabIndex);
-    
-    // کیش لون کا خود مختار کنٹرولر
-    _cashLoanController = CashLoanSectionController(
-      customerPhone: initialPhone,
-      formatAmount: controller.formatAmount,
-    );
-
-    // انسٹالمنٹ سب ویو کا خود مختار کنٹرولر (100% آزاد)
-    _installmentController = InstallmentSectionController(
-      args: InstallmentArgs(customerPhone: initialPhone),
-    );
+    controller = CustomerLedgerController(customerPhone: widget.customerPhone ?? '');
   }
 
   @override
@@ -64,121 +36,105 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
     if (controller.customerPhone.isEmpty) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map && args['customerPhone'] != null) {
-        final phone = args['customerPhone'].toString();
-        controller.customerPhone = phone;
-        CustomerSessionContextService.setActivePhone(phone);
-        controller.loadCustomerData();
-        _cashLoanController.loadFromHive();
-        _installmentController.loadInstallmentData();
+        controller.customerPhone = args['customerPhone'].toString();
+        controller.refreshDashboardData();
       }
     }
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _cashLoanController.dispose();
-    _installmentController.dispose();
     controller.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
-            appBar: LedgerAppBarUi(
-              onPurchasePressed: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.purchaseMarket,
-                  arguments: {'customerPhone': controller.customerPhone},
-                );
-              },
-              onStatementPressed: () => controller.openCustomerStatement(context),
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              backgroundColor: const Color(0xFF059669),
-              elevation: 4,
-              icon: const Icon(Icons.bug_report_rounded, color: Colors.white, size: 22),
-              label: const Text(
-                'انسپکٹر',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              onPressed: () => FloatingInspectorUi.show(context),
-            ),
-            body: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  const ShopNoticeTickerUi(),
-                  WalletMasterCardUi(
-                    net: controller.grandNetTotal,
-                    isDebtor: controller.grandNetTotal >= 0,
-                    totalInstallmentDue: controller.totalInstallmentDue,
-                    cashLoanBalance: controller.cashLoanBalance,
-                    pendingServiceCredit: controller.pendingServiceCredit,
-                    formatAmount: controller.formatAmount,
-                  ),
-                  const SizedBox(height: 12),
-                  CategoryTabsUi(
-                    selectedTabIndex: controller.selectedTabIndex,
-                    totalInstallmentDue: controller.totalInstallmentDue,
-                    cashLoanBalance: controller.cashLoanBalance,
-                    approvedServiceCredit: controller.approvedServiceCredit,
-                    formatAmount: controller.formatAmount,
-                    onTabSelected: (idx) {
-                      if (controller.selectedTabIndex != idx) {
-                        controller.setTabIndex(idx);
-                        _pageController.animateToPage(
-                          idx,
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.fastOutSlowIn,
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.72,
-                    child: ScrollConfiguration(
-                      behavior: WebAndMobileScrollBehavior(),
-                      child: PageView(
-                        controller: _pageController,
-                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                        onPageChanged: (idx) {
-                          if (controller.selectedTabIndex != idx) {
-                            controller.setTabIndex(idx);
-                          }
-                        },
-                        children: [
-                          SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: InstallmentSectionUi(controller: _installmentController),
-                          ),
-                          SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: CashLoanSectionPage(
-                              controller: _cashLoanController,
-                              customerProducts: controller.customerProducts,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+  Widget _buildBody() {
+    if (controller.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ShopNoticeTickerUi(),
+          const SizedBox(height: 14),
+          WalletMasterCardUi(
+            netAmount: controller.grandNetTotal,
+            isDebtor: controller.isDebtor,
+            formatAmount: controller.formatAmount,
+          ),
+          const SizedBox(height: 18),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 2),
+            child: Text(
+              'کھاتہ تفصیلات و انتظام',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0F172A),
+                letterSpacing: 0.2,
               ),
             ),
           ),
-        );
-      },
+          const SizedBox(height: 10),
+          InstallmentGatewayCardUi(
+            itemName: controller.activeMobileTitle,
+            planTitle: controller.activePlanSubtitle,
+            remainingAmount: controller.totalInstallmentDue,
+            overdueCount: controller.overdueInstallmentCount,
+            overdueAmount: controller.overdueInstallmentAmount,
+            formatAmount: controller.formatAmount,
+            onTap: () => controller.openInstallmentPage(context),
+          ),
+          const SizedBox(height: 14),
+          CashAccountGatewayCardUi(
+            balance: controller.cashLoanBalance,
+            hasAdvance: controller.hasAdvance,
+            formatAmount: controller.formatAmount,
+            onTap: () => controller.openCashLoanPage(context),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        appBar: const LedgerAppBarUi(), // صاف ستھرا ایپ بار
+        body: Hive.isBoxOpen(HiveBoxManager.customerBoxName) &&
+                Hive.isBoxOpen(HiveBoxManager.installmentsBoxName)
+            ? ValueListenableBuilder(
+                valueListenable: Hive.box(HiveBoxManager.customerBoxName).listenable(),
+                builder: (context, _, __) {
+                  return ValueListenableBuilder(
+                    valueListenable: Hive.box(HiveBoxManager.installmentsBoxName).listenable(),
+                    builder: (context, _, __) {
+                      controller.refreshDashboardData();
+                      return ListenableBuilder(
+                        listenable: controller,
+                        builder: (context, _) => _buildBody(),
+                      );
+                    },
+                  );
+                },
+              )
+            : ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) => _buildBody(),
+              ),
+        bottomNavigationBar: FrozenBottomActionBarUi(
+          onStatementPressed: () => controller.openStatementSheet(context),
+          onPurchasePressed: () => controller.openPurchaseMarket(context),
+        ),
+      ),
     );
   }
 }

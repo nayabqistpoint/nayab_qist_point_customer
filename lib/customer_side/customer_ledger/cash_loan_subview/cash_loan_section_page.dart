@@ -4,7 +4,7 @@ import 'components/cash_loan_section_ui.dart';
 import 'features/grocery_entry_feature/grocery_entry_page.dart';
 import 'features/stock_entry_feature/stock_entry_page.dart';
 import 'features/transfer_to_installment_feature/transfer_to_installment_sheet_ui.dart';
-import '../shared/customer_session_context_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
 
 class CashLoanSectionPage extends StatelessWidget {
   final CashLoanSectionController controller;
@@ -24,20 +24,22 @@ class CashLoanSectionPage extends StatelessWidget {
         return CashLoanSectionUi(
           controller: controller,
           onRepaymentPressed: () async {
-            await CustomerSessionContextService.openUniversalPayment(
+            await Navigator.push(
               context,
-              title: 'نقد کھاتہ واپسی ادائیگی',
-              baseAmount: controller.cashLoanBalance.abs(),
-              isInstallment: false,
-              itemName: 'دستی نقد ادھار',
+              MaterialPageRoute(
+                builder: (_) => UniversalPaymentPage(
+                  title: 'نقد کھاتہ واپسی ادائیگی',
+                  baseAmount: controller.cashLoanBalance.abs(),
+                  isInstallment: false,
+                  itemName: 'دستی نقد ادھار',
+                ),
+              ),
             );
           },
           onTransferPressed: () {
-            // 🌟 منفی ایڈوانس کو مثبت عدد بنا کر پاس کیا گیا ہے
             final int greenAdvance = controller.cashLoanBalance < 0
                 ? controller.cashLoanBalance.abs()
                 : 0;
-
             TransferToInstallmentSheetUi.show(
               context: context,
               customerPhone: controller.customerPhone,
