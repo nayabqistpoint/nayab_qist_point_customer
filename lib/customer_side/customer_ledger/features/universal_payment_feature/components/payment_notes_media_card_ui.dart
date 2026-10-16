@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_controller.dart';
 
 class PaymentNotesMediaCardUi extends StatelessWidget {
   final UniversalPaymentController controller;

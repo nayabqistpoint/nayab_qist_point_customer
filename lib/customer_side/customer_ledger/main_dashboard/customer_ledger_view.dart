@@ -108,7 +108,7 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        appBar: const LedgerAppBarUi(), // صاف ستھرا ایپ بار
+        appBar: const LedgerAppBarUi(),
         body: Hive.isBoxOpen(HiveBoxManager.customerBoxName) &&
                 Hive.isBoxOpen(HiveBoxManager.installmentsBoxName)
             ? ValueListenableBuilder(

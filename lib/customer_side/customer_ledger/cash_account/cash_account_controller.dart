@@ -3,18 +3,16 @@ import 'package:flutter/material.dart';
 import 'services/cash_loan_calculation_service.dart';
 import 'services/cash_loan_storage_handler.dart';
 
-class CashLoanSectionController extends ChangeNotifier {
+class CashAccountController extends ChangeNotifier {
   final String customerPhone;
-  final String Function(int) formatAmount;
-
   int cashLoanBalance = 0;
   List<Map<String, dynamic>> cashLoanEntries = [];
+  List<Map<String, dynamic>> customerProducts = [];
   final Set<int> _expandedIndices = {};
   List<StreamSubscription> _subscriptions = [];
 
-  CashLoanSectionController({
+  CashAccountController({
     required this.customerPhone,
-    required this.formatAmount,
   }) {
     _initDataAndListeners();
   }
@@ -29,7 +27,6 @@ class CashLoanSectionController extends ChangeNotifier {
     );
   }
 
-  /// ہائیو سے تازہ ڈیٹا لوڈ کرنا
   Future<void> loadFromHive() async {
     final result = await CashLoanStorageHandler.loadCashLoanData(customerPhone);
     cashLoanBalance = result['balance'] as int;
@@ -51,6 +48,13 @@ class CashLoanSectionController extends ChangeNotifier {
       _expandedIndices.add(index);
     }
     notifyListeners();
+  }
+
+  String formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 
   @override

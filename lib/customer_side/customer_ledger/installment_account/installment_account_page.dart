@@ -1,55 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_section_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/mobile_selector_dropdown_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/active_order_summary_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_header_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_table_row_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_pending_freeze_banner_ui.dart';
+import 'installment_args.dart';
+import 'installment_controller.dart';
+import 'components/mobile_selector_dropdown_ui.dart';
+import 'components/active_order_summary_card_ui.dart';
+import 'components/installment_pending_freeze_banner_ui.dart';
+import 'components/installment_table_header_ui.dart';
+import 'components/installment_table_row_ui.dart';
 
-class InstallmentSectionUi extends StatelessWidget {
-  final InstallmentSectionController controller;
-  const InstallmentSectionUi({
+class InstallmentAccountPage extends StatefulWidget {
+  final InstallmentArgs args;
+
+  const InstallmentAccountPage({
     super.key,
-    required this.controller,
+    required this.args,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final listenable = controller.boxListenable;
+  State<InstallmentAccountPage> createState() => _InstallmentAccountPageState();
+}
 
-    Widget renderBody() {
-      final bool hasProducts = controller.customerProducts.isNotEmpty;
-      if (!hasProducts) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: const Center(
-            child: Text(
-              'اس کسٹمر کے نام پر کوئی فعال اقساط کا پلان موجود نہیں ہے۔',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF64748B),
-              ),
+class _InstallmentAccountPageState extends State<InstallmentAccountPage> {
+  late final InstallmentController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = InstallmentController(args: widget.args);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  Widget _buildBody() {
+    final bool hasProducts = controller.customerProducts.isNotEmpty;
+    if (!hasProducts) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Center(
+          child: Text(
+            'اس کسٹمر کے نام پر کوئی فعال اقساط کا پلان موجود نہیں ہے۔',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
             ),
           ),
-        );
-      }
+        ),
+      );
+    }
 
-      final currentProduct = controller.currentProduct;
-      final scheduleList = controller.currentSchedule;
-      final overdueSummary = controller.currentOverdueSummary;
-      final bool hasPendingReview = currentProduct['hasPendingReview'] == true;
-      final int pendingAmount = (currentProduct['pendingAmount'] as int?) ?? 0;
-      final int? activePayableNo = controller.activePayableInstallmentNo;
+    final currentProduct = controller.currentProduct;
+    final scheduleList = controller.currentSchedule;
+    final overdueSummary = controller.currentOverdueSummary;
+    final bool hasPendingReview = currentProduct['hasPendingReview'] == true;
+    final int pendingAmount = (currentProduct['pendingAmount'] as int?) ?? 0;
+    final int? activePayableNo = controller.activePayableInstallmentNo;
 
-      return Column(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
         children: [
           MobileSelectorDropdownUi(
             products: controller.customerProducts,
@@ -128,24 +149,46 @@ class InstallmentSectionUi extends StatelessWidget {
             ),
           ),
         ],
-      );
-    }
+      ),
+    );
+  }
 
-    if (listenable == null) {
-      return AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) => renderBody(),
-      );
-    }
-    return ValueListenableBuilder<Box>(
-      valueListenable: listenable,
-      builder: (context, _, __) {
-        controller.loadInstallmentData();
-        return AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) => renderBody(),
-        );
-      },
+  @override
+  Widget build(BuildContext context) {
+    final listenable = controller.boxListenable;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFF0F172A),
+          title: const Text(
+            'اقساط کھاتہ تفصیلات',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        body: listenable == null
+            ? AnimatedBuilder(
+                animation: controller,
+                builder: (context, _) => _buildBody(),
+              )
+            : ValueListenableBuilder<Box>(
+                valueListenable: listenable,
+                builder: (context, _, __) {
+                  controller.loadInstallmentData();
+                  return AnimatedBuilder(
+                    animation: controller,
+                    builder: (context, _) => _buildBody(),
+                  );
+                },
+              ),
+      ),
     );
   }
 }

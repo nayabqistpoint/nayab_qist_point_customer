@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_args.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_section_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_section_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_ledger_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/cash_loan_section_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_loan_subview/cash_loan_section_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/installment_args.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/installment_ledger_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/ledger_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_account/cash_account_args.dart';
 import 'services/ledger_action_handler_service.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
@@ -102,75 +99,21 @@ class CustomerLedgerController extends ChangeNotifier {
 
   String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
 
-  // 🎯 اقساط کھاتہ پیج کھولیں (فل اسکرین نیویگیشن)
   void openInstallmentPage(BuildContext context) async {
-    final instController = InstallmentSectionController(
-      args: InstallmentArgs(customerPhone: customerPhone),
-    );
-
-    await Navigator.push(
+    await Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (_) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
-            appBar: AppBar(
-              backgroundColor: const Color(0xFF0F172A),
-              title: const Text(
-                'اقساط کھاتہ تفصیلات',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              elevation: 0,
-            ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: InstallmentSectionUi(controller: instController),
-            ),
-          ),
-        ),
-      ),
+      AppRoutes.installmentAccount,
+      arguments: InstallmentArgs(customerPhone: customerPhone),
     );
-
-    instController.dispose();
     await refreshDashboardData();
   }
 
-  // 🎯 نقد کھاتہ پیج کھولیں (فل اسکرین نیویگیشن)
   void openCashLoanPage(BuildContext context) async {
-    final cashController = CashLoanSectionController(
-      customerPhone: customerPhone,
-      formatAmount: formatAmount,
-    );
-
-    await Navigator.push(
+    await Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (_) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
-            appBar: AppBar(
-              backgroundColor: const Color(0xFF0F172A),
-              title: const Text(
-                'نقد کھاتہ تفصیلات',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              elevation: 0,
-            ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: CashLoanSectionPage(
-                controller: cashController,
-                customerProducts: customerProducts,
-              ),
-            ),
-          ),
-        ),
-      ),
+      AppRoutes.cashAccount,
+      arguments: CashAccountArgs(customerPhone: customerPhone),
     );
-
-    cashController.dispose();
     await refreshDashboardData();
   }
 

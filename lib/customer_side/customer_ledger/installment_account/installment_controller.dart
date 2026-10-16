@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/installment_args.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_ledger_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/installment_storage_handler.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_page.dart';
+import 'installment_args.dart';
+import 'services/installment_ledger_service.dart';
+import 'services/installment_storage_handler.dart';
+import 'services/ledger_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
 
-class InstallmentSectionController extends ChangeNotifier {
+class InstallmentController extends ChangeNotifier {
   final InstallmentArgs args;
-  InstallmentSectionController({required this.args}) {
+  InstallmentController({required this.args}) {
     loadInstallmentData();
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_math_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/ledger_math_service.dart';
 
 class InstallmentLedgerService {
   static Future<Box> ensureBoxOpen() async {

@@ -1,7 +1,7 @@
 // lib/customer_side/universal_payments/universal_payment_components_ui/payment_target_card_ui.dart
 
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_controller.dart';
 
 class PaymentTargetCardUi extends StatelessWidget {
   final UniversalPaymentController controller;

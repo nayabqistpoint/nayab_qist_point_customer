@@ -1,7 +1,7 @@
 // lib/customer_side/cutomer_ledger/customer_ledger_components_ui/ledger_components/installment_table_row_ui.dart
 
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/components/installment_action_badge_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/components/installment_action_badge_ui.dart';
 
 class InstallmentTableRowUi {
   static TableRow build({

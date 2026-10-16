@@ -1,13 +1,13 @@
 // lib/customer_side/universal_payments/universal_payment_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/universal_payment_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_app_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_target_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_sources_split_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_adjustment_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_notes_media_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/components/payment_footer_action_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_target_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_sources_split_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_adjustment_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_notes_media_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_footer_action_bar_ui.dart';
 
 class UniversalPaymentPage extends StatefulWidget {
   final String title;

@@ -1,4 +1,4 @@
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_subview/services/ledger_date_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/ledger_date_service.dart';
 
 class LedgerMathService {
   static String formatAmount(int amount) {

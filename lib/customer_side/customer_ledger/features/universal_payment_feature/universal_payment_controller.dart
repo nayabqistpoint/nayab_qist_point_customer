@@ -1,8 +1,8 @@
 // lib/customer_side/universal_payments/universal_payment_controller.dart
 
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/services/payment_config_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/universal_payment_feature/services/payment_rebalance_engine.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/services/payment_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/services/payment_rebalance_engine.dart';
 
 class UniversalPaymentController extends ChangeNotifier {
   final int baseAmount;
