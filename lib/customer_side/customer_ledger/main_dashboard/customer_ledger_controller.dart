@@ -5,7 +5,7 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installm
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/installment_ledger_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/ledger_math_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_account/cash_account_args.dart';
-import 'services/ledger_action_handler_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_args.dart';
 
 class CustomerLedgerController extends ChangeNotifier {
   String customerPhone;
@@ -125,7 +125,13 @@ class CustomerLedgerController extends ChangeNotifier {
     );
   }
 
-  void openStatementSheet(BuildContext context) {
-    LedgerActionHandlerService.openCustomerStatement(context, customerPhone, formatAmount);
+  // 🎯 ٹرانزیکشن ریکارڈ و رسیدیں فل پیج پر نیویگیشن
+  void openStatementSheet(BuildContext context) async {
+    await Navigator.pushNamed(
+      context,
+      AppRoutes.transactionHistory,
+      arguments: TransactionHistoryArgs(customerPhone: customerPhone),
+    );
+    await refreshDashboardData();
   }
 }

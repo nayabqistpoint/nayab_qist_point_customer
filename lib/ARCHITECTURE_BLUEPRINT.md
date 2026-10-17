@@ -1,64 +1,29 @@
-================================================================================
-                    FLUTTER REUSABLE FEATURE ARCHITECTURE
-================================================================================
+# 🏛️ FLUTTER REUSABLE FEATURE ARCHITECTURE BLUEPRINT
+> **Core Philosophy:** Self-Contained, Flat, Contract-Driven & Repomix-Optimized Modules.
 
-1. گلوبل لیول انفراسٹرکچر (Global Infrastructure):
-lib/
-├── core/
-│   └── services/
-│       ├── core_services.dart           <-- (بیرل فائل: کیمرہ، آڈیو، زوم، پرمیشن)
-│       ├── app_permission_service.dart
-│       ├── audio_service.dart
-│       ├── local_media_helper.dart
-│       ├── media_picker_service.dart
-│       └── zoom_handler.dart
-├── customer_side/
-│   ├── hive_services/
-│   │   └── hive_box_manager.dart        <-- (صرف لوکل ڈسک، سیف اوپن اور بیچ رائٹ)
-│   └── sync/
-│       └── master_sync_hub.dart         <-- (نیٹ ورک سنک، پش، پل، کلاؤڈینیری)
+یہ بلیو پرنٹ اس پروجیکٹ کے ہر آزاد پیج/فیچر کے لیے سنگِ میل کا درجہ رکھتا ہے۔ اس کا بنیادی مقصد یہ ہے کہ ہر فیچر مکمل طور پر خود کفیل (Self-Contained) ہو، تاکہ کسی ایک فیچر پر کام کرتے وقت صرف اسی کے فولڈر کو Repomix کے ذریعے ایکسپورٹ کیا جا سکے بغیر پورے پروجیکٹ کا بوجھ اٹھائے۔
 
+---
 
-2. اسٹینڈرڈ مین فیچر ٹیمپلیٹ (بمعہ خود مختار سب ویوز):
+## 1. 📂 معیاری آزاد فیچر کا فولڈر اسٹرکچر (Standard Single-Feature Architecture)
+
+ہر آزاد پیج کا فولڈر اسی یکساں اور طے شدہ فارمیٹ کا پابند ہوگا:
+
+```text
 lib/customer_side/<feature_name>/
 │
-├── 📄 <feature>_args.dart               <-- آنے والے پیرامیٹرز اور واپسی کا رزلٹ (Navigation Contract)
-├── 📄 <feature>_page.dart               <-- مین ویو اور فریم (Scaffold, App Bar, Tabs)
-├── 📄 <feature>_controller.dart         <-- اسٹیٹ مینیجمنٹ، ٹیب انڈیکس، یوزر ایکشنز
+├── 📄 <feature_name>_args.dart        <-- ان پٹ اور آؤٹ پٹ کنٹریکٹ (Navigation Contract)
+├── 📄 <feature_name>_page.dart        <-- فل اسکرین اسکیفولڈ ویو (Scaffold, App Bar, Lifecycle)
+├── 📄 <feature_name>_controller.dart  <-- اسٹیٹ مینیجمنٹ، فارم ویلیڈیشن اور یوزر ایکشنز
 │
-├── 📁 components/                       <-- صرف اس مین پیج کے شیئرڈ UI وزٹس
+├── 📁 components/                     <-- صرف اور صرف اسی پیج کے UI کے ذیلی وزٹس
 │   ├── 📄 <feature>_header_card_ui.dart
-│   └── 📄 <feature>_action_bar_ui.dart
+│   ├── 📄 <feature>_item_tile_ui.dart
+│   ├── 📄 <feature>_filter_bar_ui.dart
+│   └── 📄 <feature>_empty_state_ui.dart
 │
-├── 📁 services/                         (اختیاری: اگر مین پیج پر ڈیٹا یا لاجک ہو)
-│   ├── 📄 <feature>_calculation_service.dart
-│   ├── 📄 <feature>_payload_service.dart
-│   └── 📄 <feature>_storage_handler.dart <-- ہائیو بیچ رائٹ اور سنک ٹریگر
-│
-└── 📁 subviews/                         (اختیاری: اگر پیج میں پیچیدہ ٹیبز ہوں)
-    └── 📁 <subview_name>_subview/       <-- ہر سب ویو خود ایک مکمل مائیکرو فیچر ہے
-        ├── 📄 <subview>_args.dart       (اگر سب ویو آزاد شیٹ یا ڈائیلاگ کے طور پر کھلے)
-        ├── 📄 <subview>_ui.dart         (سب ویو کا اصل ویو/ٹیب مواد)
-        ├── 📄 <subview>_controller.dart (سب ویو کی اندرونی اسٹیٹ اور فارم ویلیڈیشن)
-        ├── 📁 components/               (سب ویو کے اپنے چھوٹے کارڈز اور ٹیبلز)
-        │   └── 📄 <subview>_item_tile_ui.dart
-        └── 📁 services/                 (سب ویو کی اپنی کاروباری لاجک اور سیونگ)
-            ├── 📄 <subview>_calc_service.dart
-            ├── 📄 <subview>_payload_service.dart
-            └── 📄 <subview>_storage_handler.dart
-
-
-3. اسٹینڈرڈ سادہ پیج ٹیمپلیٹ (جہاں سب ویوز نہ ہوں، جیسے لاگ ان یا پیمنٹ):
-lib/customer_side/<simple_feature>/
-│
-├── 📄 <simple_feature>_args.dart
-├── 📄 <simple_feature>_page.dart
-├── 📄 <simple_feature>_controller.dart
-├── 📁 components/
-│   ├── 📄 <component_1>_ui.dart
-│   └── 📄 <component_2>_ui.dart
-└── 📁 services/
-    ├── 📄 <simple_feature>_calculation_service.dart
-    ├── 📄 <simple_feature>_payload_service.dart
-    └── 📄 <simple_feature>_storage_handler.dart
-================================================================================
+└── 📁 services/                       <-- پیج کی کاروباری لاجک، ہائیو ریڈ/رائٹ اور پے لوڈز
+    ├── 📄 <feature>_service.dart      <-- ڈیٹا فیچنگ اور بنیادی بزنس لاجک
+    ├── 📄 <feature>_storage_handler.dart <-- ہائیو لسنرز، بیچ رائٹ اور سنک ٹرگرز
+    └── 📁 payload_builders/           <-- (اختیاری) اگر فائر بیس/ہائیو کے پیچیدہ پے لوڈز ہوں
+        └── 📄 <feature>_box_builder.dart

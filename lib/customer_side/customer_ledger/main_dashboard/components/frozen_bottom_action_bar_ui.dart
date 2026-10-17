@@ -35,8 +35,10 @@ class FrozenBottomActionBarUi extends StatelessWidget {
                 onPressed: onStatementPressed,
                 icon: const Icon(Icons.receipt_long_rounded, size: 18),
                 label: const Text(
-                  'پاس بک و رسیدیں',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  'ٹرانزیکشن ریکارڈ و رسیدیں',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF0F172A),

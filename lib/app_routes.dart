@@ -7,6 +7,8 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installm
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/installment_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_account/cash_account_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_account/cash_account_args.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
@@ -18,6 +20,7 @@ class AppRoutes {
   static const String ledger = '/ledger';
   static const String installmentAccount = '/installment-account';
   static const String cashAccount = '/cash-account';
+  static const String transactionHistory = '/transaction-history';
   static const String purchaseMarket = '/purchase-market';
   static const String planDetail = '/plan-detail';
   static const String payment = '/payment';
@@ -59,6 +62,15 @@ class AppRoutes {
             : CashAccountArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
           builder: (_) => CashAccountPage(args: args),
+        );
+
+      case transactionHistory:
+        final rawArgs = settings.arguments;
+        final TransactionHistoryArgs args = rawArgs is TransactionHistoryArgs
+            ? rawArgs
+            : TransactionHistoryArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
+        return MaterialPageRoute(
+          builder: (_) => TransactionHistoryPage(args: args),
         );
 
       case purchaseMarket:
