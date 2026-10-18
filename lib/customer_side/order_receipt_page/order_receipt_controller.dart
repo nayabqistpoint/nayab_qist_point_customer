@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/services/purchase_order_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/services/order_receipt_storage_handler.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/services/purchase_order_payload_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/sign_up_barrier_dialog_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/components/sign_up_barrier_dialog_ui.dart';
 
-class OrderReceiptSheetController extends ChangeNotifier {
+class OrderReceiptController extends ChangeNotifier {
   final Map<String, dynamic> plan;
   final TextEditingController bankNameCtrl = TextEditingController();
   final TextEditingController chequeNoCtrl = TextEditingController();
-
   late final int advance;
   late final int monthly;
   late final int months;
   late final int totalInstallmentSum;
   late final bool isChequePlan;
   late final String tokenNo;
-
   String? localError;
   bool isSubmitting = false;
 
-  OrderReceiptSheetController({required this.plan}) {
+  OrderReceiptController({required this.plan}) {
     advance = (plan['advance'] as num?)?.toInt() ?? 0;
     monthly = (plan['monthly'] as num?)?.toInt() ?? 0;
     months = (plan['months'] as num?)?.toInt() ?? 6;
-
-    // اصل کل کنٹریکٹ رقم جو پچھلی اسکرین سے آئی ہے یا فارمولے سے حاصل ہوئی ہے
     totalInstallmentSum = (plan['totalContract'] as num?)?.toInt() ??
         (advance + (monthly * ((months - 1) > 0 ? (months - 1) : 1)));
-
     isChequePlan = plan['guarantee'] == 'BANK_CHEQUE';
     tokenNo = 'NQP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
   }
@@ -51,17 +46,13 @@ class OrderReceiptSheetController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
     if (customerPhone == null || customerPhone.trim().isEmpty) {
-      Navigator.pop(context);
       SignUpBarrierDialogUi.show(context);
       return;
     }
-
     isSubmitting = true;
     localError = null;
     notifyListeners();
-
     try {
       final payload = PurchaseOrderPayloadService.buildOrderPayload(
         docId: tokenNo,
@@ -79,14 +70,15 @@ class OrderReceiptSheetController extends ChangeNotifier {
         orderDateTime: DateTime.now(),
       );
 
-      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
-      await box.put(tokenNo, payload);
+      await OrderReceiptStorageHandler.saveOrderRecord(
+        tokenNo: tokenNo,
+        payload: payload,
+      );
 
       MasterSyncHub.pushAllPendingRecords().catchError((_) {});
 
       if (!context.mounted) return;
       Navigator.pop(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں کامیابی سے بن گیا!'),

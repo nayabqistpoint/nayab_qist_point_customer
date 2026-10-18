@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order_receipt_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
@@ -8,7 +10,6 @@ import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/
 
 class DevicePlanDetailController extends ChangeNotifier {
   final CalculatorConfigService _configService = CalculatorConfigService();
-  
   int selectedDuration = 0;
   String selectedGuaranteeFilter = 'ALL';
   String selectedAdvanceFilter = 'ALL';
@@ -48,7 +49,6 @@ class DevicePlanDetailController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// بنیادی تخمینہ کے لیے متحرک کم از کم ایڈوانس نکالنا
   int getDynamicMinAdvance(int baseValue) {
     final currentConfig = config;
     final int principal = PlanMathService.calculatePrincipal(
@@ -71,7 +71,6 @@ class DevicePlanDetailController extends ChangeNotifier {
     );
   }
 
-  /// تمام ممکنہ غیر فلٹر شدہ پلانز (سنگل سورس آف ٹروتھ)
   List<Map<String, dynamic>> getAllRawPlans(int baseValue) {
     return PlanGeneratorService.generateAllPlans(
       baseValue: baseValue,
@@ -80,7 +79,6 @@ class DevicePlanDetailController extends ChangeNotifier {
     );
   }
 
-  /// سکرین پر ظاہر ہونے والے فلٹر شدہ پلانز
   List<Map<String, dynamic>> getFilteredPlans(List<Map<String, dynamic>> allPlans) {
     return PlanFilterSortService.filterAndSort(
       allPlans: allPlans,
@@ -91,17 +89,32 @@ class DevicePlanDetailController extends ChangeNotifier {
     );
   }
 
-  /// پورا شیڈول جنریٹ کرنا
-  List<Map<String, dynamic>> generateSchedule({
-    required int months,
-    required int monthlyAmount,
-    required int advancePaid,
+  void openOrderReceiptPage({
+    required BuildContext context,
+    required Map<String, dynamic> plan,
+    required Map<String, dynamic> device,
+    required String? customerPhone,
   }) {
-    return PlanScheduleService.generateSchedule(
-      totalMonths: months,
-      monthlyAmount: monthlyAmount,
-      advancePaid: advancePaid,
+    final schedule = PlanScheduleService.generateSchedule(
+      totalMonths: plan['months'],
+      monthlyAmount: plan['monthly'],
+      advancePaid: plan['advance'],
       config: config,
+    );
+
+    final args = OrderReceiptArgs(
+      plan: plan,
+      deviceName: device['name']?.toString() ?? 'موبائل فون',
+      customerPhone: customerPhone,
+      installmentSchedule: schedule,
+      sourceMode: device['isCustomEstimate'] == true ? 'CUSTOM_ESTIMATE' : 'STOCK',
+      imeiNo: device['imeiNo']?.toString() ?? device['imei']?.toString(),
+    );
+
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderReceipt,
+      arguments: args,
     );
   }
 

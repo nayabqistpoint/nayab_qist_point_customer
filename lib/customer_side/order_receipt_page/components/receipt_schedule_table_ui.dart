@@ -36,39 +36,39 @@ class ReceiptScheduleTableUi extends StatelessWidget {
           ),
           const Divider(height: 12, color: Color(0xFFCBD5E1)),
           ...installmentSchedule.map((row) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3.5),
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    '${row['no']}',
-                    style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 3.5),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        '${row['no']}',
+                        style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'قسط ${row['no']} (${row['dueDate']})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Rs. ${row['amount']}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'قسط ${row['no']} (${row['dueDate']})',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Rs. ${row['amount']}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );

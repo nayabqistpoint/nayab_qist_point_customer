@@ -33,14 +33,29 @@ class PlanFilterSortService {
         return totalA.compareTo(totalB);
       });
     } else {
-      // DEFAULT: پہلے کم مدت پھر کم قسط
+      // ڈیفالٹ معیاری ترتیب (تمام کسٹمرز کے لیے یکساں):
+      // 1. پہلے مدت (Months ASC)
+      // 2. پھر گارنٹی (پہلے بینک چیک، پھر اشٹام)
+      // 3. پھر ایڈوانس کی نوعیت (پہلے ایڈوانس کے ساتھ، پھر بغیر ایڈوانس)
       filtered.sort((a, b) {
         final int cmpDuration = (a['months'] as int).compareTo(b['months'] as int);
         if (cmpDuration != 0) return cmpDuration;
+
+        final bool isChequeA = a['guarantee'] == 'BANK_CHEQUE';
+        final bool isChequeB = b['guarantee'] == 'BANK_CHEQUE';
+        if (isChequeA != isChequeB) {
+          return isChequeA ? -1 : 1;
+        }
+
+        final bool hasAdvA = a['hasAdvance'] == true;
+        final bool hasAdvB = b['hasAdvance'] == true;
+        if (hasAdvA != hasAdvB) {
+          return hasAdvA ? -1 : 1;
+        }
+
         return (a['monthly'] as int).compareTo(b['monthly'] as int);
       });
     }
-
     return filtered;
   }
 }

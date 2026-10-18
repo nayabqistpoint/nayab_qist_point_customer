@@ -12,6 +12,9 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_args.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order_receipt_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order_receipt_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart';
 
@@ -24,6 +27,7 @@ class AppRoutes {
   static const String transactionHistory = '/transaction-history';
   static const String purchaseMarket = '/purchase-market';
   static const String planDetail = '/plan-detail';
+  static const String orderReceipt = '/order-receipt';
   static const String payment = '/payment';
   static const String shopShowcase = '/shop-showcase';
 
@@ -84,12 +88,21 @@ class AppRoutes {
         );
 
       case planDetail:
-        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final rawArgs = settings.arguments;
+        final DevicePlanDetailArgs args = rawArgs is DevicePlanDetailArgs
+            ? rawArgs
+            : DevicePlanDetailArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
-          builder: (_) => DevicePlanDetailPage(
-            device: args['device'] ?? {},
-            customerPhone: args['customerPhone'],
-          ),
+          builder: (_) => DevicePlanDetailPage(args: args),
+        );
+
+      case orderReceipt:
+        final rawArgs = settings.arguments;
+        final OrderReceiptArgs args = rawArgs is OrderReceiptArgs
+            ? rawArgs
+            : OrderReceiptArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
+        return MaterialPageRoute(
+          builder: (_) => OrderReceiptPage(args: args),
         );
 
       case payment:

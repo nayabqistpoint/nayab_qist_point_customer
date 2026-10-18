@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/detail_app_bar_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/stock_device_hero_card_ui.dart';
@@ -8,13 +9,11 @@ import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/plan_sorting_toolbar_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/bill_style_schedule_header_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/order_receipt_sheet.dart';
 
 class DevicePlanDetailPage extends StatefulWidget {
-  final Map<String, dynamic> device;
-  final String? customerPhone;
+  final DevicePlanDetailArgs? args;
 
-  const DevicePlanDetailPage({super.key, required this.device, this.customerPhone});
+  const DevicePlanDetailPage({super.key, this.args});
 
   @override
   State<DevicePlanDetailPage> createState() => _DevicePlanDetailPageState();
@@ -22,15 +21,43 @@ class DevicePlanDetailPage extends StatefulWidget {
 
 class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
   late final DevicePlanDetailController _controller;
+  Map<String, dynamic> _device = const {};
+  String? _customerPhone;
 
   @override
   void initState() {
     super.initState();
     _controller = DevicePlanDetailController();
-    final int initAdv = (widget.device['userCustomAdvance'] as int?) ??
-        (widget.device['minAdvanceRequired'] as int?) ??
-        (widget.device['minAdvance'] as int?) ?? 0;
+    if (widget.args != null) {
+      _device = widget.args!.device;
+      _customerPhone = widget.args!.customerPhone;
+      _initAdvance();
+    }
+  }
+
+  void _initAdvance() {
+    final int initAdv = (_device['userCustomAdvance'] as int?) ??
+        (_device['minAdvanceRequired'] as int?) ??
+        (_device['minAdvance'] as int?) ?? 0;
     _controller.init(initAdv);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_device.isEmpty) {
+      final rawArgs = ModalRoute.of(context)?.settings.arguments;
+      if (rawArgs is DevicePlanDetailArgs) {
+        _device = rawArgs.device;
+        _customerPhone = rawArgs.customerPhone;
+        _initAdvance();
+      } else if (rawArgs is Map<String, dynamic>) {
+        final parsed = DevicePlanDetailArgs.fromMap(rawArgs);
+        _device = parsed.device;
+        _customerPhone = parsed.customerPhone;
+        _initAdvance();
+      }
+    }
   }
 
   @override
@@ -39,28 +66,11 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
     super.dispose();
   }
 
-  void _openOrderSheet(Map<String, dynamic> plan) {
-    final schedule = _controller.generateSchedule(
-      months: plan['months'],
-      monthlyAmount: plan['monthly'],
-      advancePaid: plan['advance'],
-    );
-    OrderReceiptSheet.show(
-      context,
-      plan: plan,
-      deviceName: widget.device['name'] ?? '',
-      customerPhone: widget.customerPhone,
-      installmentSchedule: schedule,
-      sourceMode: widget.device['isCustomEstimate'] == true ? 'CUSTOM_ESTIMATE' : 'STOCK',
-      imeiNo: widget.device['imeiNo']?.toString() ?? widget.device['imei']?.toString(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final int baseValue = (widget.device['baseValue'] as int?) ?? 0;
-    final List<String> images = (widget.device['images'] as List?)?.cast<String>() ?? [];
-    final bool isCustomEstimate = widget.device['isCustomEstimate'] == true;
+    final int baseValue = (_device['baseValue'] as int?) ?? 0;
+    final List<String> images = (_device['images'] as List?)?.cast<String>() ?? [];
+    final bool isCustomEstimate = _device['isCustomEstimate'] == true;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -70,12 +80,14 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
           final rawPlans = _controller.getAllRawPlans(baseValue);
           final plans = _controller.getFilteredPlans(rawPlans);
           final int calculatedMinAdv = _controller.getDynamicMinAdvance(baseValue);
-          final int displayedAdv = _controller.userCustomAdvance > 0 ? _controller.userCustomAdvance : calculatedMinAdv;
+          final int displayedAdv = _controller.userCustomAdvance > 0
+              ? _controller.userCustomAdvance
+              : calculatedMinAdv;
 
           return Scaffold(
             backgroundColor: const Color(0xFFF1F5F9),
             appBar: DetailAppBarUi(
-              title: widget.device['name'] ?? 'موبائل پلان',
+              title: _device['name'] ?? 'موبائل پلان',
               subtitle: 'نایاب قسط پوائنٹ • ${rawPlans.length} سمارٹ اقساطی پیکجز',
             ),
             body: SingleChildScrollView(
@@ -85,10 +97,10 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isCustomEstimate)
-                    StockDeviceHeroCardUi(device: widget.device, images: images)
+                    StockDeviceHeroCardUi(device: _device, images: images)
                   else
                     CustomEstimateHeroCardUi(
-                      title: widget.device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
+                      title: _device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
                       baseValue: baseValue,
                       displayedAdvance: displayedAdv,
                     ),
@@ -108,12 +120,25 @@ class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
                     calculatedMinAdv: calculatedMinAdv,
                   ),
                   const SizedBox(height: 12),
-                  PlanSortingToolbarUi(activeSort: _controller.activeSort, onSortChanged: _controller.setSort),
+                  PlanSortingToolbarUi(
+                    activeSort: _controller.activeSort,
+                    onSortChanged: _controller.setSort,
+                  ),
                   const SizedBox(height: 10),
                   BillStyleScheduleHeaderUi(count: plans.length),
                   const SizedBox(height: 8),
-                  ...plans.map((plan) => IndividualPlanRowUi(plan: plan, onOrderTap: () => _openOrderSheet(plan))),
-                  const SizedBox(height: 80),
+                  ...plans.map(
+                    (plan) => IndividualPlanRowUi(
+                      plan: plan,
+                      onOrderTap: () => _controller.openOrderReceiptPage(
+                        context: context,
+                        plan: plan,
+                        device: _device,
+                        customerPhone: _customerPhone,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 60),
                 ],
               ),
             ),

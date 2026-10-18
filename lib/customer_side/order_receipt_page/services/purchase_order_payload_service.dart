@@ -5,10 +5,10 @@ class PurchaseOrderPayloadService {
   static Map<String, dynamic> buildOrderPayload({
     required String docId,
     required String customerPhone,
-    required String sourceMode, // 'STOCK' یا 'CUSTOM_ESTIMATE'
+    required String sourceMode,
     required String itemName,
     String? imeiNo,
-    required String guaranteeType, // 'BANK_CHEQUE' یا 'LEGAL_STAMP'
+    required String guaranteeType,
     String? bankName,
     String? chequeNo,
     required int totalMonths,
@@ -19,8 +19,6 @@ class PurchaseOrderPayloadService {
     CalculatorConfigModel? config,
   }) {
     final bool isCheque = guaranteeType == 'BANK_CHEQUE';
-
-    // 🎯 مستند PlanScheduleService سے شیڈول حاصل کیا گیا، کوئی الگ لاجک نہیں لگائی گئی
     final effectiveConfig = config ?? CalculatorConfigModel.fallback();
     final generatedSchedule = PlanScheduleService.generateSchedule(
       totalMonths: totalMonths,
@@ -29,18 +27,13 @@ class PurchaseOrderPayloadService {
       config: effectiveConfig,
       requestDate: orderDateTime,
     );
-
     final List<Map<String, dynamic>> finalInstallments = [];
-
     for (int i = 0; i < generatedSchedule.length; i++) {
       final item = generatedSchedule[i];
       final int instNo = (item['no'] as num?)?.toInt() ?? (i + 1);
       final int amt = (item['amount'] as num?)?.toInt() ?? 0;
       final bool isFirst = instNo == 1;
-
-      // اگر زیرو ایڈوانس پلان ہو تو پہلی قسط خود بخود مکمل ادا شدہ مانی جائے گی
       final bool isZeroAdv = isFirst && advance == 0;
-
       finalInstallments.add({
         'installmentNo': instNo,
         'title': isFirst
@@ -52,11 +45,9 @@ class PurchaseOrderPayloadService {
         'remainingAmount': amt,
         'paymentPercentage': isZeroAdv ? 100 : 0,
         'status': isZeroAdv ? 'PAID' : 'PENDING',
-        // 🎯 آپ کے منتخب کردہ دو واضح اور معیاری اسٹیٹس:
         'verificationStatus': isZeroAdv ? 'VERIFIED' : 'UNDER_REVIEW',
       });
     }
-
     return {
       'docId': docId,
       'customerPhone': customerPhone,
