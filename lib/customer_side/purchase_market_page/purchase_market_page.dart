@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_app_bar_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/luminous_calculator_banner_ui.dart';
@@ -6,8 +7,9 @@ import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/com
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_stock_section_ui.dart';
 
 class PurchaseMarketPage extends StatefulWidget {
-  final String? customerPhone;
-  const PurchaseMarketPage({super.key, this.customerPhone});
+  final PurchaseMarketArgs? args;
+
+  const PurchaseMarketPage({super.key, this.args});
 
   @override
   State<PurchaseMarketPage> createState() => _PurchaseMarketPageState();
@@ -15,11 +17,26 @@ class PurchaseMarketPage extends StatefulWidget {
 
 class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
   late final PurchaseMarketController _controller;
+  String? _customerPhone;
 
   @override
   void initState() {
     super.initState();
     _controller = PurchaseMarketController();
+    _customerPhone = widget.args?.customerPhone;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_customerPhone == null) {
+      final modalArgs = ModalRoute.of(context)?.settings.arguments;
+      if (modalArgs is PurchaseMarketArgs) {
+        _customerPhone = modalArgs.customerPhone;
+      } else if (modalArgs is Map<String, dynamic>) {
+        _customerPhone = PurchaseMarketArgs.fromMap(modalArgs).customerPhone;
+      }
+    }
   }
 
   @override
@@ -34,11 +51,11 @@ class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
       onSubmit: (name, price, adv) {
         Navigator.pop(context);
         _controller.handleCustomEstimateSubmit(
-          context, 
-          name, 
-          price, 
-          adv, 
-          widget.customerPhone,
+          context,
+          name,
+          price,
+          adv,
+          _customerPhone,
         );
       },
     );
@@ -50,7 +67,7 @@ class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        appBar: MarketAppBarUi(customerPhone: widget.customerPhone),
+        appBar: MarketAppBarUi(customerPhone: _customerPhone),
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(12),
@@ -61,7 +78,7 @@ class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
               const SizedBox(height: 16),
               MarketStockSectionUi(
                 controller: _controller,
-                customerPhone: widget.customerPhone,
+                customerPhone: _customerPhone,
               ),
             ],
           ),

@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/hive_services/hive_box_manager.dart, lib/customer_side/sync/master_sync_hub.dart
+- Only files matching these patterns are included: lib/customer_side/purchase_market_page
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -47,191 +47,1141 @@ The content is organized as follows:
 <directory_structure>
 lib/
   customer_side/
-    hive_services/
-      hive_box_manager.dart
-    sync/
-      master_sync_hub.dart
+    purchase_market_page/
+      components/
+        custom_estimate_sheet_ui.dart
+        estimate_sheet_form_ui.dart
+        inline_quick_ribbon_trigger_ui.dart
+        inline_two_plan_drawer_ui.dart
+        luminous_calculator_banner_ui.dart
+        market_app_bar_ui.dart
+        market_empty_stock_ui.dart
+        market_stock_list_header_ui.dart
+        market_stock_section_ui.dart
+        stock_phone_card_ui.dart
+        zero_advance_pill_badge_ui.dart
+      services/
+        stock_box_service.dart
+      purchase_market_args.dart
+      purchase_market_controller.dart
+      purchase_market_page.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/sync/master_sync_hub.dart">
-import 'package:flutter/foundation.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/core/connectivity_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/core/sync_status.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/app_config_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/global_sync/stock_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/users_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/customer_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/guarantor_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/installments_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/transaction_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/pull_services/media_pull_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/users_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/customer_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/guarantor_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/installments_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/transaction_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/media_push_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/push_services/atomic_batch_sync_service.dart';
-export 'push_services/atomic_batch_sync_service.dart' show BatchOperationItem;
-export 'core/sync_status.dart';
-class MasterSyncHub {
-  static Future<SyncResult> executeBatch(List<BatchOperationItem> operations) async {
-    return await AtomicBatchSyncService.executeBatch(operations);
-  }
-  static Future<void> syncGlobalDataOnBoot() async {
-    if (!await ConnectivityService.hasInternetConnection()) return;
-    debugPrint('🚀 گلوبل ڈیٹا لائیو سنک شروع...');
-    AppConfigPullService.startLiveSync();
-    StockPullService.startLiveSync();
-  }
-  static Future<void> syncCustomerSession({required String customerPhone}) async {
-    if (!await ConnectivityService.hasInternetConnection()) {
-      debugPrint('🌐 آف لائن موڈ: لوکل ہائیو ڈسک ڈیٹا محفوظ اور فعال ہے۔');
-      return;
-    }
-    await pushAllPendingRecords();
-    UsersPullService.startLiveSync(customerPhone);
-    CustomerPullService.startLiveSync(customerPhone);
-    GuarantorPullService.startLiveSync(customerPhone);
-    InstallmentsPullService.startLiveSync(customerPhone);
-    TransactionPullService.startLiveSync(customerPhone);
-    MediaPullService.startLiveSync(customerPhone);
-    debugPrint('⚡ کسٹمر سیشن کے تمام لائیو لسنرز فعال ہو گئے برائے: $customerPhone');
-  }
-  static Future<void> pushAllPendingRecords() async {
-    if (!await ConnectivityService.hasInternetConnection()) return;
-    debugPrint('📤 پینڈنگ ریکارڈز پش ہو رہے ہیں...');
-    await PendingMediaSyncService.processPendingUploads();
-    await Future.wait([
-      UsersPushService.pushPending(),
-      CustomerPushService.pushPending(),
-      GuarantorPushService.pushPending(),
-      InstallmentsPushService.pushPending(),
-      TransactionPushService.pushPending(),
-      StockPushService.pushPending(),
-      MediaPushService.pushPending(),
-    ]);
-  }
-  static void stopAllLiveSyncs() {
-    AppConfigPullService.stopLiveSync();
-    StockPullService.stopLiveSync();
-    UsersPullService.stopLiveSync();
-    CustomerPullService.stopLiveSync();
-    GuarantorPullService.stopLiveSync();
-    InstallmentsPullService.stopLiveSync();
-    TransactionPullService.stopLiveSync();
-    MediaPullService.stopLiveSync();
-    debugPrint('🛑 تمام لائیو لسنرز بند کر دیے گئے۔');
+<file path="lib/customer_side/purchase_market_page/components/market_empty_stock_ui.dart">
+import 'package:flutter/material.dart';
+class MarketEmptyStockUi extends StatelessWidget {
+  const MarketEmptyStockUi({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 48,
+            color: Color(0xFF94A3B8),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'فی الحال اسٹاک میں کوئی موبائل موجود نہیں ہے',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'اپنی مرضی کی قیمت کا تخمینہ لگانے کے لیے اوپر والا بینر استعمال کریں',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 </file>
 
-<file path="lib/customer_side/hive_services/hive_box_manager.dart">
+<file path="lib/customer_side/purchase_market_page/purchase_market_args.dart">
+
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/inline_quick_ribbon_trigger_ui.dart">
+import 'package:flutter/material.dart';
+class InlineQuickRibbonTriggerUi extends StatelessWidget {
+  final bool isExpanded;
+  final VoidCallback onTap;
+  const InlineQuickRibbonTriggerUi({
+    super.key,
+    required this.isExpanded,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isExpanded ? const Color(0xFFF0FDFA) : const Color(0xFFF8FAFC),
+          border: const Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(13),
+            bottomRight: Radius.circular(13),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isExpanded ? Icons.keyboard_double_arrow_up_rounded : Icons.table_chart_outlined,
+                  size: 14,
+                  color: const Color(0xFF0D9488),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  isExpanded ? 'فوری موازنہ بند کریں' : 'سب سے سستے 6 ماہ کے 2 پلانز دیکھیں',
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                ),
+              ],
+            ),
+            Icon(
+              isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: const Color(0xFF64748B),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/market_stock_list_header_ui.dart">
+import 'package:flutter/material.dart';
+class MarketStockListHeaderUi extends StatelessWidget {
+  final int totalCount;
+  const MarketStockListHeaderUi({super.key, required this.totalCount});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'دکان پر دستیاب موبائل فونز',
+          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            '$totalCount ماڈلز موجود',
+            style: const TextStyle(fontSize: 10.5, color: Color(0xFF475569), fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/market_stock_section_ui.dart">
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_stock_list_header_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/stock_phone_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_empty_stock_ui.dart';
+class MarketStockSectionUi extends StatelessWidget {
+  final PurchaseMarketController controller;
+  final String? customerPhone;
+  const MarketStockSectionUi({
+    super.key,
+    required this.controller,
+    this.customerPhone,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Box>(
+      valueListenable: controller.stockListenable,
+      builder: (context, _, __) {
+        final stockDevices = controller.getStockDevices();
+        return AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MarketStockListHeaderUi(totalCount: stockDevices.length),
+                const SizedBox(height: 10),
+                if (stockDevices.isEmpty)
+                  const MarketEmptyStockUi()
+                else
+                  ...List.generate(
+                    stockDevices.length,
+                    (idx) {
+                      final item = stockDevices[idx];
+                      return StockPhoneCardUi(
+                        item: item,
+                        isRibbonExpanded: controller.expandedCardIndex == idx,
+                        totalPlans: controller.totalPlansCount,
+                        onCardTap: () => controller.navigateToPlanDetail(context, item, customerPhone),
+                        onToggleRibbon: () => controller.toggleRibbon(idx),
+                      );
+                    },
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/zero_advance_pill_badge_ui.dart">
+import 'package:flutter/material.dart';
+class ZeroAdvancePillBadgeUi extends StatelessWidget {
+  final int monthlyAmount;
+  const ZeroAdvancePillBadgeUi({super.key, required this.monthlyAmount});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.stars_rounded,
+            size: 13,
+            color: Color(0xFF059669),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                'بغیر ایڈوانس: Rs. $monthlyAmount /ماہ',
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF065F46),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/services/stock_box_service.dart">
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
-class HiveBoxManager {
-  static const String settingsBoxName = 'settingsBox';
-  static const String usersBoxName = 'usersBox';
-  static const String stockBoxName = 'stockBox';
-  static const String appConfigBoxName = 'appConfigBox';
-  static const String customerBoxName = 'customerBox';
-  static const String guarantorBoxName = 'guarantorBox';
-  static const String mediaBoxName = 'mediaBox';
-  static const String installmentsBoxName = 'installmentsBox';
-  static const String transactionBoxName = 'transactionBox';
-  static Future<void> initGlobalBoxes() async {
-    await Hive.initFlutter();
-    await Future.wait([
-      openSafeBox(settingsBoxName),
-      openSafeBox(usersBoxName),
-      openSafeBox(stockBoxName),
-      openSafeBox(appConfigBoxName),
-    ]);
-  }
-  static Future<void> openSessionBoxes() async {
-    await Future.wait([
-      openSafeBox(customerBoxName),
-      openSafeBox(guarantorBoxName),
-      openSafeBox(mediaBoxName),
-      openSafeBox(installmentsBoxName),
-      openSafeBox(transactionBoxName),
-    ]);
-  }
-  static Future<void> closeSessionBoxes() async {
-    await Future.wait([
-      _closeSafeBox(customerBoxName),
-      _closeSafeBox(guarantorBoxName),
-      _closeSafeBox(mediaBoxName),
-      _closeSafeBox(installmentsBoxName),
-      _closeSafeBox(transactionBoxName),
-    ]);
-  }
-  static Future<Box> openSafeBox(String boxName) async {
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
+class StockBoxService {
+  static const String boxName = 'stockBox';
+  final CalculatorConfigService _configService = CalculatorConfigService();
+  Box get _box {
     if (Hive.isBoxOpen(boxName)) {
       return Hive.box(boxName);
     }
-    return await Hive.openBox(boxName);
+    throw StateError('ہائیو باکس "$boxName" کھلا ہوا نہیں ہے!');
   }
-  static Future<void> _closeSafeBox(String boxName) async {
-    if (Hive.isBoxOpen(boxName)) {
-      await Hive.box(boxName).close();
-    }
+  ValueListenable<Box> listenToStock() {
+    return _box.listenable();
   }
-  static ValueListenable<Box>? listenBox(String boxName) {
-    if (Hive.isBoxOpen(boxName)) {
-      return Hive.box(boxName).listenable();
-    }
-    return null;
+  int getTotalPlansCount() {
+    final config = _configService.getConfig();
+    return config.allowedDurations.length * 4;
   }
-  static Future<bool> writeBatchPayloads({
-    required String docId,
-    required Map<String, Map<String, dynamic>> payloads,
-    String logTitle = 'ڈیٹا لوکل محفوظ ہوا',
-  }) async {
+  List<Map<String, dynamic>> getAllStockDevices() {
     try {
-      for (final entry in payloads.entries) {
-        final boxName = entry.key;
-        final innerMap = entry.value;
-        final box = await openSafeBox(boxName);
-        if (boxName == customerBoxName || boxName == guarantorBoxName || boxName == mediaBoxName) {
-          await box.clear();
-          await box.put(docId, innerMap);
-        } else {
-          for (final record in innerMap.entries) {
-            await box.put(record.key, record.value);
+      final box = _box;
+      final config = _configService.getConfig();
+      final List<Map<String, dynamic>> devices = [];
+      for (var key in box.keys) {
+        final raw = box.get(key);
+        if (raw is Map) {
+          final String statusRaw = raw['status']?.toString().toLowerCase() ?? '';
+          if (statusRaw != 'available') {
+            continue;
           }
+          final int baseValue = (raw['salePrice'] as num?)?.toInt() ?? 0;
+          final String conditionType = raw['conditionType']?.toString().toUpperCase() ?? '';
+          final String conditionRating = raw['conditionRating']?.toString() ?? '';
+          // کنڈیشن صرف تب بنے گی جب فیلڈ موجود ہو
+          String conditionText = '';
+          if (conditionType == 'NEW') {
+            conditionText = 'ڈبہ پیک (نیا)';
+          } else if (conditionType == 'USED') {
+            conditionText = conditionRating.isNotEmpty ? 'استعمال شدہ ($conditionRating)' : 'استعمال شدہ';
+          } else if (raw['condition'] != null && raw['condition'].toString().isNotEmpty) {
+            conditionText = raw['condition'].toString();
+          }
+          final int warrantyMonths = (raw['warranty'] as num?)?.toInt() ?? 0;
+          final String warrantyText = warrantyMonths > 0
+              ? '$warrantyMonths ماہ آفیشل وارنٹی'
+              : 'بغیر وارنٹی';
+          List<String> imagesList = [];
+          if (raw['images'] is List) {
+            imagesList = (raw['images'] as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+          } else if (raw['images'] is String && (raw['images'] as String).trim().isNotEmpty) {
+            imagesList = [(raw['images'] as String).trim()];
+          }
+          final int principal = PlanMathService.calculatePrincipal(
+            baseValue: baseValue,
+            config: config,
+          );
+          final int baseDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.first : 6;
+          final int chequeTotal = PlanMathService.calculateTotalContractPrice(
+            principal: principal,
+            months: baseDuration,
+            isCheque: true,
+            config: config,
+          );
+          final int minAdv = PlanMathService.calculateMinAdvance(
+            totalContractPrice: chequeTotal,
+            months: baseDuration,
+            config: config,
+          );
+          final int zeroAdvMonthly = PlanMathService.calculateMonthlyEmi(
+            totalContractPrice: chequeTotal,
+            advancePaid: 0,
+            months: baseDuration,
+            config: config,
+          );
+          final int minMonthlyWithAdv = PlanMathService.calculateMonthlyEmi(
+            totalContractPrice: chequeTotal,
+            advancePaid: minAdv,
+            months: baseDuration,
+            config: config,
+          );
+          devices.add({
+            'id': raw['itemId']?.toString() ?? key.toString(),
+            'name': raw['itemName']?.toString() ?? '',
+            'baseValue': baseValue,
+            'ramRom': raw['ramRom']?.toString() ?? '',
+            'condition': conditionText,
+            'status': 'موجود ہے',
+            'warranty': warrantyText,
+            'color': raw['color']?.toString() ?? '',
+            'imeiNo': raw['imeiNo']?.toString() ?? '',
+            'minAdvance': minAdv,
+            'zeroAdvMonthly': zeroAdvMonthly,
+            'minMonthlyWithAdv': minMonthlyWithAdv,
+            'images': imagesList,
+            'isCustomEstimate': false,
+          });
         }
       }
-      InspectorStore.instance.logPayload(
-        title: '$logTitle (DocId: $docId)',
-        direction: PayloadDirection.localHiveWrite,
-        data: payloads,
-      );
-      MasterSyncHub.pushAllPendingRecords().catchError((_) {});
-      return true;
-    } catch (e) {
-      return false;
+      return devices;
+    } catch (_) {
+      return [];
     }
   }
-  static List<String> getAllActiveBoxNames() {
-    return [
-      settingsBoxName,
-      usersBoxName,
-      stockBoxName,
-      appConfigBoxName,
-      if (Hive.isBoxOpen(customerBoxName)) customerBoxName,
-      if (Hive.isBoxOpen(guarantorBoxName)) guarantorBoxName,
-      if (Hive.isBoxOpen(mediaBoxName)) mediaBoxName,
-      if (Hive.isBoxOpen(installmentsBoxName)) installmentsBoxName,
-      if (Hive.isBoxOpen(transactionBoxName)) transactionBoxName,
-    ];
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/estimate_sheet_form_ui.dart">
+import 'package:flutter/material.dart';
+class EstimateSheetFormUi extends StatefulWidget {
+  final int totalPlans;
+  final Function(String name, int estimatePrice, int advance) onSubmit;
+  const EstimateSheetFormUi({
+    super.key,
+    required this.totalPlans,
+    required this.onSubmit,
+  });
+  @override
+  State<EstimateSheetFormUi> createState() => _EstimateSheetFormUiState();
+}
+class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
+  final _nameCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _advanceCtrl = TextEditingController(text: '0');
+  String? _error;
+  int _dynamicMinAdvance = 0;
+  @override
+  void initState() {
+    super.initState();
+    _priceCtrl.addListener(_onPriceChanged);
+  }
+  int _calculateRoundedMinAdvance(int price) {
+    if (price <= 0) return 0;
+    final double raw = price * 0.1667;
+    return ((raw / 100).ceil()) * 100;
+  }
+  void _onPriceChanged() {
+    final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final calculatedMin = _calculateRoundedMinAdvance(price);
+    if (_dynamicMinAdvance != calculatedMin) {
+      setState(() {
+        _dynamicMinAdvance = calculatedMin;
+      });
+    }
+  }
+  @override
+  void dispose() {
+    _priceCtrl.removeListener(_onPriceChanged);
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _advanceCtrl.dispose();
+    super.dispose();
+  }
+  void _validate() {
+    final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
+    final adv = int.tryParse(_advanceCtrl.text.trim()) ?? 0;
+    if (price <= 0) {
+      setState(() => _error = 'برائے مہربانی درست مالیت درج کریں');
+      return;
+    }
+    final requiredMin = _calculateRoundedMinAdvance(price);
+    if (adv > 0 && adv < requiredMin) {
+      setState(() => _error = 'ایڈوانس یا تو 0 ہو یا کم از کم Rs. $requiredMin ضروری ہے');
+      return;
+    }
+    if (adv > price) {
+      setState(() => _error = 'ایڈوانس رقم موبائل کی کل قیمت سے زیادہ نہیں ہو سکتی');
+      return;
+    }
+    widget.onSubmit(_nameCtrl.text.trim(), price, adv);
+  }
+  @override
+  Widget build(BuildContext context) {
+    final String advanceHint = _dynamicMinAdvance > 0
+        ? '0 یا کم از کم Rs. $_dynamicMinAdvance'
+        : 'بغیر ایڈوانس کیلئے 0 رکھیں';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _field(_nameCtrl, 'موبائل ماڈل کا نام (اختیاری)', 'مثلاً Vivo Y200، ریڈمی', TextInputType.text),
+          const SizedBox(height: 12),
+          _field(_priceCtrl, 'کل مالیت کا تخمینہ (روپوں میں)*', 'مثلاً 45000', TextInputType.number),
+          const SizedBox(height: 12),
+          _field(_advanceCtrl, 'متوقع ایڈوانس رقم (بغیر ایڈوانس کیلئے 0 رکھیں)', advanceHint, TextInputType.number),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _validate,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+              child: Text(
+                '${widget.totalPlans} اقساطی پیکجز کا شیڈول دیکھیں',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+  Widget _field(TextEditingController ctrl, String label, String hint, TextInputType type) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: type,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+        isDense: true,
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF0D9488), width: 1.3)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/inline_two_plan_drawer_ui.dart">
+import 'package:flutter/material.dart';
+class InlineTwoPlanDrawerUi extends StatelessWidget {
+  final int zeroAdvMonthly;
+  final int withAdvMonthly;
+  final int totalPlans;
+  final VoidCallback onOpenFullPlan;
+  const InlineTwoPlanDrawerUi({
+    super.key,
+    required this.zeroAdvMonthly,
+    required this.withAdvMonthly,
+    required this.totalPlans,
+    required this.onOpenFullPlan,
+  });
+  Widget _buildMiniRateBadge(String title, int monthly, {required bool isGreen}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isGreen ? const Color(0xFFECFDF5) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isGreen ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: isGreen ? const Color(0xFF065F46) : const Color(0xFF64748B),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Rs. $monthly /ماہ',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: isGreen ? const Color(0xFF059669) : const Color(0xFF0D9488),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      color: const Color(0xFFF8FAFC),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildMiniRateBadge('6 ماہ (بغیر ایڈوانس)', zeroAdvMonthly, isGreen: true),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMiniRateBadge('6 ماہ (ایڈوانس کے ساتھ)', withAdvMonthly, isGreen: false),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onOpenFullPlan,
+              icon: const Icon(Icons.fullscreen_rounded, size: 15),
+              label: Text('مکمل $totalPlans اقساطی پلانز کھولیں اور آرڈر بک کریں'),
+              style: OutlinedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: const Color(0xFF0F172A),
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/luminous_calculator_banner_ui.dart">
+import 'package:flutter/material.dart';
+class LuminousCalculatorBannerUi extends StatelessWidget {
+  final VoidCallback onEstimateTap;
+  const LuminousCalculatorBannerUi({
+    super.key,
+    required this.onEstimateTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      decoration: BoxDecoration(
+        gradient: const RadialGradient(
+          center: Alignment(-0.8, -0.6),
+          radius: 1.5,
+          colors: [
+            Color(0xFF334155),
+            Color(0xFF1E293B),
+            Color(0xFF0F172A),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFF475569).withValues(alpha: 0.6),
+          width: 1.3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.5)),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF34D399), size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'اپنی پسند کے موبائل کا قسط پلان بنائیں',
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'اگر آپ کا مطلوبہ ماڈل لسٹ میں شامل نہیں، تو نیچے بٹن دبا کر فوری اپنے بجٹ کے مطابق اقساط نکالیں:',
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFFFDE68A),
+              height: 1.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onEstimateTap,
+              icon: const Icon(Icons.touch_app_rounded, size: 20),
+              label: const Text(
+                'اپنی مرضی کی قیمت کا حساب لگائیں',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D9488),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/market_app_bar_ui.dart">
+import 'package:flutter/material.dart';
+class MarketAppBarUi extends StatelessWidget implements PreferredSizeWidget {
+  final String? customerPhone;
+  final VoidCallback? onCalculatorTap;
+  const MarketAppBarUi({
+    super.key,
+    this.customerPhone,
+    this.onCalculatorTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final bool isPublic = customerPhone == null || customerPhone!.isEmpty;
+    return AppBar(
+      elevation: 0,
+      backgroundColor: const Color(0xFF0F172A),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'نایاب قسط پوائنٹ (قائم پور)',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            isPublic
+                ? 'پبلک شو روم • 28 سمارٹ اقساطی پلانز'
+                : 'کھاتہ: $customerPhone • تصدیق شدہ کسٹمر',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isPublic ? const Color(0xFF94A3B8) : const Color(0xFF34D399),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        if (onCalculatorTap != null)
+          IconButton(
+            icon: const Icon(Icons.calculate_outlined, color: Color(0xFFFDE68A)),
+            onPressed: onCalculatorTap,
+          ),
+      ],
+    );
+  }
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/stock_phone_card_ui.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/zero_advance_pill_badge_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/inline_quick_ribbon_trigger_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/inline_two_plan_drawer_ui.dart';
+class StockPhoneCardUi extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final bool isRibbonExpanded;
+  final int totalPlans;
+  final VoidCallback onCardTap;
+  final VoidCallback onToggleRibbon;
+  const StockPhoneCardUi({
+    super.key,
+    required this.item,
+    required this.isRibbonExpanded,
+    required this.totalPlans,
+    required this.onCardTap,
+    required this.onToggleRibbon,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final List images = (item['images'] as List?) ?? [];
+    final bool hasValidImage = images.isNotEmpty && images.first.toString().trim().isNotEmpty;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isRibbonExpanded ? const Color(0xFF0D9488) : const Color(0xFFCBD5E1),
+          width: isRibbonExpanded ? 1.4 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onCardTap,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 88,
+                      height: 94,
+                      color: const Color(0xFFF8FAFC),
+                      child: hasValidImage
+                          ? Image.network(
+                              images.first.toString(),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(
+                                  Icons.phone_android_rounded,
+                                  size: 38,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.phone_android_rounded,
+                                size: 38,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item['name'] ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                item['status'] ?? '',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${item['ramRom']} • ${item['condition']}',
+                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 6),
+                        ZeroAdvancePillBadgeUi(monthlyAmount: item['zeroAdvMonthly'] ?? 0),
+                        const SizedBox(height: 4),
+                        Text(
+                          'یا ایڈوانس کے ساتھ صرف: Rs. ${item['minMonthlyWithAdv'] ?? 0} /ماہ',
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          InlineQuickRibbonTriggerUi(
+            isExpanded: isRibbonExpanded,
+            onTap: onToggleRibbon,
+          ),
+          if (isRibbonExpanded)
+            InlineTwoPlanDrawerUi(
+              zeroAdvMonthly: item['zeroAdvMonthly'] ?? 0,
+              withAdvMonthly: item['minMonthlyWithAdv'] ?? 0,
+              totalPlans: totalPlans,
+              onOpenFullPlan: onCardTap,
+            ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/purchase_market_controller.dart">
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/services/stock_box_service.dart';
+class PurchaseMarketController extends ChangeNotifier {
+  final StockBoxService _stockService = StockBoxService();
+  int expandedCardIndex = -1;
+  ValueListenable<Box> get stockListenable => _stockService.listenToStock();
+  List<Map<String, dynamic>> getStockDevices() => _stockService.getAllStockDevices();
+  int get totalPlansCount => _stockService.getTotalPlansCount();
+  void toggleRibbon(int index) {
+    expandedCardIndex = (expandedCardIndex == index) ? -1 : index;
+    notifyListeners();
+  }
+  void navigateToPlanDetail(BuildContext context, Map<String, dynamic> device, String? customerPhone) {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.planDetail,
+      arguments: {
+        'device': device,
+        'customerPhone': customerPhone,
+      },
+    );
+  }
+  void handleCustomEstimateSubmit(BuildContext context, String name, int price, int adv, String? customerPhone) {
+    final int dynamicMinAdv = (((price * 0.1667) / 100).ceil()) * 100;
+    final int finalUserAdv = adv == 0 ? 0 : (adv < dynamicMinAdv ? dynamicMinAdv : adv);
+    final device = {
+      'name': name.isEmpty ? 'کسٹم ڈیوائس تخمینہ' : name,
+      'baseValue': price,
+      'ramRom': 'کسٹمر ڈیمانڈ',
+      'condition': 'نئی یا طلب کے مطابق',
+      'warranty': '12 ماہ وارنٹی',
+      'minAdvanceRequired': dynamicMinAdv,
+      'userCustomAdvance': finalUserAdv,
+      'isCustomEstimate': true,
+      'images': <String>[],
+    };
+    navigateToPlanDetail(context, device, customerPhone);
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/components/custom_estimate_sheet_ui.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/estimate_sheet_form_ui.dart';
+class CustomEstimateSheetUi extends StatelessWidget {
+  final Function(String name, int estimatePrice, int advance) onSubmit;
+  const CustomEstimateSheetUi({super.key, required this.onSubmit});
+  static void show(
+    BuildContext context, {
+    required Function(String name, int estimatePrice, int advance) onSubmit,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CustomEstimateSheetUi(onSubmit: onSubmit),
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    final config = CalculatorConfigService().getConfig();
+    final int durationCount = config.allowedDurations.length;
+    final int minDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.first : 6;
+    final int maxDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.last : 12;
+    final rawPlans = PlanGeneratorService.generateAllPlans(
+      baseValue: 50000,
+      userCustomAdvance: 0,
+      config: config,
+    );
+    final int totalPlans = rawPlans.length;
+    final int chequeCount = rawPlans.where((p) => p['guarantee'] == 'BANK_CHEQUE').length;
+    final int stampCount = rawPlans.where((p) => p['guarantee'] == 'LEGAL_STAMP').length;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(22),
+            topRight: Radius.circular(22),
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDE68A),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$totalPlans',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'نایاب $totalPlans اقساطی پیکجز کا مکمل جدول',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$durationCount مدتیں ($minDuration تا $maxDuration ماہ) • $chequeCount چیک مع $stampCount اشٹام پلانز • زیرو ایڈوانس سہولت',
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              color: Color(0xFFCBD5E1),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              EstimateSheetFormUi(
+                totalPlans: totalPlans,
+                onSubmit: onSubmit,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/purchase_market_page/purchase_market_page.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/luminous_calculator_banner_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/custom_estimate_sheet_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/components/market_stock_section_ui.dart';
+class PurchaseMarketPage extends StatefulWidget {
+  final String? customerPhone;
+  const PurchaseMarketPage({super.key, this.customerPhone});
+  @override
+  State<PurchaseMarketPage> createState() => _PurchaseMarketPageState();
+}
+class _PurchaseMarketPageState extends State<PurchaseMarketPage> {
+  late final PurchaseMarketController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = PurchaseMarketController();
+  }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  void _openCustomEstimateSheet() {
+    CustomEstimateSheetUi.show(
+      context,
+      onSubmit: (name, price, adv) {
+        Navigator.pop(context);
+        _controller.handleCustomEstimateSubmit(
+          context,
+          name,
+          price,
+          adv,
+          widget.customerPhone,
+        );
+      },
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        appBar: MarketAppBarUi(customerPhone: widget.customerPhone),
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LuminousCalculatorBannerUi(onEstimateTap: _openCustomEstimateSheet),
+              const SizedBox(height: 16),
+              MarketStockSectionUi(
+                controller: _controller,
+                customerPhone: widget.customerPhone,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 </file>

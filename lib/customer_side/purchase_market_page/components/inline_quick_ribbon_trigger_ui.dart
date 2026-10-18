@@ -37,7 +37,11 @@ class InlineQuickRibbonTriggerUi extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   isExpanded ? 'فوری موازنہ بند کریں' : 'سب سے سستے 6 ماہ کے 2 پلانز دیکھیں',
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0D9488),
+                  ),
                 ),
               ],
             ),

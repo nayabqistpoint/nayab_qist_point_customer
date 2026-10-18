@@ -21,7 +21,7 @@ class StockPhoneCardUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List images = (item['images'] as List?) ?? [];
+    final List images = (item['images'] as List?) ?? const [];
     final bool hasValidImage = images.isNotEmpty && images.first.toString().trim().isNotEmpty;
 
     return Container(

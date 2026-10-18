@@ -22,7 +22,6 @@ class CustomEstimateSheetUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 ہائیو کنفگریشن اور حقیقی پلانز کی گنتی
     final config = CalculatorConfigService().getConfig();
     final int durationCount = config.allowedDurations.length;
     final int minDuration = config.allowedDurations.isNotEmpty ? config.allowedDurations.first : 6;
@@ -52,7 +51,6 @@ class CustomEstimateSheetUi extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 🌟 نایاب قسط پوائنٹ کی مستند ڈائنامک بیج والی پٹی
               Container(
                 margin: const EdgeInsets.fromLTRB(14, 14, 14, 6),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -69,7 +67,6 @@ class CustomEstimateSheetUi extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // 🟡 متحرک بیج
                     Container(
                       width: 38,
                       height: 38,
@@ -88,7 +85,6 @@ class CustomEstimateSheetUi extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // 📜 تفصیلی متحرک متن
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,8 +118,6 @@ class CustomEstimateSheetUi extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // فارم باڈی
               EstimateSheetFormUi(
                 totalPlans: totalPlans,
                 onSubmit: onSubmit,

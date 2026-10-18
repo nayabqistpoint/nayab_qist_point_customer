@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/services/purchase_market_calculation_service.dart';
 
 class EstimateSheetFormUi extends StatefulWidget {
   final int totalPlans;
@@ -27,17 +28,9 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
     _priceCtrl.addListener(_onPriceChanged);
   }
 
-  // 🎯 راؤنڈنگ لاجک: رقم کو 100 کے قریب ترین راؤنڈ کرنا
-  int _calculateRoundedMinAdvance(int price) {
-    if (price <= 0) return 0;
-    final double raw = price * 0.1667;
-    // 100 پر راؤنڈ اپ کرنا تاکہ کنٹرولر اور UI میں ایک ہی رقم آئے
-    return ((raw / 100).ceil()) * 100;
-  }
-
   void _onPriceChanged() {
     final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
-    final calculatedMin = _calculateRoundedMinAdvance(price);
+    final calculatedMin = PurchaseMarketCalculationService.calculateRoundedMinAdvance(price);
     if (_dynamicMinAdvance != calculatedMin) {
       setState(() {
         _dynamicMinAdvance = calculatedMin;
@@ -57,30 +50,26 @@ class _EstimateSheetFormUiState extends State<EstimateSheetFormUi> {
   void _validate() {
     final price = int.tryParse(_priceCtrl.text.trim()) ?? 0;
     final adv = int.tryParse(_advanceCtrl.text.trim()) ?? 0;
-
     if (price <= 0) {
       setState(() => _error = 'برائے مہربانی درست مالیت درج کریں');
       return;
     }
-
-    final requiredMin = _calculateRoundedMinAdvance(price);
+    final requiredMin = PurchaseMarketCalculationService.calculateRoundedMinAdvance(price);
     if (adv > 0 && adv < requiredMin) {
       setState(() => _error = 'ایڈوانس یا تو 0 ہو یا کم از کم Rs. $requiredMin ضروری ہے');
       return;
     }
-
     if (adv > price) {
       setState(() => _error = 'ایڈوانس رقم موبائل کی کل قیمت سے زیادہ نہیں ہو سکتی');
       return;
     }
-
     widget.onSubmit(_nameCtrl.text.trim(), price, adv);
   }
 
   @override
   Widget build(BuildContext context) {
-    final String advanceHint = _dynamicMinAdvance > 0 
-        ? '0 یا کم از کم Rs. $_dynamicMinAdvance' 
+    final String advanceHint = _dynamicMinAdvance > 0
+        ? '0 یا کم از کم Rs. $_dynamicMinAdvance'
         : 'بغیر ایڈوانس کیلئے 0 رکھیں';
 
     return Padding(

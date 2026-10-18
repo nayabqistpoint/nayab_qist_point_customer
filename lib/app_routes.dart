@@ -10,6 +10,7 @@ import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_acc
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/purchase_market_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart';
@@ -74,11 +75,12 @@ class AppRoutes {
         );
 
       case purchaseMarket:
-        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final rawArgs = settings.arguments;
+        final PurchaseMarketArgs args = rawArgs is PurchaseMarketArgs
+            ? rawArgs
+            : PurchaseMarketArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
-          builder: (_) => PurchaseMarketPage(
-            customerPhone: args['customerPhone'],
-          ),
+          builder: (_) => PurchaseMarketPage(args: args),
         );
 
       case planDetail:

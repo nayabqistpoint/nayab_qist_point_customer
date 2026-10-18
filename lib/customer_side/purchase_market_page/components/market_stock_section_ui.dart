@@ -17,40 +17,47 @@ class MarketStockSectionUi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
-      valueListenable: controller.stockListenable,
-      builder: (context, _, __) {
-        final stockDevices = controller.getStockDevices();
+    final listenable = controller.boxListenable;
 
-        return AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MarketStockListHeaderUi(totalCount: stockDevices.length),
-                const SizedBox(height: 10),
-                if (stockDevices.isEmpty)
-                  const MarketEmptyStockUi()
-                else
-                  ...List.generate(
-                    stockDevices.length,
-                    (idx) {
-                      final item = stockDevices[idx];
-                      return StockPhoneCardUi(
-                        item: item,
-                        isRibbonExpanded: controller.expandedCardIndex == idx,
-                        totalPlans: controller.totalPlansCount,
-                        onCardTap: () => controller.navigateToPlanDetail(context, item, customerPhone),
-                        onToggleRibbon: () => controller.toggleRibbon(idx),
-                      );
-                    },
-                  ),
-              ],
-            );
-          },
-        );
-      },
+    Widget buildContent() {
+      final stockDevices = controller.getStockDevices();
+      return AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MarketStockListHeaderUi(totalCount: stockDevices.length),
+              const SizedBox(height: 10),
+              if (stockDevices.isEmpty)
+                const MarketEmptyStockUi()
+              else
+                ...List.generate(
+                  stockDevices.length,
+                  (idx) {
+                    final item = stockDevices[idx];
+                    return StockPhoneCardUi(
+                      item: item,
+                      isRibbonExpanded: controller.expandedCardIndex == idx,
+                      totalPlans: controller.totalPlansCount,
+                      onCardTap: () => controller.navigateToPlanDetail(context, item, customerPhone),
+                      onToggleRibbon: () => controller.toggleRibbon(idx),
+                    );
+                  },
+                ),
+            ],
+          );
+        },
+      );
+    }
+
+    if (listenable == null) {
+      return buildContent();
+    }
+
+    return ValueListenableBuilder<Box>(
+      valueListenable: listenable,
+      builder: (context, _, __) => buildContent(),
     );
   }
 }

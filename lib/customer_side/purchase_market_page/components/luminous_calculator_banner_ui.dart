@@ -12,7 +12,6 @@ class LuminousCalculatorBannerUi extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      // 🌟 اوپر اور نیچے کی پیڈنگ بڑھا کر 24 کر دی ہے تاکہ بینر موٹا اور کشادہ رہے
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       decoration: BoxDecoration(
         gradient: const RadialGradient(
