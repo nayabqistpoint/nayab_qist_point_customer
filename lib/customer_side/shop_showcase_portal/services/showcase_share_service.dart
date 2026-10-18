@@ -1,5 +1,3 @@
-// lib/customer_side/shop_showcase_portal/services/showcase_share_service.dart
-
 class ShowcaseShareService {
   static String generateShareText({
     required String shopName,

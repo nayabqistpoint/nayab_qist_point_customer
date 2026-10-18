@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/order_receipt_sheet, lib/customer_side/device_plan_detail_page
+- Only files matching these patterns are included: lib/customer_side/shop_showcase_portal
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -47,1101 +47,46 @@ The content is organized as follows:
 <directory_structure>
 lib/
   customer_side/
-    device_plan_detail_page/
+    shop_showcase_portal/
       components/
-        advance_option_filter_bar_ui.dart
-        bill_style_schedule_header_ui.dart
-        custom_advance_input_box_ui.dart
-        custom_estimate_hero_card_ui.dart
-        detail_app_bar_ui.dart
-        device_spec_pills_ui.dart
-        duration_seven_filter_bar_ui.dart
-        full_screen_zoom_gallery_ui.dart
-        guarantee_filter_bar_ui.dart
-        hero_image_swiper_ui.dart
-        individual_plan_row_ui.dart
-        plan_filter_section_card_ui.dart
-        plan_sorting_toolbar_ui.dart
-        stock_device_hero_card_ui.dart
-        vip_28_promotional_banner_ui.dart
+        audio_announcement_bar_ui.dart
+        contact_location_card_ui.dart
+        large_slots_schedule_ui.dart
+        live_metrics_ribbon_ui.dart
+        media_showcase_row_ui.dart
+        patron_hero_card_ui.dart
+        privacy_shield_card_ui.dart
+        prize_draw_card_ui.dart
+        products_wings_card_ui.dart
+        share_notice_card_ui.dart
       services/
-        calculator_config_model.dart
-        calculator_config_service.dart
-        plan_filter_sort_service.dart
-        plan_generator_service.dart
-        plan_math_service.dart
-        plan_schedule_service.dart
-      device_plan_detail_args.dart
-      device_plan_detail_controller.dart
-      device_plan_detail_page.dart
-    order_receipt_sheet/
-      components/
-        bank_cheque_input_box_ui.dart
-        grace_period_note_ui.dart
-        receipt_schedule_table_ui.dart
-        receipt_summary_rows_ui.dart
-        receipt_token_header_ui.dart
-        sign_up_barrier_dialog_ui.dart
-        signup_instruction_card_ui.dart
-        submit_order_button_ui.dart
-      services/
-        order_receipt_storage_handler.dart
-        purchase_order_payload_service.dart
-      order_receipt_sheet_args.dart
-      order_receipt_sheet_controller.dart
-      order_receipt_sheet.dart
+        live_quota_service.dart
+        plan_counter_service.dart
+        showcase_audio_service.dart
+        showcase_config_service.dart
+        showcase_share_service.dart
+        slots_feed_service.dart
+      shop_showcase_args.dart
+      shop_showcase_controller.dart
+      shop_showcase_portal_page.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/device_plan_detail_page/components/custom_estimate_hero_card_ui.dart">
+<file path="lib/customer_side/shop_showcase_portal/components/audio_announcement_bar_ui.dart">
 import 'package:flutter/material.dart';
-class CustomEstimateHeroCardUi extends StatelessWidget {
-  final String title;
-  final int baseValue;
-  final int displayedAdvance;
-  const CustomEstimateHeroCardUi({
+class AudioAnnouncementBarUi extends StatelessWidget {
+  final bool isPlaying;
+  final String patronName;
+  final String durationText;
+  final VoidCallback onTogglePlay;
+  const AudioAnnouncementBarUi({
     super.key,
-    required this.title,
-    required this.baseValue,
-    required this.displayedAdvance,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.white),
-          ),
-          const Divider(height: 18, color: Color(0xFF334155)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('تخمینہ رقم: Rs. $baseValue', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFFFDE68A))),
-              Text(
-                displayedAdvance > 0 ? 'ایڈوانس: Rs. $displayedAdvance' : '⭐ بغیر ایڈوانس پلان',
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF34D399)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/plan_sorting_toolbar_ui.dart">
-import 'package:flutter/material.dart';
-class PlanSortingToolbarUi extends StatelessWidget {
-  final String activeSort;
-  final Function(String) onSortChanged;
-  const PlanSortingToolbarUi({
-    super.key,
-    required this.activeSort,
-    required this.onSortChanged,
-  });
-  Widget _sortChip({
-    required String label,
-    required String sortKey,
-    required IconData icon,
-  }) {
-    final bool isSelected = activeSort == sortKey;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSortChanged(sortKey),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 13,
-                color: isSelected ? const Color(0xFFFDE68A) : const Color(0xFF64748B),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : const Color(0xFF334155),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        children: [
-          const Text(
-            'ترتیب:',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _sortChip(
-                    label: 'سب سے کم قسط',
-                    sortKey: 'LOW_MONTHLY',
-                    icon: Icons.trending_down_rounded,
-                  ),
-                  _sortChip(
-                    label: 'تیز ترین اختتام (کم مدت)',
-                    sortKey: 'SHORTEST_DURATION',
-                    icon: Icons.bolt_rounded,
-                  ),
-                  _sortChip(
-                    label: 'سب سے سستا کل معاہدہ',
-                    sortKey: 'LOWEST_TOTAL',
-                    icon: Icons.savings_outlined,
-                  ),
-                  _sortChip(
-                    label: 'معیاری (پہلے کم مدت)',
-                    sortKey: 'DEFAULT',
-                    icon: Icons.tune_rounded,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/services/calculator_config_model.dart">
-class CalculatorConfigModel {
-  final bool addProcessingFeeToPrincipal;
-  final double advancePercentage;
-  final List<int> allowedDurations;
-  final int gracePeriodDays;
-  final int installmentDueDay;
-  final bool isCompoundingProfit;
-  final double perMonthIncrement;
-  final int processingFee;
-  final double profitWithCheck;
-  final double profitWithoutCheck;
-  final int roundToNearest;
-  final String status;
-  const CalculatorConfigModel({
-    required this.addProcessingFeeToPrincipal,
-    required this.advancePercentage,
-    required this.allowedDurations,
-    required this.gracePeriodDays,
-    required this.installmentDueDay,
-    required this.isCompoundingProfit,
-    required this.perMonthIncrement,
-    required this.processingFee,
-    required this.profitWithCheck,
-    required this.profitWithoutCheck,
-    required this.roundToNearest,
-    required this.status,
-  });
-  factory CalculatorConfigModel.fallback() {
-    return const CalculatorConfigModel(
-      addProcessingFeeToPrincipal: false,
-      advancePercentage: 0.8,
-      allowedDurations: [6, 7, 8, 9, 10, 11, 12],
-      gracePeriodDays: 15,
-      installmentDueDay: 5,
-      isCompoundingProfit: false,
-      perMonthIncrement: 0.05,
-      processingFee: 0,
-      profitWithCheck: 0.25,
-      profitWithoutCheck: 0.35,
-      roundToNearest: 100,
-      status: 'approved',
-    );
-  }
-  factory CalculatorConfigModel.fromMap(Map<dynamic, dynamic>? map) {
-    if (map == null) return CalculatorConfigModel.fallback();
-    List<int> parseDurations(dynamic raw) {
-      if (raw is List) {
-        final parsed = raw
-            .map((e) => int.tryParse(e.toString()) ?? 0)
-            .where((e) => e > 0)
-            .toList();
-        if (parsed.isNotEmpty) return parsed;
-      }
-      return [6, 7, 8, 9, 10, 11, 12];
-    }
-    return CalculatorConfigModel(
-      addProcessingFeeToPrincipal: map['addProcessingFeeToPrincipal'] == true,
-      advancePercentage: (map['advancePercentage'] as num?)?.toDouble() ?? 0.8,
-      allowedDurations: parseDurations(map['allowedDurations']),
-      gracePeriodDays: (map['gracePeriodDays'] as num?)?.toInt() ?? 15,
-      installmentDueDay: (map['installmentDueDay'] as num?)?.toInt() ?? 5,
-      isCompoundingProfit: map['isCompoundingProfit'] == true,
-      perMonthIncrement: (map['perMonthIncrement'] as num?)?.toDouble() ?? 0.05,
-      processingFee: (map['processingFee'] as num?)?.toInt() ?? 0,
-      profitWithCheck: (map['profitWithCheck'] as num?)?.toDouble() ?? 0.25,
-      profitWithoutCheck: (map['profitWithoutCheck'] as num?)?.toDouble() ?? 0.35,
-      roundToNearest: (map['roundToNearest'] as num?)?.toInt() ?? 100,
-      status: map['status']?.toString() ?? 'approved',
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/services/plan_filter_sort_service.dart">
-class PlanFilterSortService {
-  static List<Map<String, dynamic>> filterAndSort({
-    required List<Map<String, dynamic>> allPlans,
-    required String guaranteeFilter,
-    required String advanceFilter,
-    required int durationFilter,
-    required String sortKey,
-  }) {
-    final filtered = allPlans.where((plan) {
-      if (guaranteeFilter != 'ALL' && plan['guarantee'] != guaranteeFilter) {
-        return false;
-      }
-      if (advanceFilter == 'WITH_ADV' && plan['hasAdvance'] == false) {
-        return false;
-      }
-      if (advanceFilter == 'ZERO_ADV' && plan['hasAdvance'] == true) {
-        return false;
-      }
-      if (durationFilter != 0 && plan['months'] != durationFilter) {
-        return false;
-      }
-      return true;
-    }).toList();
-    if (sortKey == 'LOW_MONTHLY') {
-      filtered.sort((a, b) => (a['monthly'] as int).compareTo(b['monthly'] as int));
-    } else if (sortKey == 'SHORTEST_DURATION') {
-      filtered.sort((a, b) => (a['months'] as int).compareTo(b['months'] as int));
-    } else if (sortKey == 'LOWEST_TOTAL') {
-      filtered.sort((a, b) {
-        final int totalA = (a['advance'] as int) + ((a['monthly'] as int) * ((a['months'] as int) - 1));
-        final int totalB = (b['advance'] as int) + ((b['monthly'] as int) * ((b['months'] as int) - 1));
-        return totalA.compareTo(totalB);
-      });
-    } else {
-      filtered.sort((a, b) {
-        final int cmpDuration = (a['months'] as int).compareTo(b['months'] as int);
-        if (cmpDuration != 0) return cmpDuration;
-        return (a['monthly'] as int).compareTo(b['monthly'] as int);
-      });
-    }
-    return filtered;
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/device_plan_detail_args.dart">
-
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/bank_cheque_input_box_ui.dart">
-import 'package:flutter/material.dart';
-class BankChequeInputBoxUi extends StatelessWidget {
-  final TextEditingController bankNameCtrl;
-  final TextEditingController chequeNoCtrl;
-  const BankChequeInputBoxUi({
-    super.key,
-    required this.bankNameCtrl,
-    required this.chequeNoCtrl,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.account_balance_rounded,
-                  size: 15,
-                  color: Color(0xFF047857),
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Expanded(
-                child: Text(
-                  'بینک چیک کی ضروری تفصیلات (لازمی):',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF047857),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: bankNameCtrl,
-            decoration: InputDecoration(
-              isDense: true,
-              labelText: 'بینک کا نام (مثلاً HBL, Meezan, UBL)*',
-              labelStyle: const TextStyle(fontSize: 11),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: chequeNoCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              isDense: true,
-              labelText: 'چیک نمبر (Cheque No)*',
-              labelStyle: const TextStyle(fontSize: 11),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/grace_period_note_ui.dart">
-import 'package:flutter/material.dart';
-class GracePeriodNoteUi extends StatelessWidget {
-  const GracePeriodNoteUi({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Text(
-        'نوٹ: اگر تاریخ درخواست سے آنے والی 5 تاریخ میں 15 دن سے کم وقفہ ہو تو پہلی قسط اگلے ماہ کی 5 تاریخ سے شروع ہو گی۔',
-        style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B), height: 1.3),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/receipt_schedule_table_ui.dart">
-import 'package:flutter/material.dart';
-class ReceiptScheduleTableUi extends StatelessWidget {
-  final List<Map<String, dynamic>> installmentSchedule;
-  const ReceiptScheduleTableUi({super.key, required this.installmentSchedule});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'ماہانہ قسط شیڈول (ہر ماہ کی 5 تاریخ):',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                ),
-              ),
-              SizedBox(width: 6),
-              Text(
-                'واجب الادا',
-                style: TextStyle(fontSize: 10, color: Color(0xFF0D9488), fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const Divider(height: 12, color: Color(0xFFCBD5E1)),
-          ...installmentSchedule.map((row) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3.5),
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    '${row['no']}',
-                    style: const TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'قسط ${row['no']} (${row['dueDate']})',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Rs. ${row['amount']}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                ),
-              ],
-            ),
-          )),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/receipt_summary_rows_ui.dart">
-import 'package:flutter/material.dart';
-class ReceiptSummaryRowsUi extends StatelessWidget {
-  final String deviceName;
-  final String guaranteeTitle;
-  final int months;
-  final int advance;
-  final int monthly;
-  final int totalInstallmentSum;
-  const ReceiptSummaryRowsUi({
-    super.key,
-    required this.deviceName,
-    required this.guaranteeTitle,
-    required this.months,
-    required this.advance,
-    required this.monthly,
-    required this.totalInstallmentSum,
-  });
-  Widget _slipRow(String label, String value, {bool isHighlight = false, bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569))),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isBold || isHighlight ? FontWeight.bold : FontWeight.w600,
-              color: isHighlight ? const Color(0xFF0D9488) : const Color(0xFF0F172A),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _slipRow('مطلوبہ موبائل ماڈل:', deviceName),
-        _slipRow('ضمانت کی قسم:', guaranteeTitle),
-        _slipRow('اقساط کی کل مدت:', '$months ماہ'),
-        _slipRow('طے شدہ ایڈوانس رقم:', advance > 0 ? 'Rs. $advance' : '⭐ بغیر ایڈوانس (Zero Advance)'),
-        _slipRow('مقررہ ماہانہ قسط:', 'Rs. $monthly / ماہ', isHighlight: true),
-        const Divider(color: Color(0xFFE2E8F0)),
-        _slipRow('کل اقساط معاہدہ رقم:', 'Rs. $totalInstallmentSum', isBold: true),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/receipt_token_header_ui.dart">
-import 'package:flutter/material.dart';
-class ReceiptTokenHeaderUi extends StatelessWidget {
-  final String tokenNo;
-  const ReceiptTokenHeaderUi({super.key, required this.tokenNo});
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'نایاب قسط پوائنٹ',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-              ),
-              Text(
-                'رسید ٹوکن: $tokenNo',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.hourglass_top_rounded, size: 10, color: Color(0xFFFDE68A)),
-              SizedBox(width: 4),
-              Text(
-                'زیرِ جائزہ (Pending)',
-                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFFDE68A)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/signup_instruction_card_ui.dart">
-import 'package:flutter/material.dart';
-class SignupInstructionCardUi extends StatelessWidget {
-  const SignupInstructionCardUi({super.key});
-  Widget _buildStepRow(String number, String text, {bool isHighlight = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isHighlight ? const Color(0xFF0D9488) : const Color(0xFFE2E8F0),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              number,
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.bold,
-                color: isHighlight ? Colors.white : const Color(0xFF475569),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1.35,
-                fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
-                color: isHighlight ? const Color(0xFF047857) : const Color(0xFF334155),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFFB45309)),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'اکاؤنٹ اور منظوری کا طریقہ کار:',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildStepRow('1', 'پہلے اپنا مختصر سائن اپ فارم پُر کریں۔'),
-          _buildStepRow('2', 'ایڈمن جانچ کے بعد کھاتہ منظور کرے گا۔'),
-          _buildStepRow('3', 'آپ کے موبائل کے آخری 4 ہندسے ہی آپ کا پاسورڈ (PIN) ہوں گے۔', isHighlight: true),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/submit_order_button_ui.dart">
-import 'package:flutter/material.dart';
-class SubmitOrderButtonUi extends StatelessWidget {
-  final VoidCallback onSubmit;
-  const SubmitOrderButtonUi({super.key, required this.onSubmit});
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onSubmit,
-        icon: const Icon(Icons.send_rounded, size: 16),
-        label: const Text('ایڈمن کو باضابطہ آرڈر ارسال کریں'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF059669),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/services/order_receipt_storage_handler.dart">
-
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/services/purchase_order_payload_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_schedule_service.dart';
-class PurchaseOrderPayloadService {
-  static Map<String, dynamic> buildOrderPayload({
-    required String docId,
-    required String customerPhone,
-    required String sourceMode,
-    required String itemName,
-    String? imeiNo,
-    required String guaranteeType,
-    String? bankName,
-    String? chequeNo,
-    required int totalMonths,
-    required int advance,
-    required int monthlyAmount,
-    required int totalContractAmount,
-    required DateTime orderDateTime,
-    CalculatorConfigModel? config,
-  }) {
-    final bool isCheque = guaranteeType == 'BANK_CHEQUE';
-    final effectiveConfig = config ?? CalculatorConfigModel.fallback();
-    final generatedSchedule = PlanScheduleService.generateSchedule(
-      totalMonths: totalMonths,
-      monthlyAmount: monthlyAmount,
-      advancePaid: advance,
-      config: effectiveConfig,
-      requestDate: orderDateTime,
-    );
-    final List<Map<String, dynamic>> finalInstallments = [];
-    for (int i = 0; i < generatedSchedule.length; i++) {
-      final item = generatedSchedule[i];
-      final int instNo = (item['no'] as num?)?.toInt() ?? (i + 1);
-      final int amt = (item['amount'] as num?)?.toInt() ?? 0;
-      final bool isFirst = instNo == 1;
-      final bool isZeroAdv = isFirst && advance == 0;
-      finalInstallments.add({
-        'installmentNo': instNo,
-        'title': isFirst
-            ? (advance > 0 ? 'ایڈوانس قسط (قسط نمبر 1)' : 'زیرو ایڈوانس (قسط نمبر 1)')
-            : 'ماہانہ قسط نمبر $instNo',
-        'dueDate': item['dueDate']?.toString() ?? '',
-        'dueAmount': amt,
-        'paidAmount': 0,
-        'remainingAmount': amt,
-        'paymentPercentage': isZeroAdv ? 100 : 0,
-        'status': isZeroAdv ? 'PAID' : 'PENDING',
-        'verificationStatus': isZeroAdv ? 'VERIFIED' : 'UNDER_REVIEW',
-      });
-    }
-    return {
-      'docId': docId,
-      'customerPhone': customerPhone,
-      'sourceMode': sourceMode,
-      'itemName': itemName,
-      'imeiNo': (imeiNo != null && imeiNo.trim().isNotEmpty) ? imeiNo.trim() : null,
-      'guaranteeType': guaranteeType,
-      'bankName': isCheque ? (bankName?.trim() ?? '') : null,
-      'chequeNo': isCheque ? (chequeNo?.trim() ?? '') : null,
-      'totalMonths': totalMonths,
-      'advance': advance,
-      'monthlyAmount': monthlyAmount,
-      'totalContractAmount': totalContractAmount,
-      'status': 'PENDING',
-      'isSynced': false,
-      'createdAt': orderDateTime.toIso8601String(),
-      'installments': finalInstallments,
-    };
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/order_receipt_sheet_args.dart">
-
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/bill_style_schedule_header_ui.dart">
-import 'package:flutter/material.dart';
-class BillStyleScheduleHeaderUi extends StatelessWidget {
-  final int count;
-  const BillStyleScheduleHeaderUi({super.key, required this.count});
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: Text(
-            'اقساطی پلانز کا شیڈول جدول:',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D9488).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            '$count پیکجز ظاہر ہیں',
-            style: const TextStyle(
-              fontSize: 10.5,
-              color: Color(0xFF0D9488),
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/detail_app_bar_ui.dart">
-import 'package:flutter/material.dart';
-class DetailAppBarUi extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
-  final String subtitle;
-  const DetailAppBarUi({
-    super.key,
-    required this.title,
-    required this.subtitle,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: const Color(0xFF0F172A),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 10.5, color: Color(0xFFFDE68A), fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/device_spec_pills_ui.dart">
-import 'package:flutter/material.dart';
-class DeviceSpecPillsUi extends StatelessWidget {
-  final String ramRom;
-  final String condition;
-  final String warranty;
-  const DeviceSpecPillsUi({
-    super.key,
-    required this.ramRom,
-    required this.condition,
-    required this.warranty,
-  });
-  Widget _badgeChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: const Color(0xFF475569)),
-          const SizedBox(width: 4),
-          Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
-        ],
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        _badgeChip(Icons.memory_rounded, ramRom),
-        _badgeChip(Icons.verified_rounded, condition),
-        _badgeChip(Icons.security_rounded, warranty),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/full_screen_zoom_gallery_ui.dart">
-import 'package:flutter/material.dart';
-class FullScreenZoomGalleryUi extends StatefulWidget {
-  final int initialIndex;
-  final List<String> images;
-  const FullScreenZoomGalleryUi({
-    super.key,
-    required this.initialIndex,
-    required this.images,
-  });
-  static void show(BuildContext context, int initialIndex, List<String> images) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.95),
-      builder: (_) => FullScreenZoomGalleryUi(
-        initialIndex: initialIndex,
-        images: images,
-      ),
-    );
-  }
-  @override
-  State<FullScreenZoomGalleryUi> createState() => _FullScreenZoomGalleryUiState();
-}
-class _FullScreenZoomGalleryUiState extends State<FullScreenZoomGalleryUi> {
-  late int curIdx;
-  late final PageController pageController;
-  final TransformationController _transformController = TransformationController();
-  bool _isZoomed = false;
-  @override
-  void initState() {
-    super.initState();
-    curIdx = widget.initialIndex;
-    pageController = PageController(initialPage: widget.initialIndex);
-    _transformController.addListener(() {
-      final double scale = _transformController.value.getMaxScaleOnAxis();
-      if (scale > 1.05 && !_isZoomed) {
-        setState(() => _isZoomed = true);
-      } else if (scale <= 1.05 && _isZoomed) {
-        setState(() => _isZoomed = false);
-      }
-    });
-  }
-  @override
-  void dispose() {
-    _transformController.dispose();
-    pageController.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'تصویر ${curIdx + 1} از ${widget.images.length}',
-          style: const TextStyle(fontSize: 13, color: Colors.white),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: pageController,
-              physics: _isZoomed ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
-              itemCount: widget.images.length,
-              onPageChanged: (idx) {
-                _transformController.value = Matrix4.identity();
-                setState(() => curIdx = idx);
-              },
-              itemBuilder: (context, i) {
-                return InteractiveViewer(
-                  transformationController: _transformController,
-                  panEnabled: _isZoomed,
-                  minScale: 1.0,
-                  maxScale: 3.5,
-                  child: Center(
-                    child: Image.network(
-                      widget.images[i],
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.image_not_supported_rounded,
-                        color: Colors.white,
-                        size: 80,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (widget.images.length > 1)
-            Container(
-              height: 70,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.images.length, (i) {
-                  final bool isSel = curIdx == i;
-                  return GestureDetector(
-                    onTap: () {
-                      _transformController.value = Matrix4.identity();
-                      pageController.animateToPage(
-                        i,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      width: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isSel ? const Color(0xFF34D399) : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.network(widget.images[i], fit: BoxFit.cover),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/plan_filter_section_card_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/guarantee_filter_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/advance_option_filter_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/duration_seven_filter_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/custom_advance_input_box_ui.dart';
-class PlanFilterSectionCardUi extends StatelessWidget {
-  final DevicePlanDetailController controller;
-  final int totalPossiblePlans;
-  final int chequeCount;
-  final int stampCount;
-  final int zeroAdvCount;
-  final int withAdvCount;
-  final int calculatedMinAdv;
-  const PlanFilterSectionCardUi({
-    super.key,
-    required this.controller,
-    required this.totalPossiblePlans,
-    required this.chequeCount,
-    required this.stampCount,
-    required this.zeroAdvCount,
-    required this.withAdvCount,
-    required this.calculatedMinAdv,
+    required this.isPlaying,
+    required this.patronName,
+    required this.durationText,
+    required this.onTogglePlay,
   });
   @override
   Widget build(BuildContext context) {
@@ -1151,45 +96,65 @@ class PlanFilterSectionCardUi extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFCBD5E1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Text(
-            'ضمانت اور مدت چھانٹیں (تمام فلٹرز آن ہونے پر تمام پیکجز نظر آئیں گے):',
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF475569),
+          InkWell(
+            onTap: onTogglePlay,
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF334155)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
+                ],
+              ),
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                color: const Color(0xFFFDE68A),
+                size: 26,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          GuaranteeFilterBarUi(
-            selectedFilter: controller.selectedGuaranteeFilter,
-            totalCount: totalPossiblePlans,
-            chequeCount: chequeCount,
-            stampCount: stampCount,
-            onSelect: controller.setGuaranteeFilter,
-          ),
-          const SizedBox(height: 6),
-          AdvanceOptionFilterBarUi(
-            selectedFilter: controller.selectedAdvanceFilter,
-            totalCount: totalPossiblePlans,
-            zeroAdvCount: zeroAdvCount,
-            withAdvCount: withAdvCount,
-            onSelect: controller.setAdvanceFilter,
-          ),
-          const SizedBox(height: 6),
-          DurationSevenFilterBarUi(
-            selectedDuration: controller.selectedDuration,
-            allowedDurations: controller.config.allowedDurations,
-            onSelect: controller.setDuration,
-          ),
-          const Divider(height: 16, color: Color(0xFFE2E8F0)),
-          CustomAdvanceInputBoxUi(
-            minAdvanceRequired: calculatedMinAdv,
-            controller: controller.customAdvanceCtrl,
-            onChanged: controller.updateCustomAdvance,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'صوتی پیغام: $patronName',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                    ),
+                    Text(
+                      isPlaying ? 'چل رہا ہے...' : durationText,
+                      style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '36 اقساط پلانز، فوری الیکٹرانکس فراہمی اور کسٹمر رازداری پالیسی کی تفصیل سنیں',
+                  style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1198,391 +163,769 @@ class PlanFilterSectionCardUi extends StatelessWidget {
 }
 </file>
 
-<file path="lib/customer_side/device_plan_detail_page/services/calculator_config_service.dart">
-import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-class CalculatorConfigService {
-  static const String boxName = 'appConfigBox';
-  static const String configDocKey = 'calculator_config';
-  Box? _box;
-  Box get _configBox {
-    if (_box != null && _box!.isOpen) return _box!;
-    if (Hive.isBoxOpen(boxName)) {
-      _box = Hive.box(boxName);
-      return _box!;
-    }
-    throw StateError('ہائیو باکس "$boxName" کھلا ہوا نہیں ہے!');
-  }
-  CalculatorConfigModel getConfig() {
-    try {
-      final box = _configBox;
-      final rawData = box.get(configDocKey);
-      if (rawData is Map) {
-        return CalculatorConfigModel.fromMap(rawData);
-      }
-    } catch (_) {}
-    return CalculatorConfigModel.fallback();
-  }
-  ValueListenable<Box> listenToConfig() {
-    return _configBox.listenable(keys: [configDocKey]);
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/services/plan_generator_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
-class PlanGeneratorService {
-  static List<Map<String, dynamic>> generateAllPlans({
-    required int baseValue,
-    required int userCustomAdvance,
-    required CalculatorConfigModel config,
-  }) {
-    final List<Map<String, dynamic>> plans = [];
-    final int principal = PlanMathService.calculatePrincipal(
-      baseValue: baseValue,
-      config: config,
-    );
-    for (final int m in config.allowedDurations) {
-      final int chequeTotal = PlanMathService.calculateTotalContractPrice(
-        principal: principal,
-        months: m,
-        isCheque: true,
-        config: config,
-      );
-      final int chequeMinAdv = PlanMathService.calculateMinAdvance(
-        totalContractPrice: chequeTotal,
-        months: m,
-        config: config,
-      );
-      final int effectiveChequeAdv = userCustomAdvance > 0
-          ? (userCustomAdvance > chequeTotal ? chequeTotal : userCustomAdvance)
-          : chequeMinAdv;
-      plans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': true,
-        'advance': effectiveChequeAdv,
-        'monthly': PlanMathService.calculateMonthlyEmi(
-          totalContractPrice: chequeTotal,
-          advancePaid: effectiveChequeAdv,
-          months: m,
-          config: config,
-        ),
-        'totalContract': chequeTotal,
-        'minAdvanceRequired': chequeMinAdv,
-      });
-      plans.add({
-        'months': m,
-        'guarantee': 'BANK_CHEQUE',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': PlanMathService.calculateMonthlyEmi(
-          totalContractPrice: chequeTotal,
-          advancePaid: 0,
-          months: m,
-          config: config,
-        ),
-        'totalContract': chequeTotal,
-        'minAdvanceRequired': chequeMinAdv,
-      });
-      final int stampTotal = PlanMathService.calculateTotalContractPrice(
-        principal: principal,
-        months: m,
-        isCheque: false,
-        config: config,
-      );
-      final int stampMinAdv = PlanMathService.calculateMinAdvance(
-        totalContractPrice: stampTotal,
-        months: m,
-        config: config,
-      );
-      final int effectiveStampAdv = userCustomAdvance > 0
-          ? (userCustomAdvance > stampTotal ? stampTotal : userCustomAdvance)
-          : stampMinAdv;
-      plans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': true,
-        'advance': effectiveStampAdv,
-        'monthly': PlanMathService.calculateMonthlyEmi(
-          totalContractPrice: stampTotal,
-          advancePaid: effectiveStampAdv,
-          months: m,
-          config: config,
-        ),
-        'totalContract': stampTotal,
-        'minAdvanceRequired': stampMinAdv,
-      });
-      plans.add({
-        'months': m,
-        'guarantee': 'LEGAL_STAMP',
-        'hasAdvance': false,
-        'advance': 0,
-        'monthly': PlanMathService.calculateMonthlyEmi(
-          totalContractPrice: stampTotal,
-          advancePaid: 0,
-          months: m,
-          config: config,
-        ),
-        'totalContract': stampTotal,
-        'minAdvanceRequired': stampMinAdv,
-      });
-    }
-    return plans;
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/services/plan_math_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-class PlanMathService {
-  static int ceilValue(num value, int roundToNearest) {
-    if (roundToNearest <= 0) return value.ceil();
-    final double remainder = (value % roundToNearest).toDouble();
-    if (remainder == 0) return value.toInt();
-    return (value + (roundToNearest - remainder)).toInt();
-  }
-  static int calculatePrincipal({
-    required int baseValue,
-    required CalculatorConfigModel config,
-  }) {
-    if (config.addProcessingFeeToPrincipal) {
-      return baseValue + config.processingFee;
-    }
-    return baseValue;
-  }
-  static int calculateTotalContractPrice({
-    required int principal,
-    required int months,
-    required bool isCheque,
-    required CalculatorConfigModel config,
-  }) {
-    final int baseDuration = config.allowedDurations.isNotEmpty
-        ? config.allowedDurations.first
-        : 6;
-    final double baseRate =
-        isCheque ? config.profitWithCheck : config.profitWithoutCheck;
-    final int extraMonths = (months - baseDuration) > 0 ? (months - baseDuration) : 0;
-    double calculatedTotal = 0.0;
-    if (!config.isCompoundingProfit) {
-      final double totalRate = baseRate + (extraMonths * config.perMonthIncrement);
-      calculatedTotal = principal * (1.0 + totalRate);
-    } else {
-      double runningTotal = principal * (1.0 + baseRate);
-      for (int i = 0; i < extraMonths; i++) {
-        runningTotal = runningTotal * (1.0 + config.perMonthIncrement);
-      }
-      calculatedTotal = runningTotal;
-    }
-    if (!config.addProcessingFeeToPrincipal && config.processingFee > 0) {
-      calculatedTotal += config.processingFee;
-    }
-    return ceilValue(calculatedTotal, config.roundToNearest);
-  }
-  static int calculateMinAdvance({
-    required int totalContractPrice,
-    required int months,
-    required CalculatorConfigModel config,
-  }) {
-    if (months <= 0) return 0;
-    final double theoreticalEmi = totalContractPrice / months;
-    final double rawMinAdv = theoreticalEmi * config.advancePercentage;
-    return ceilValue(rawMinAdv, config.roundToNearest);
-  }
-  static int calculateMonthlyEmi({
-    required int totalContractPrice,
-    required int advancePaid,
-    required int months,
-    required CalculatorConfigModel config,
-  }) {
-    final int remainingInstallments = (months - 1) > 0 ? (months - 1) : 1;
-    final int balance = totalContractPrice - advancePaid;
-    if (balance <= 0) return 0;
-    final double rawMonthly = balance / remainingInstallments;
-    return ceilValue(rawMonthly, config.roundToNearest);
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/services/plan_schedule_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-class PlanScheduleService {
-  static const List<String> urduMonths = [
-    '',
-    'جنوری',
-    'فروری',
-    'مارچ',
-    'اپریل',
-    'مئی',
-    'جون',
-    'جولائی',
-    'اگست',
-    'ستمبر',
-    'اکتوبر',
-    'نومبر',
-    'دسمبر',
-  ];
-  /// پوری m اقساط کا شیڈول تیار کرنا (پہلی قسط موقع پر + بقیہ m-1 اقساط)
-  static List<Map<String, dynamic>> generateSchedule({
-    required int totalMonths,
-    required int monthlyAmount,
-    required int advancePaid,
-    required CalculatorConfigModel config,
-    DateTime? requestDate,
-  }) {
-    final List<Map<String, dynamic>> schedule = [];
-    final DateTime now = requestDate ?? DateTime.now();
-    final int dueDay = config.installmentDueDay > 0 ? config.installmentDueDay : 5;
-    final int graceDays = config.gracePeriodDays > 0 ? config.gracePeriodDays : 15;
-    // پہلی قسط: موقع پر ادائیگی (درخواست کی موجودہ تاریخ)
-    final String todayFormatted =
-        '${now.day.toString().padLeft(2, '0')} ${urduMonths[now.month]} ${now.year}';
-    schedule.add({
-      'no': 1,
-      'dueDate': '$todayFormatted (موقع پر / ایڈوانس)',
-      'amount': advancePaid,
-      'status': advancePaid > 0 ? 'PAID_ADVANCE' : 'ZERO_ADVANCE',
-    });
-    DateTime nextDue = DateTime(now.year, now.month, dueDay);
-    if (nextDue.isBefore(now)) {
-      nextDue = DateTime(now.year, now.month + 1, dueDay);
-    }
-    final int daysLeft = nextDue.difference(now).inDays;
-    DateTime firstDueDate = nextDue;
-    if (daysLeft < graceDays) {
-      firstDueDate = DateTime(nextDue.year, nextDue.month + 1, dueDay);
-    }
-    final int remainingCount = (totalMonths - 1) > 0 ? (totalMonths - 1) : 1;
-    for (int i = 0; i < remainingCount; i++) {
-      final DateTime installmentDate = DateTime(
-        firstDueDate.year,
-        firstDueDate.month + i,
-        dueDay,
-      );
-      final String formattedDate =
-          '${installmentDate.day.toString().padLeft(2, '0')} ${urduMonths[installmentDate.month]} ${installmentDate.year}';
-      schedule.add({
-        'no': i + 2,
-        'dueDate': formattedDate,
-        'amount': monthlyAmount,
-        'status': 'DUE',
-      });
-    }
-    return schedule;
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/components/sign_up_barrier_dialog_ui.dart">
+<file path="lib/customer_side/shop_showcase_portal/components/contact_location_card_ui.dart">
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/signup_instruction_card_ui.dart';
-class SignUpBarrierDialogUi extends StatelessWidget {
-  const SignUpBarrierDialogUi({super.key});
-  static void show(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (_) => const SignUpBarrierDialogUi(),
-    );
-  }
+class ContactLocationCardUi extends StatelessWidget {
+  final String whatsappNumber;
+  const ContactLocationCardUi({
+    super.key,
+    required this.whatsappNumber,
+  });
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF22C55E).withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'کسٹمر ہیلپ لائن و فوری واٹس ایپ رابطہ',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                ),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0F172A),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(19),
-                    topRight: Radius.circular(19),
+          const SizedBox(height: 6),
+          const Text(
+            '36 اقساط پلانز، فوری الیکٹرانکس آرڈر یا نئی بکنگ کے لیے رابطہ فرمائیں:',
+            style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16A34A),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.chat_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    whatsappNumber,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF334155),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.lock_person_rounded, color: Color(0xFFFDE68A), size: 18),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/large_slots_schedule_ui.dart">
+import 'package:flutter/material.dart';
+import '../services/slots_feed_service.dart';
+class LargeSlotsScheduleUi extends StatelessWidget {
+  final List<ShowcaseSlotItem> slots;
+  const LargeSlotsScheduleUi({
+    super.key,
+    required this.slots,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('لائیو سلاٹ و ڈلیوری شیڈول', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+            Text('اکتوبر 2026', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...slots.map((s) => _buildSlotCard(s)),
+      ],
+    );
+  }
+  Widget _buildSlotCard(ShowcaseSlotItem s) {
+    Color tagBg;
+    Color tagColor;
+    if (s.isAvailable) {
+      tagBg = const Color(0xFFEFF6FF);
+      tagColor = const Color(0xFF2563EB);
+    } else if (s.tag.contains('جاری')) {
+      tagBg = const Color(0xFFFEF3C7);
+      tagColor = const Color(0xFFB45309);
+    } else {
+      tagBg = const Color(0xFFDCFCE7);
+      tagColor = const Color(0xFF16A34A);
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: s.isAvailable ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
+          width: s.isAvailable ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'باضابطہ رجسٹریشن درکار ہے',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
+                    child: Text(
+                      s.date,
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    s.token,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: tagBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  s.tag,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: tagColor),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                s.isAvailable ? Icons.event_available_rounded : Icons.check_circle_rounded,
+                size: 15,
+                color: s.isAvailable ? const Color(0xFF2563EB) : const Color(0xFF10B981),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  s.item,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: s.isAvailable ? const Color(0xFF1E40AF) : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/live_metrics_ribbon_ui.dart">
+import 'package:flutter/material.dart';
+class LiveMetricsRibbonUi extends StatelessWidget {
+  final int totalQuota;
+  final int deliveredCount;
+  const LiveMetricsRibbonUi({
+    super.key,
+    required this.totalQuota,
+    required this.deliveredCount,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _metricTile('$totalQuota میں سے $deliveredCount', 'موبائل کوٹہ ترسیل', Icons.phone_android_rounded, const Color(0xFF0D9488), const Color(0xFFF0FDFA)),
+        const SizedBox(width: 8),
+        _metricTile('24 گھنٹے', 'الیکٹرانکس ڈلیوری', Icons.electric_bolt_rounded, const Color(0xFFD97706), const Color(0xFFFFFBEB)),
+        const SizedBox(width: 8),
+        _metricTile('100% محفوظ', 'رازداری گارنٹی', Icons.security_rounded, const Color(0xFF16A34A), const Color(0xFFF0FDF4)),
+      ],
+    );
+  }
+  Widget _metricTile(String val, String sub, IconData icon, Color accent, Color bgColor) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accent.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+              child: Icon(icon, size: 16, color: accent),
+            ),
+            const SizedBox(height: 5),
+            Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accent)),
+            const SizedBox(height: 2),
+            Text(
+              sub,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/media_showcase_row_ui.dart">
+import 'package:flutter/material.dart';
+class MediaShowcaseRowUi extends StatelessWidget {
+  final List<Map<String, dynamic>> mediaList;
+  const MediaShowcaseRowUi({
+    super.key,
+    required this.mediaList,
+  });
+  @override
+  Widget build(BuildContext context) {
+    if (mediaList.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.video_library_rounded, color: Color(0xFF0D9488), size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'سیل کٹ و ہینڈ اوور ویڈیوز (پرائیویسی پروٹیکٹڈ)',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Text('لائیو ریکارڈ', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: mediaList.map((item) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _videoThumbnailCard(
+                    item['title']?.toString() ?? '',
+                    item['token']?.toString() ?? '',
+                    item['duration']?.toString() ?? '',
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '📌 ویڈیوز میں کسٹمر کا چہرہ دکھائے بغیر صرف اوریجنل پروڈکٹ، سیل کٹ اور ڈبہ دکھایا جاتا ہے۔',
+            style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B)),
+          ),
+        ],
+      ),
+    );
+  }
+  static Widget _videoThumbnailCard(String title, String token, String duration) {
+    return Container(
+      height: 85,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Color(0xFFFDE68A), size: 20),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+              ),
+              Text(token, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 8.5)),
+            ],
+          ),
+          Positioned(
+            bottom: 4,
+            right: 6,
+            child: Text(duration, style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 8)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/patron_hero_card_ui.dart">
+import 'package:flutter/material.dart';
+class PatronHeroCardUi extends StatelessWidget {
+  final String patronName;
+  final String patronRole;
+  final String shopName;
+  final String address;
+  const PatronHeroCardUi({
+    super.key,
+    required this.patronName,
+    required this.patronRole,
+    required this.shopName,
+    required this.address,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 95,
+                  height: 115,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.person_pin_rounded,
+                              size: 36,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'تصویر نگران',
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'NQP',
+                            style: TextStyle(color: Color(0xFFFDE68A), fontSize: 8.5, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          patronRole,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        patronName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        shopName,
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'باہمی اعتماد، آسان شرائط اور 100% شفاف لین دین کی باوقار پہچان۔',
+                        style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on_rounded, color: Color(0xFFE11D48), size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    address,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/privacy_shield_card_ui.dart">
+import 'package:flutter/material.dart';
+class PrivacyShieldCardUi extends StatelessWidget {
+  final String title;
+  final String description;
+  const PrivacyShieldCardUi({
+    super.key,
+    required this.title,
+    required this.description,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(color: Color(0xFF16A34A), shape: BoxShape.circle),
+            child: const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF14532D)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF166534), height: 1.45),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/prize_draw_card_ui.dart">
+import 'package:flutter/material.dart';
+class PrizeDrawCardUi extends StatelessWidget {
+  final String title;
+  final String description;
+  const PrizeDrawCardUi({
+    super.key,
+    required this.title,
+    required this.description,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(color: Color(0xFFD97706), shape: BoxShape.circle),
+            child: const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF78350F)),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF92400E), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/products_wings_card_ui.dart">
+import 'package:flutter/material.dart';
+class ProductsWingsCardUi extends StatelessWidget {
+  final int plansCount;
+  const ProductsWingsCardUi({
+    super.key,
+    required this.plansCount,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'شاپ شیڈول پالیسی و کیٹیگریز',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'محترم کسٹمر! آپ 28 اقساطی پلانز اور شیڈول دیکھ سکتے ہیں، لیکن آرڈر ایڈمن کو ارسال کرنے کے لیے اکاؤنٹ ہونا لازمی ہے۔',
-                      style: TextStyle(fontSize: 11.5, height: 1.45, color: Color(0xFF475569)),
-                    ),
-                    const SizedBox(height: 12),
-                    const SignupInstructionCardUi(),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, AppRoutes.customerSignup);
-                        },
-                        icon: const Icon(Icons.app_registration_rounded, size: 16),
-                        label: const Text('ابھی سائن اپ کریں (نیا کھاتہ)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          elevation: 0,
-                        ),
-                      ),
+                    const Row(
+                      children: [
+                        Icon(Icons.phone_iphone_rounded, color: Color(0xFF0284C7), size: 16),
+                        SizedBox(width: 4),
+                        Text('اسمارٹ فونز', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
                     ),
                     const SizedBox(height: 6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('صرف ریٹ اور شیڈول دیکھنا ہے', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-                      ),
+                    Text(
+                      '• ماہانہ کوٹہ: 10 موبائلز\n• سلیکشن شاپ پر $plansCount پلانز سے\n• ایڈوانس و قسط خود طے کریں',
+                      style: const TextStyle(fontSize: 10, color: Color(0xFF475569), height: 1.45),
                     ),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFED7AA)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.blender_rounded, color: Color(0xFFEA580C), size: 16),
+                        SizedBox(width: 4),
+                        Text('چھوٹے الیکٹرانکس', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      '• جوسر، استری، واشنگ مشین\n• کوئی سلاٹ ویٹنگ نہیں!\n• درخواست پر 24 گھنٹے میں تیار',
+                      style: TextStyle(fontSize: 10, color: Color(0xFF475569), height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/components/share_notice_card_ui.dart">
+import 'package:flutter/material.dart';
+class ShareNoticeCardUi extends StatelessWidget {
+  final VoidCallback onSharePressed;
+  const ShareNoticeCardUi({
+    super.key,
+    required this.onSharePressed,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onSharePressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
+                child: const Icon(Icons.share_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'دوستوں کو نایاب قسط پوائنٹ شیڈول بھیجیں',
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF1E40AF)),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'واٹس ایپ پر اپنے دوستوں اور رشتہ داروں کے ساتھ دکان کی آفرز شیئر کریں',
+                      style: TextStyle(fontSize: 9.5, color: Color(0xFF3B82F6)),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF2563EB)),
             ],
           ),
         ),
@@ -1592,24 +935,424 @@ class SignUpBarrierDialogUi extends StatelessWidget {
 }
 </file>
 
-<file path="lib/customer_side/order_receipt_sheet/order_receipt_sheet.dart">
+<file path="lib/customer_side/shop_showcase_portal/services/live_quota_service.dart">
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class LiveQuotaService {
+  static Future<Map<String, int>> getMonthlyQuotaMetrics() async {
+    int totalQuota = 10;
+    int delivered = 6;
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
+      final quotaConfig = box.get('quota_config');
+      if (quotaConfig is Map) {
+        totalQuota = (quotaConfig['monthly_mobile_quota'] as num?)?.toInt() ?? 10;
+      }
+      if (Hive.isBoxOpen(HiveBoxManager.installmentsBoxName)) {
+        final instBox = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
+        if (instBox.isNotEmpty) {
+        }
+      }
+    } catch (_) {}
+    return {
+      'total': totalQuota,
+      'delivered': delivered,
+      'remaining': (totalQuota - delivered).clamp(0, totalQuota),
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/services/plan_counter_service.dart">
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class PlanCounterService {
+  static Future<int> getAvailablePlansCount() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
+      final calcConfig = box.get('calculator_config');
+      if (calcConfig is Map) {
+        final durations = calcConfig['allowedDurations'] ?? calcConfig['durations'];
+        final plansPerDuration = calcConfig['plansPerDuration'] ?? 4;
+        if (durations is List && durations.isNotEmpty) {
+          return durations.length * (plansPerDuration is int ? plansPerDuration : 4);
+        }
+      }
+    } catch (_) {}
+    return 36;
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/services/showcase_audio_service.dart">
+class ShowcaseAudioService {
+  bool _isPlaying = false;
+  bool get isPlaying => _isPlaying;
+  bool togglePlayState() {
+    _isPlaying = !_isPlaying;
+    return _isPlaying;
+  }
+  void stop() {
+    _isPlaying = false;
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/services/showcase_config_service.dart">
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+class ShowcaseConfigService {
+  static const String configDocKey = 'shop_showcase_config';
+  static Future<Map<String, dynamic>> loadShowcaseConfig() async {
+    try {
+      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
+      final rawData = box.get(configDocKey);
+      if (rawData is Map) {
+        return Map<String, dynamic>.from(rawData);
+      }
+    } catch (_) {}
+    return {
+      'patron_name': 'حافظ محمد صابر مونڈ',
+      'patron_role': 'پروپرائیٹر و نگرانِ اعلیٰ',
+      'shop_name': 'نایاب قسط پوائنٹ',
+      'address': 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
+      'whatsapp': '03231988351',
+      'privacy_title': '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت',
+      'privacy_desc':
+          'قسطوں پر خریداری آپ کا نجی معاملہ ہے۔ کسی بھی صارف کا نام، چہرہ یا ڈلیوری ویڈیو کبھی تشہیر کے لیے ظاہر نہیں کی جاتی۔ لائیو شیڈول پر شفافیت کے لیے صرف آفیشل ٹوکن (#NQP-408) نظر آتا ہے۔',
+      'prize_title': '🎁 ماہانہ انعامی قرعہ اندازی و زیرو ایڈوانس',
+      'prize_desc':
+          'تمام اقساط تاریخ پر جمع کرانے والے معزز کسٹمرز کو خصوصی لکی ڈرا میں شامل کیا جائے گا اور اگلی ڈیوائس پر 0% ایڈوانس کی خصوصی رعایت دی جائے گی۔',
+      'audio_url': '',
+      'audio_duration': '0:42 سیکنڈ',
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/services/showcase_share_service.dart">
+class ShowcaseShareService {
+  static String generateShareText({
+    required String shopName,
+    required String patronName,
+    required String address,
+    required String whatsapp,
+    required int plansCount,
+  }) {
+    return '📢 $shopName (قائم پور)\n'
+        'نگرانِ اعلیٰ: $patronName\n\n'
+        '✨ ہر موبائل پر $plansCount آسان اقساط پلانز دستیاب ہیں!\n'
+        '⚡ چھوٹے گھریلو الیکٹرانکس بغیر سلاٹ کے 24 گھنٹے میں دستیاب۔\n'
+        '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت۔\n\n'
+        '📍 پتہ: $address\n'
+        '📞 واٹس ایپ رابطہ: $whatsapp';
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/services/slots_feed_service.dart">
+class ShowcaseSlotItem {
+  final String date;
+  final String token;
+  final String item;
+  final String tag;
+  final bool isAvailable;
+  const ShowcaseSlotItem({
+    required this.date,
+    required this.token,
+    required this.item,
+    required this.tag,
+    required this.isAvailable,
+  });
+}
+class SlotsFeedService {
+  static List<ShowcaseSlotItem> getLiveSlotsFeed(int availablePlansCount) {
+    return [
+      const ShowcaseSlotItem(
+        date: '03 اکتوبر',
+        token: '#NQP-401',
+        item: 'Redmi 13C (128GB)',
+        tag: 'کامیابی سے ڈلیور شدہ ✓',
+        isAvailable: false,
+      ),
+      const ShowcaseSlotItem(
+        date: '06 اکتوبر',
+        token: '#NQP-EL-88',
+        item: 'نیشنل جوسر بلینڈر 3in1',
+        tag: '24 گھنٹے میں ترسیل مکمل ✓',
+        isAvailable: false,
+      ),
+      const ShowcaseSlotItem(
+        date: '08 اکتوبر',
+        token: '#NQP-404',
+        item: 'Infinix Hot 40 (256GB)',
+        tag: 'ہینڈ اوور مکمل ✓',
+        isAvailable: false,
+      ),
+      const ShowcaseSlotItem(
+        date: '12 اکتوبر',
+        token: '#NQP-408',
+        item: 'Tecno Spark 20',
+        tag: 'ضمانتی تصدیق جاری ⏳',
+        isAvailable: false,
+      ),
+      ShowcaseSlotItem(
+        date: '15 اکتوبر',
+        token: 'سلاٹ نمبر 07',
+        item: 'اسمارٹ فون (کوٹہ نشست خالی)',
+        tag: 'دکان پر آ کر $availablePlansCount پلانز سے بک کریں 🟢',
+        isAvailable: true,
+      ),
+      ShowcaseSlotItem(
+        date: '18 اکتوبر',
+        token: 'سلاٹ نمبر 08',
+        item: 'اسمارٹ فون (کوٹہ نشست خالی)',
+        tag: 'دکان پر آ کر $availablePlansCount پلانز سے بک کریں 🟢',
+        isAvailable: true,
+      ),
+    ];
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/shop_showcase_controller.dart">
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/order_receipt_sheet_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_token_header_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_summary_rows_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/receipt_schedule_table_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/bank_cheque_input_box_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/grace_period_note_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/submit_order_button_ui.dart';
-class OrderReceiptSheet extends StatefulWidget {
+import 'services/showcase_config_service.dart';
+import 'services/plan_counter_service.dart';
+import 'services/live_quota_service.dart';
+import 'services/slots_feed_service.dart';
+import 'services/showcase_audio_service.dart';
+import 'services/showcase_share_service.dart';
+class ShopShowcaseController extends ChangeNotifier {
+  final ShowcaseAudioService _audioService = ShowcaseAudioService();
+  bool isLoading = true;
+  Map<String, dynamic> config = {};
+  int availablePlansCount = 36;
+  Map<String, int> quotaMetrics = {'total': 10, 'delivered': 5, 'remaining': 5};
+  List<ShowcaseSlotItem> slots = [];
+  List<Map<String, dynamic>> mediaList = [];
+  bool get isAudioPlaying => _audioService.isPlaying;
+  ShopShowcaseController() {
+    initData();
+  }
+  Future<void> initData() async {
+    isLoading = true;
+    notifyListeners();
+    config = await ShowcaseConfigService.loadShowcaseConfig();
+    availablePlansCount = await PlanCounterService.getAvailablePlansCount();
+    quotaMetrics = await LiveQuotaService.getMonthlyQuotaMetrics();
+    slots = SlotsFeedService.getLiveSlotsFeed(availablePlansCount);
+    if (config['media_showcase'] is List) {
+      mediaList = (config['media_showcase'] as List)
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    isLoading = false;
+    notifyListeners();
+  }
+  void toggleAudio() {
+    _audioService.togglePlayState();
+    notifyListeners();
+  }
+  String getShareContent() {
+    final shop = (config['shop_info'] as Map?) ?? {};
+    return ShowcaseShareService.generateShareText(
+      shopName: shop['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ',
+      patronName: shop['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
+      address: shop['address']?.toString() ?? 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
+      whatsapp: shop['whatsapp']?.toString() ?? '0323 1988351',
+      plansCount: availablePlansCount,
+    );
+  }
+  @override
+  void dispose() {
+    _audioService.stop();
+    super.dispose();
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart">
+import 'package:flutter/material.dart';
+import 'shop_showcase_controller.dart';
+import 'components/patron_hero_card_ui.dart';
+import 'components/audio_announcement_bar_ui.dart';
+import 'components/live_metrics_ribbon_ui.dart';
+import 'components/privacy_shield_card_ui.dart';
+import 'components/prize_draw_card_ui.dart';
+import 'components/products_wings_card_ui.dart';
+import 'components/large_slots_schedule_ui.dart';
+import 'components/media_showcase_row_ui.dart';
+import 'components/share_notice_card_ui.dart';
+import 'components/contact_location_card_ui.dart';
+class ShopShowcasePortalPage extends StatefulWidget {
+  const ShopShowcasePortalPage({super.key});
+  @override
+  State<ShopShowcasePortalPage> createState() => _ShopShowcasePortalPageState();
+}
+class _ShopShowcasePortalPageState extends State<ShopShowcasePortalPage> {
+  late final ShopShowcaseController controller;
+  @override
+  void initState() {
+    super.initState();
+    controller = ShopShowcaseController();
+  }
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        if (controller.isLoading) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF8FAFC),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF0D9488)),
+            ),
+          );
+        }
+        final config = controller.config;
+        final shopInfo = (config['shop_info'] as Map?) ?? {};
+        final audioInfo = (config['audio_announcement'] as Map?) ?? {};
+        final policies = (config['policies'] as Map?) ?? {};
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF8FAFC),
+            appBar: AppBar(
+              elevation: 2,
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    shopInfo['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ - لائیو پورٹل',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const Text(
+                    'قائم پور، تحصیل حاصل پور',
+                    style: TextStyle(
+                      color: Color(0xFFFDE68A),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF14B8A6), width: 0.8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF2DD4BF)),
+                      SizedBox(width: 5),
+                      Text(
+                        'لائیو کاؤنٹر',
+                        style: TextStyle(color: Color(0xFF5EEAD4), fontSize: 10.5, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            body: ListView(
+              padding: const EdgeInsets.all(14),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                PatronHeroCardUi(
+                  patronName: shopInfo['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
+                  patronRole: shopInfo['patron_role']?.toString() ?? 'پروپرائیٹر و نگرانِ اعلیٰ',
+                  shopName: shopInfo['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ',
+                  address: shopInfo['address']?.toString() ?? 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
+                ),
+                const SizedBox(height: 14),
+                AudioAnnouncementBarUi(
+                  isPlaying: controller.isAudioPlaying,
+                  patronName: shopInfo['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
+                  durationText: audioInfo['duration_text']?.toString() ?? '0:42 سیکنڈ',
+                  onTogglePlay: controller.toggleAudio,
+                ),
+                const SizedBox(height: 14),
+                LiveMetricsRibbonUi(
+                  totalQuota: controller.quotaMetrics['total'] ?? 10,
+                  deliveredCount: controller.quotaMetrics['delivered'] ?? 5,
+                ),
+                const SizedBox(height: 14),
+                PrivacyShieldCardUi(
+                  title: policies['privacy_title']?.toString() ?? '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت',
+                  description: policies['privacy_desc']?.toString() ?? '',
+                ),
+                const SizedBox(height: 14),
+                PrizeDrawCardUi(
+                  title: policies['prize_title']?.toString() ?? '🎁 ماہانہ انعامی قرعہ اندازی و زیرو ایڈوانس',
+                  description: policies['prize_desc']?.toString() ?? '',
+                ),
+                const SizedBox(height: 16),
+                ProductsWingsCardUi(plansCount: controller.availablePlansCount),
+                const SizedBox(height: 16),
+                LargeSlotsScheduleUi(slots: controller.slots),
+                const SizedBox(height: 16),
+                MediaShowcaseRowUi(mediaList: controller.mediaList),
+                const SizedBox(height: 16),
+                ShareNoticeCardUi(
+                  onSharePressed: () {
+                    final text = controller.getShareContent();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('شیئرنگ مواد تیار ہو گیا: $text')),
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
+                ContactLocationCardUi(
+                  whatsappNumber: shopInfo['whatsapp']?.toString() ?? '0323 1988351',
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/shop_showcase_portal/shop_showcase_args.dart">
+class OrderReceiptArgs {
   final Map<String, dynamic> plan;
   final String deviceName;
   final String? customerPhone;
   final List<Map<String, dynamic>> installmentSchedule;
   final String? sourceMode;
   final String? imeiNo;
-  const OrderReceiptSheet({
-    super.key,
+  const OrderReceiptArgs({
     required this.plan,
     required this.deviceName,
     this.customerPhone,
@@ -1617,1039 +1360,34 @@ class OrderReceiptSheet extends StatefulWidget {
     this.sourceMode,
     this.imeiNo,
   });
-  static void show(
-    BuildContext context, {
-    required Map<String, dynamic> plan,
-    required String deviceName,
-    String? customerPhone,
-    required List<Map<String, dynamic>> installmentSchedule,
-    String? sourceMode,
-    String? imeiNo,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => OrderReceiptSheet(
-        plan: plan,
-        deviceName: deviceName,
-        customerPhone: customerPhone,
-        installmentSchedule: installmentSchedule,
-        sourceMode: sourceMode,
-        imeiNo: imeiNo,
-      ),
-    );
+  Map<String, dynamic> toMap() {
+    return {
+      'plan': plan,
+      'deviceName': deviceName,
+      'customerPhone': customerPhone,
+      'installmentSchedule': installmentSchedule,
+      'sourceMode': sourceMode,
+      'imeiNo': imeiNo,
+    };
   }
-  @override
-  State<OrderReceiptSheet> createState() => _OrderReceiptSheetState();
-}
-class _OrderReceiptSheetState extends State<OrderReceiptSheet> {
-  late final OrderReceiptSheetController _c;
-  @override
-  void initState() {
-    super.initState();
-    _c = OrderReceiptSheetController(plan: widget.plan);
-  }
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: ListenableBuilder(
-        listenable: _c,
-        builder: (context, _) => Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.90),
-          margin: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20)],
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(10)))),
-                const SizedBox(height: 12),
-                ReceiptTokenHeaderUi(tokenNo: _c.tokenNo),
-                const Divider(height: 20, color: Color(0xFFE2E8F0)),
-                ReceiptSummaryRowsUi(
-                  deviceName: widget.deviceName,
-                  guaranteeTitle: _c.isChequePlan ? 'بینک چیک گارنٹی' : 'اشٹام پرنوٹ ضمانت',
-                  months: _c.months,
-                  advance: _c.advance,
-                  monthly: _c.monthly,
-                  totalInstallmentSum: _c.totalInstallmentSum,
-                ),
-                const SizedBox(height: 12),
-                ReceiptScheduleTableUi(installmentSchedule: widget.installmentSchedule),
-                if (_c.isChequePlan) ...[
-                  const SizedBox(height: 12),
-                  BankChequeInputBoxUi(bankNameCtrl: _c.bankNameCtrl, chequeNoCtrl: _c.chequeNoCtrl),
-                ],
-                if (_c.localError != null) ...[
-                  const SizedBox(height: 8),
-                  Text(_c.localError!, style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
-                ],
-                const SizedBox(height: 12),
-                const GracePeriodNoteUi(),
-                const SizedBox(height: 14),
-                SubmitOrderButtonUi(
-                  onSubmit: _c.isSubmitting ? () {} : () => _c.submitOrder(
-                    context: context,
-                    deviceName: widget.deviceName,
-                    customerPhone: widget.customerPhone,
-                    sourceMode: widget.sourceMode,
-                    imeiNo: widget.imeiNo,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/advance_option_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class AdvanceOptionFilterBarUi extends StatelessWidget {
-  final String selectedFilter;
-  final int totalCount;
-  final int zeroAdvCount;
-  final int withAdvCount;
-  final Function(String) onSelect;
-  const AdvanceOptionFilterBarUi({
-    super.key,
-    required this.selectedFilter,
-    required this.totalCount,
-    required this.zeroAdvCount,
-    required this.withAdvCount,
-    required this.onSelect,
-  });
-  Widget _chip(String label, String value) {
-    final active = selectedFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('تمام آپشنز', 'ALL'),
-          if (zeroAdvCount > 0) _chip('⭐ بغیر ایڈوانس ($zeroAdvCount)', 'ZERO_ADV'),
-          if (withAdvCount > 0) _chip('👛 ایڈوانس کے ساتھ ($withAdvCount)', 'WITH_ADV'),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/custom_advance_input_box_ui.dart">
-import 'package:flutter/material.dart';
-class CustomAdvanceInputBoxUi extends StatefulWidget {
-  final int minAdvanceRequired;
-  final TextEditingController controller;
-  final Function(int) onChanged;
-  const CustomAdvanceInputBoxUi({
-    super.key,
-    required this.minAdvanceRequired,
-    required this.controller,
-    required this.onChanged,
-  });
-  @override
-  State<CustomAdvanceInputBoxUi> createState() => _CustomAdvanceInputBoxUiState();
-}
-class _CustomAdvanceInputBoxUiState extends State<CustomAdvanceInputBoxUi> {
-  bool get _isInvalid {
-    final int val = int.tryParse(widget.controller.text.trim()) ?? 0;
-    return val > 0 && val < widget.minAdvanceRequired;
-  }
-  @override
-  Widget build(BuildContext context) {
-    final bool invalid = _isInvalid;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'ایڈوانس رقم تبدیل کریں (قسط کم کرنے کے لیے):',
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'کم از کم ضروری ایڈوانس: Rs. ${widget.minAdvanceRequired}',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: invalid ? FontWeight.bold : FontWeight.normal,
-                      color: invalid ? const Color(0xFFDC2626) : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 125,
-              height: 38,
-              child: TextField(
-                controller: widget.controller,
-                keyboardType: TextInputType.number,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: invalid ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
-                ),
-                decoration: InputDecoration(
-                  prefixText: 'Rs. ',
-                  prefixStyle: TextStyle(
-                    fontSize: 11,
-                    color: invalid ? const Color(0xFFDC2626) : const Color(0xFF64748B),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: invalid ? const Color(0xFFDC2626) : const Color(0xFFCBD5E1),
-                      width: invalid ? 1.5 : 1.0,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: invalid ? const Color(0xFFDC2626) : const Color(0xFF0D9488),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                onChanged: (val) {
-                  setState(() {});
-                  final int v = int.tryParse(val.trim()) ?? 0;
-                  if (v == 0 || v >= widget.minAdvanceRequired) {
-                    widget.onChanged(v);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-        if (invalid) ...[
-          const SizedBox(height: 4),
-          Text(
-            'درج کردہ رقم کم از کم ایڈوانس (Rs. ${widget.minAdvanceRequired}) سے کم ہے!',
-            style: const TextStyle(fontSize: 9.5, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
-          ),
-        ],
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/duration_seven_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class DurationSevenFilterBarUi extends StatelessWidget {
-  final int selectedDuration;
-  final List<int> allowedDurations;
-  final Function(int) onSelect;
-  const DurationSevenFilterBarUi({
-    super.key,
-    required this.selectedDuration,
-    required this.allowedDurations,
-    required this.onSelect,
-  });
-  Widget _chip(String label, int value) {
-    final active = selectedDuration == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1),
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('تمام مدتیں', 0),
-          ...allowedDurations.map(
-            (duration) => _chip('$duration ماہ', duration),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/guarantee_filter_bar_ui.dart">
-import 'package:flutter/material.dart';
-class GuaranteeFilterBarUi extends StatelessWidget {
-  final String selectedFilter;
-  final int totalCount;
-  final int chequeCount;
-  final int stampCount;
-  final Function(String) onSelect;
-  const GuaranteeFilterBarUi({
-    super.key,
-    required this.selectedFilter,
-    required this.totalCount,
-    required this.chequeCount,
-    required this.stampCount,
-    required this.onSelect,
-  });
-  Widget _chip(String label, String value) {
-    final active = selectedFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: () => onSelect(value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: active ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              color: active ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _chip('سبھی ضمانتیں ($totalCount)', 'ALL'),
-          if (chequeCount > 0) _chip('🏦 بینک چیک گارنٹی ($chequeCount)', 'BANK_CHEQUE'),
-          if (stampCount > 0) _chip('⚖️ قانونی اشٹام و پرنوٹ ($stampCount)', 'LEGAL_STAMP'),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/hero_image_swiper_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/full_screen_zoom_gallery_ui.dart';
-class HeroImageSwiperUi extends StatelessWidget {
-  final List<String> images;
-  const HeroImageSwiperUi({super.key, required this.images});
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SizedBox(
-          height: 180,
-          child: PageView.builder(
-            itemCount: images.isNotEmpty ? images.length : 1,
-            itemBuilder: (ctx, i) {
-              final String url = images.isNotEmpty ? images[i] : '';
-              return InkWell(
-                onTap: () => FullScreenZoomGalleryUi.show(context, i, images),
-                child: Container(
-                  color: const Color(0xFFF8FAFC),
-                  child: Image.network(
-                    url,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(Icons.phone_android_rounded, size: 70, color: Color(0xFF0D9488)),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        Positioned(
-          bottom: 8,
-          left: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.zoom_in_rounded, size: 12, color: Colors.white),
-                SizedBox(width: 4),
-                Text('بڑی تصویر دیکھنے کے لیے ٹیپ کریں', style: TextStyle(color: Colors.white, fontSize: 9.5)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart">
-import 'package:flutter/material.dart';
-class IndividualPlanRowUi extends StatelessWidget {
-  final Map<String, dynamic> plan;
-  final VoidCallback onOrderTap;
-  const IndividualPlanRowUi({
-    super.key,
-    required this.plan,
-    required this.onOrderTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final bool isCheque = plan['guarantee'] == 'BANK_CHEQUE';
-    final bool hasAdv = plan['hasAdvance'] as bool;
-    final int advance = plan['advance'] as int;
-    final int monthly = plan['monthly'] as int;
-    final int months = plan['months'] as int;
-    final int totalContractPrice = (plan['totalContract'] as int?) ??
-        (advance + (monthly * (months - 1)));
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isCheque ? const Color(0xFFECFDF5) : const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                color: isCheque ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE),
-              ),
-            ),
-            child: Icon(
-              isCheque ? Icons.account_balance_rounded : Icons.balance_rounded,
-              size: 19,
-              color: isCheque ? const Color(0xFF059669) : const Color(0xFF3730A3),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 3,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      '$months ماہ کی مدت',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: const Color(0xFFA7F3D0)),
-                      ),
-                      child: Text(
-                        'کل: Rs. $totalContractPrice',
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF065F46),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 2,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: isCheque ? const Color(0xFFDCFCE7) : const Color(0xFFE0E7FF),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isCheque ? 'بینک چیک' : 'اشٹام پرنوٹ',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: isCheque ? const Color(0xFF047857) : const Color(0xFF3730A3),
-                        ),
-                      ),
-                    ),
-                    const Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 10)),
-                    Text(
-                      hasAdv ? 'ایڈوانس: Rs. $advance' : '⭐ بغیر ایڈوانس',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: hasAdv ? const Color(0xFFB45309) : const Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Rs. $monthly',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0D9488),
-                ),
-              ),
-              const Text(
-                'ماہانہ قسط',
-                style: TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              ElevatedButton(
-                onPressed: onOrderTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  foregroundColor: Colors.white,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-                child: const Text(
-                  'آرڈر شیڈول',
-                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/stock_device_hero_card_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/hero_image_swiper_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/device_spec_pills_ui.dart';
-class StockDeviceHeroCardUi extends StatelessWidget {
-  final Map<String, dynamic> device;
-  final List<String> images;
-  const StockDeviceHeroCardUi({
-    super.key,
-    required this.device,
-    required this.images,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final bool hasImages = images.isNotEmpty && images.first.trim().isNotEmpty;
-    final String imei = device['imeiNo']?.toString() ?? '';
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Column(
-        children: [
-          if (hasImages)
-            HeroImageSwiperUi(images: images)
-          else
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Icon(Icons.phone_android_rounded, size: 54, color: Color(0xFF94A3B8)),
-            ),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  device['name'] ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                ),
-                const SizedBox(height: 8),
-                DeviceSpecPillsUi(
-                  ramRom: device['ramRom'] ?? '',
-                  condition: device['condition'] ?? '',
-                  warranty: device['warranty'] ?? 'بغیر وارنٹی',
-                ),
-                if (imei.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'IMEI: $imei',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/components/vip_28_promotional_banner_ui.dart">
-import 'package:flutter/material.dart';
-class Vip28PromotionalBannerUi extends StatelessWidget {
-  final int totalCount;
-  final int durationCount;
-  const Vip28PromotionalBannerUi({
-    super.key,
-    required this.totalCount,
-    required this.durationCount,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFDE68A).withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFDE68A),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '$totalCount',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'نایاب $totalCount اقساطی پیکجز کا مکمل جدول',
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFFDE68A)),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  '$durationCount مدتیں • آسان چیک و اشٹام پلانز • زیرو ایڈوانس سہولت',
-                  style: const TextStyle(fontSize: 9.5, color: Colors.white70, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/device_plan_detail_controller.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_filter_sort_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_schedule_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
-class DevicePlanDetailController extends ChangeNotifier {
-  final CalculatorConfigService _configService = CalculatorConfigService();
-  int selectedDuration = 0;
-  String selectedGuaranteeFilter = 'ALL';
-  String selectedAdvanceFilter = 'ALL';
-  int userCustomAdvance = 0;
-  String activeSort = 'DEFAULT';
-  final TextEditingController customAdvanceCtrl = TextEditingController();
-  CalculatorConfigModel get config => _configService.getConfig();
-  void init(int initialAdvance) {
-    userCustomAdvance = initialAdvance;
-    customAdvanceCtrl.text = initialAdvance > 0 ? initialAdvance.toString() : '';
-  }
-  void setGuaranteeFilter(String filter) {
-    selectedGuaranteeFilter = filter;
-    notifyListeners();
-  }
-  void setAdvanceFilter(String filter) {
-    selectedAdvanceFilter = filter;
-    notifyListeners();
-  }
-  void setDuration(int duration) {
-    selectedDuration = duration;
-    notifyListeners();
-  }
-  void updateCustomAdvance(int amount) {
-    userCustomAdvance = amount;
-    notifyListeners();
-  }
-  void setSort(String sortKey) {
-    activeSort = sortKey;
-    notifyListeners();
-  }
-  int getDynamicMinAdvance(int baseValue) {
-    final currentConfig = config;
-    final int principal = PlanMathService.calculatePrincipal(
-      baseValue: baseValue,
-      config: currentConfig,
-    );
-    final int minDuration = currentConfig.allowedDurations.isNotEmpty
-        ? currentConfig.allowedDurations.first
-        : 6;
-    final int total = PlanMathService.calculateTotalContractPrice(
-      principal: principal,
-      months: minDuration,
-      isCheque: true,
-      config: currentConfig,
-    );
-    return PlanMathService.calculateMinAdvance(
-      totalContractPrice: total,
-      months: minDuration,
-      config: currentConfig,
-    );
-  }
-  List<Map<String, dynamic>> getAllRawPlans(int baseValue) {
-    return PlanGeneratorService.generateAllPlans(
-      baseValue: baseValue,
-      userCustomAdvance: userCustomAdvance,
-      config: config,
-    );
-  }
-  List<Map<String, dynamic>> getFilteredPlans(List<Map<String, dynamic>> allPlans) {
-    return PlanFilterSortService.filterAndSort(
-      allPlans: allPlans,
-      guaranteeFilter: selectedGuaranteeFilter,
-      advanceFilter: selectedAdvanceFilter,
-      durationFilter: selectedDuration,
-      sortKey: activeSort,
-    );
-  }
-  List<Map<String, dynamic>> generateSchedule({
-    required int months,
-    required int monthlyAmount,
-    required int advancePaid,
-  }) {
-    return PlanScheduleService.generateSchedule(
-      totalMonths: months,
-      monthlyAmount: monthlyAmount,
-      advancePaid: advancePaid,
-      config: config,
-    );
-  }
-  @override
-  void dispose() {
-    customAdvanceCtrl.dispose();
-    super.dispose();
-  }
-}
-</file>
-
-<file path="lib/customer_side/order_receipt_sheet/order_receipt_sheet_controller.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/services/purchase_order_payload_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/components/sign_up_barrier_dialog_ui.dart';
-class OrderReceiptSheetController extends ChangeNotifier {
-  final Map<String, dynamic> plan;
-  final TextEditingController bankNameCtrl = TextEditingController();
-  final TextEditingController chequeNoCtrl = TextEditingController();
-  late final int advance;
-  late final int monthly;
-  late final int months;
-  late final int totalInstallmentSum;
-  late final bool isChequePlan;
-  late final String tokenNo;
-  String? localError;
-  bool isSubmitting = false;
-  OrderReceiptSheetController({required this.plan}) {
-    advance = (plan['advance'] as num?)?.toInt() ?? 0;
-    monthly = (plan['monthly'] as num?)?.toInt() ?? 0;
-    months = (plan['months'] as num?)?.toInt() ?? 6;
-    totalInstallmentSum = (plan['totalContract'] as num?)?.toInt() ??
-        (advance + (monthly * ((months - 1) > 0 ? (months - 1) : 1)));
-    isChequePlan = plan['guarantee'] == 'BANK_CHEQUE';
-    tokenNo = 'NQP-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-  }
-  @override
-  void dispose() {
-    bankNameCtrl.dispose();
-    chequeNoCtrl.dispose();
-    super.dispose();
-  }
-  Future<void> submitOrder({
-    required BuildContext context,
-    required String deviceName,
-    required String? customerPhone,
-    required String? sourceMode,
-    required String? imeiNo,
-  }) async {
-    if (isChequePlan && (bankNameCtrl.text.trim().isEmpty || chequeNoCtrl.text.trim().isEmpty)) {
-      localError = 'برائے مہربانی بینک کا نام اور چیک نمبر درج کریں!';
-      notifyListeners();
-      return;
-    }
-    if (customerPhone == null || customerPhone.trim().isEmpty) {
-      Navigator.pop(context);
-      SignUpBarrierDialogUi.show(context);
-      return;
-    }
-    isSubmitting = true;
-    localError = null;
-    notifyListeners();
-    try {
-      final payload = PurchaseOrderPayloadService.buildOrderPayload(
-        docId: tokenNo,
-        customerPhone: customerPhone.trim(),
-        sourceMode: sourceMode ?? 'STOCK',
-        itemName: deviceName,
-        imeiNo: imeiNo,
-        guaranteeType: plan['guarantee'] ?? 'LEGAL_STAMP',
-        bankName: bankNameCtrl.text,
-        chequeNo: chequeNoCtrl.text,
-        totalMonths: months,
-        advance: advance,
-        monthlyAmount: monthly,
-        totalContractAmount: totalInstallmentSum,
-        orderDateTime: DateTime.now(),
+  factory OrderReceiptArgs.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return const OrderReceiptArgs(
+        plan: {},
+        deviceName: '',
+        installmentSchedule: [],
       );
-      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
-      await box.put(tokenNo, payload);
-      MasterSyncHub.pushAllPendingRecords().catchError((_) {});
-      if (!context.mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں کامیابی سے بن گیا!'),
-          backgroundColor: const Color(0xFF059669),
-        ),
-      );
-    } catch (e) {
-      isSubmitting = false;
-      localError = 'آرڈر محفوظ کرتے وقت مسئلہ پیش آیا، دوبارہ کوشش کریں۔';
-      notifyListeners();
     }
-  }
-}
-</file>
-
-<file path="lib/customer_side/device_plan_detail_page/device_plan_detail_page.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/device_plan_detail_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/detail_app_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/stock_device_hero_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/custom_estimate_hero_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/vip_28_promotional_banner_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/plan_filter_section_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/plan_sorting_toolbar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/bill_style_schedule_header_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/components/individual_plan_row_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_sheet/order_receipt_sheet.dart';
-class DevicePlanDetailPage extends StatefulWidget {
-  final Map<String, dynamic> device;
-  final String? customerPhone;
-  const DevicePlanDetailPage({super.key, required this.device, this.customerPhone});
-  @override
-  State<DevicePlanDetailPage> createState() => _DevicePlanDetailPageState();
-}
-class _DevicePlanDetailPageState extends State<DevicePlanDetailPage> {
-  late final DevicePlanDetailController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = DevicePlanDetailController();
-    final int initAdv = (widget.device['userCustomAdvance'] as int?) ??
-        (widget.device['minAdvanceRequired'] as int?) ??
-        (widget.device['minAdvance'] as int?) ?? 0;
-    _controller.init(initAdv);
-  }
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-  void _openOrderSheet(Map<String, dynamic> plan) {
-    final schedule = _controller.generateSchedule(
-      months: plan['months'],
-      monthlyAmount: plan['monthly'],
-      advancePaid: plan['advance'],
-    );
-    OrderReceiptSheet.show(
-      context,
-      plan: plan,
-      deviceName: widget.device['name'] ?? '',
-      customerPhone: widget.customerPhone,
-      installmentSchedule: schedule,
-      sourceMode: widget.device['isCustomEstimate'] == true ? 'CUSTOM_ESTIMATE' : 'STOCK',
-      imeiNo: widget.device['imeiNo']?.toString() ?? widget.device['imei']?.toString(),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    final int baseValue = (widget.device['baseValue'] as int?) ?? 0;
-    final List<String> images = (widget.device['images'] as List?)?.cast<String>() ?? [];
-    final bool isCustomEstimate = widget.device['isCustomEstimate'] == true;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          final rawPlans = _controller.getAllRawPlans(baseValue);
-          final plans = _controller.getFilteredPlans(rawPlans);
-          final int calculatedMinAdv = _controller.getDynamicMinAdvance(baseValue);
-          final int displayedAdv = _controller.userCustomAdvance > 0 ? _controller.userCustomAdvance : calculatedMinAdv;
-          return Scaffold(
-            backgroundColor: const Color(0xFFF1F5F9),
-            appBar: DetailAppBarUi(
-              title: widget.device['name'] ?? 'موبائل پلان',
-              subtitle: 'نایاب قسط پوائنٹ • ${rawPlans.length} سمارٹ اقساطی پیکجز',
-            ),
-            body: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isCustomEstimate)
-                    StockDeviceHeroCardUi(device: widget.device, images: images)
-                  else
-                    CustomEstimateHeroCardUi(
-                      title: widget.device['name'] ?? 'اپنی مرضی کی قیمت کا تخمینہ',
-                      baseValue: baseValue,
-                      displayedAdvance: displayedAdv,
-                    ),
-                  const SizedBox(height: 14),
-                  Vip28PromotionalBannerUi(
-                    totalCount: rawPlans.length,
-                    durationCount: _controller.config.allowedDurations.length,
-                  ),
-                  const SizedBox(height: 10),
-                  PlanFilterSectionCardUi(
-                    controller: _controller,
-                    totalPossiblePlans: rawPlans.length,
-                    chequeCount: rawPlans.where((p) => p['guarantee'] == 'BANK_CHEQUE').length,
-                    stampCount: rawPlans.where((p) => p['guarantee'] == 'LEGAL_STAMP').length,
-                    zeroAdvCount: rawPlans.where((p) => p['hasAdvance'] == false).length,
-                    withAdvCount: rawPlans.where((p) => p['hasAdvance'] == true).length,
-                    calculatedMinAdv: calculatedMinAdv,
-                  ),
-                  const SizedBox(height: 12),
-                  PlanSortingToolbarUi(activeSort: _controller.activeSort, onSortChanged: _controller.setSort),
-                  const SizedBox(height: 10),
-                  BillStyleScheduleHeaderUi(count: plans.length),
-                  const SizedBox(height: 8),
-                  ...plans.map((plan) => IndividualPlanRowUi(plan: plan, onOrderTap: () => _openOrderSheet(plan))),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+    return OrderReceiptArgs(
+      plan: (map['plan'] as Map<dynamic, dynamic>?)?.cast<String, dynamic>() ?? {},
+      deviceName: map['deviceName']?.toString() ?? '',
+      customerPhone: map['customerPhone']?.toString(),
+      installmentSchedule: (map['installmentSchedule'] as List?)
+              ?.map((e) => (e as Map<dynamic, dynamic>).cast<String, dynamic>())
+              .toList() ??
+          [],
+      sourceMode: map['sourceMode']?.toString(),
+      imeiNo: map['imeiNo']?.toString(),
     );
   }
 }

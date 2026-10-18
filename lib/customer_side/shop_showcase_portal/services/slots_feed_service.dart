@@ -1,5 +1,3 @@
-// lib/customer_side/shop_showcase_portal/services/slots_feed_service.dart
-
 class ShowcaseSlotItem {
   final String date;
   final String token;
