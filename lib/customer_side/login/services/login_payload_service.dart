@@ -1,5 +1,4 @@
 class LoginPayloadService {
-  /// سیٹنگز باکس کے سیشن کا فلیٹ پے لوڈ (اصل لاگ ان ایگزیکیوشن کے لیے)
   static Map<String, dynamic> buildLoginSessionPayload({
     required String phone,
     required bool rememberMe,
@@ -16,7 +15,6 @@ class LoginPayloadService {
     };
   }
 
-  /// 🎯 شیشہ اسکرین (Benchmark Mirror) کے لیے ٹارگٹڈ باکس پے لوڈ
   static Map<String, dynamic> getBenchmarkPayload() {
     return {
       '1. Session & Preferences (settingsBox)': buildLoginSessionPayload(

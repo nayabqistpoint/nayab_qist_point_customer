@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/database_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/customer_login_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/components/login_header_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/components/login_form_ui.dart';
@@ -7,7 +8,9 @@ import 'package:nayab_qist_point_customer/customer_side/login/components/login_c
 import 'package:nayab_qist_point_customer/customer_side/login/components/login_footer_ui.dart';
 
 class CustomerLoginPage extends StatefulWidget {
-  const CustomerLoginPage({super.key});
+  final CustomerLoginArgs? args;
+
+  const CustomerLoginPage({super.key, this.args});
 
   @override
   State<CustomerLoginPage> createState() => _CustomerLoginPageState();
@@ -20,7 +23,21 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
   void initState() {
     super.initState();
     _controller = CustomerLoginController();
-    _controller.initSavedCredentials();
+    _controller.initSavedCredentials(widget.args?.initialPhone);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalArgs = ModalRoute.of(context)?.settings.arguments;
+    if (modalArgs is CustomerLoginArgs && modalArgs.initialPhone != null) {
+      _controller.phoneController.text = modalArgs.initialPhone!;
+    } else if (modalArgs is Map<String, dynamic>) {
+      final parsed = CustomerLoginArgs.fromMap(modalArgs);
+      if (parsed.initialPhone != null) {
+        _controller.phoneController.text = parsed.initialPhone!;
+      }
+    }
   }
 
   @override
@@ -86,8 +103,8 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                   );
                 }
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem<String>(
+              itemBuilder: (context) => const [
+                PopupMenuItem<String>(
                   value: 'db_monitor',
                   child: Row(
                     children: [

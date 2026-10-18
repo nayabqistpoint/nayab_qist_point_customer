@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/showcase_config_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/plan_counter_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/live_quota_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/shop_showcase_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/slots_feed_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/showcase_audio_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/services/showcase_share_service.dart';
@@ -18,7 +16,7 @@ class ShopShowcaseController extends ChangeNotifier {
 
   bool get isAudioPlaying => _audioService.isPlaying;
 
-  // کلین UI گیٹرز تاکہ پیج کے اندر کوئی میپ یا ہارڈ کوڈڈ سٹرنگ نہ ہو
+  // کلین UI گیٹرز
   Map<String, dynamic> get shopInfo => (config['shop_info'] as Map?)?.cast<String, dynamic>() ?? const {};
   Map<String, dynamic> get audioInfo => (config['audio_announcement'] as Map?)?.cast<String, dynamic>() ?? const {};
   Map<String, dynamic> get policies => (config['policies'] as Map?)?.cast<String, dynamic>() ?? const {};
@@ -43,9 +41,10 @@ class ShopShowcaseController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    config = await ShowcaseConfigService.loadShowcaseConfig();
-    availablePlansCount = await PlanCounterService.getAvailablePlansCount();
-    quotaMetrics = await LiveQuotaService.getMonthlyQuotaMetrics();
+    // تمام ڈیٹا اب صرف اسٹوریج ہینڈلر کے ذریعے محفوظ طریقے سے آ رہا ہے
+    config = await ShopShowcaseStorageHandler.loadShowcaseConfig();
+    availablePlansCount = await ShopShowcaseStorageHandler.getAvailablePlansCount();
+    quotaMetrics = await ShopShowcaseStorageHandler.getMonthlyQuotaMetrics();
     slots = SlotsFeedService.getLiveSlotsFeed(availablePlansCount);
 
     if (config['media_showcase'] is List) {

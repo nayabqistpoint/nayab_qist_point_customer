@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/customer_login_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/customer_ledger_view.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/installment_account_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/installment_args.dart';
@@ -17,6 +19,7 @@ import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order
 import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order_receipt_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart';
+import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_args.dart';
 
 class AppRoutes {
   static const String login = '/';
@@ -34,13 +37,21 @@ class AppRoutes {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case login:
+        final rawArgs = settings.arguments;
+        final CustomerLoginArgs args = rawArgs is CustomerLoginArgs
+            ? rawArgs
+            : CustomerLoginArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
-          builder: (_) => const CustomerLoginPage(),
+          builder: (_) => CustomerLoginPage(args: args),
         );
 
       case customerSignup:
+        final rawArgs = settings.arguments;
+        final CustomerSignupArgs args = rawArgs is CustomerSignupArgs
+            ? rawArgs
+            : CustomerSignupArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
-          builder: (_) => const CustomerSignupPage(),
+          builder: (_) => CustomerSignupPage(args: args),
         );
 
       case ledger:
@@ -116,8 +127,12 @@ class AppRoutes {
         );
 
       case shopShowcase:
+        final rawArgs = settings.arguments;
+        final ShopShowcaseArgs args = rawArgs is ShopShowcaseArgs
+            ? rawArgs
+            : ShopShowcaseArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
-          builder: (_) => const ShopShowcasePortalPage(),
+          builder: (_) => ShopShowcasePortalPage(args: args),
         );
 
       default:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/inspector/floating_inspector_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_app_bar_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_step_tracker_ui.dart';
@@ -9,7 +10,9 @@ import 'package:nayab_qist_point_customer/customer_side/auth/components/step3_gu
 import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_bottom_action_bar_ui.dart';
 
 class CustomerSignupPage extends StatefulWidget {
-  const CustomerSignupPage({super.key});
+  final CustomerSignupArgs? args;
+
+  const CustomerSignupPage({super.key, this.args});
 
   @override
   State<CustomerSignupPage> createState() => _CustomerSignupPageState();
@@ -22,6 +25,19 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
   void initState() {
     super.initState();
     _controller = CustomerSignupController();
+    _controller.initPhone(widget.args?.initialPhone);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalArgs = ModalRoute.of(context)?.settings.arguments;
+    if (modalArgs is CustomerSignupArgs && modalArgs.initialPhone != null) {
+      _controller.initPhone(modalArgs.initialPhone);
+    } else if (modalArgs is Map<String, dynamic>) {
+      final parsed = CustomerSignupArgs.fromMap(modalArgs);
+      _controller.initPhone(parsed.initialPhone);
+    }
   }
 
   @override
@@ -34,7 +50,6 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
     if (_controller.currentStep < 2) {
       _controller.nextStep();
     } else {
-      // 🎯 کنٹرولر کا مرکزی ہینڈلر کال ہوگا جو ویلیڈیشن، رسید شیٹ، ہائیو سروس اور انسپکٹر لاگ سب ایک فلو میں چلائے گا
       _controller.handleFinalSubmit(
         context,
         onSuccess: () {
@@ -80,7 +95,6 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
                 ),
               ],
             ),
-            // 🐛 لائیو پے لوڈ انسپکٹر فلوٹنگ بٹن
             floatingActionButton: FloatingActionButton(
               backgroundColor: const Color(0xFF0F172A),
               mini: true,

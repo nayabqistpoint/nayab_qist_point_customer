@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/app_routes.dart';
 import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order_receipt_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_model.dart';
-import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/calculator_config_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/device_plan_detail_storage_handler.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_generator_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_filter_sort_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_schedule_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/device_plan_detail_page/services/plan_math_service.dart';
 
 class DevicePlanDetailController extends ChangeNotifier {
-  final CalculatorConfigService _configService = CalculatorConfigService();
   int selectedDuration = 0;
   String selectedGuaranteeFilter = 'ALL';
   String selectedAdvanceFilter = 'ALL';
@@ -17,7 +16,7 @@ class DevicePlanDetailController extends ChangeNotifier {
   String activeSort = 'DEFAULT';
   final TextEditingController customAdvanceCtrl = TextEditingController();
 
-  CalculatorConfigModel get config => _configService.getConfig();
+  CalculatorConfigModel get config => DevicePlanDetailStorageHandler.getCalculatorConfig();
 
   void init(int initialAdvance) {
     userCustomAdvance = initialAdvance;

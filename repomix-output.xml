@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/shop_showcase_portal
+- Only files matching these patterns are included: lib/customer_side/auth
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -47,109 +47,238 @@ The content is organized as follows:
 <directory_structure>
 lib/
   customer_side/
-    shop_showcase_portal/
+    auth/
       components/
-        audio_announcement_bar_ui.dart
-        contact_location_card_ui.dart
-        large_slots_schedule_ui.dart
-        live_metrics_ribbon_ui.dart
-        media_showcase_row_ui.dart
-        patron_hero_card_ui.dart
-        privacy_shield_card_ui.dart
-        prize_draw_card_ui.dart
-        products_wings_card_ui.dart
-        share_notice_card_ui.dart
+        audio_record_tile_ui.dart
+        guarantor_info_card_ui.dart
+        legal_agreement_card_ui.dart
+        signup_app_bar_ui.dart
+        signup_bottom_action_bar_ui.dart
+        signup_step_tracker_ui.dart
+        step1_customer_info_ui.dart
+        step2_customer_media_ui.dart
+        step3_guarantor_and_terms_ui.dart
       services/
-        live_quota_service.dart
-        plan_counter_service.dart
-        showcase_audio_service.dart
-        showcase_config_service.dart
-        showcase_share_service.dart
-        slots_feed_service.dart
-      shop_showcase_args.dart
-      shop_showcase_controller.dart
-      shop_showcase_portal_page.dart
+        payload_builders/
+          customer_payload_builder.dart
+          guarantor_payload_builder.dart
+          media_payload_builder.dart
+          user_auth_payload_builder.dart
+        signup_media_service.dart
+        signup_payload_service.dart
+        signup_storage_handler.dart
+        signup_submit_service.dart
+      customer_signup_args.dart
+      customer_signup_controller.dart
+      customer_signup_page.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/shop_showcase_portal/components/audio_announcement_bar_ui.dart">
+<file path="lib/customer_side/auth/components/legal_agreement_card_ui.dart">
 import 'package:flutter/material.dart';
-class AudioAnnouncementBarUi extends StatelessWidget {
-  final bool isPlaying;
-  final String patronName;
-  final String durationText;
-  final VoidCallback onTogglePlay;
-  const AudioAnnouncementBarUi({
+class LegalAgreementCardUi extends StatelessWidget {
+  final bool agreementAccepted;
+  final ValueChanged<bool?> onAgreementChanged;
+  const LegalAgreementCardUi({
     super.key,
-    required this.isPlaying,
-    required this.patronName,
-    required this.durationText,
-    required this.onTogglePlay,
+    required this.agreementAccepted,
+    required this.onAgreementChanged,
   });
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.5), width: 1.3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF059669).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: onTogglePlay,
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF334155)],
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
-                ],
+                child: const Icon(Icons.gavel_rounded, color: Color(0xFFFDE68A), size: 17),
               ),
-              child: Icon(
-                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: const Color(0xFFFDE68A),
-                size: 26,
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'قانونی اقرار نامہ و ضابطہ اخلاق',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: const Text(
+                  'لازمی شرط',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 18, color: Color(0xFFCBD5E1)),
+          _buildPoint('1', 'میں حلفاً اقرار کرتا ہوں کہ تمام کوائف اور شناختی دستاویزات بالکل درست اور اصلی ہیں۔'),
+          const SizedBox(height: 7),
+          _buildPoint('2', 'میں نایاب قسط پوائنٹ کے جملہ اقساطی قوانین اور مقررہ تاریخ پر ماہانہ ادائیگی کا پابند رہوں گا۔'),
+          const SizedBox(height: 7),
+          _buildPoint('3', 'جھوٹی معلومات کی صورت میں ادارے کو تعزیرات دفعہ 420 ت پ کے تحت قانونی کارروائی، ضبطی اور یکمشت ریکوری کا مکمل حق ہوگا۔', isWarning: true),
+          const SizedBox(height: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onAgreementChanged(!agreementAccepted),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: agreementAccepted ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: agreementAccepted ? const Color(0xFF059669) : const Color(0xFFCBD5E1),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: agreementAccepted,
+                    activeColor: const Color(0xFF059669),
+                    checkColor: Colors.white,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: onAgreementChanged,
+                  ),
+                  const SizedBox(width: 4),
+                  const Expanded(
+                    child: Text(
+                      'میں نے تمام شرائط پڑھ کر حلفاً تسلیم کر لی ہیں*',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF065F46)),
+                    ),
+                  ),
+                  if (agreementAccepted)
+                    const Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 18),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+        ],
+      ),
+    );
+  }
+  Widget _buildPoint(String num, String text, {bool isWarning = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 17,
+          height: 17,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isWarning ? const Color(0xFFFEE2E2) : const Color(0xFFE0F2FE),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            num,
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.bold,
+              color: isWarning ? const Color(0xFFDC2626) : const Color(0xFF0369A1),
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.45,
+              fontWeight: isWarning ? FontWeight.bold : FontWeight.w600,
+              color: isWarning ? const Color(0xFFB91C1C) : const Color(0xFF334155),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/components/signup_app_bar_ui.dart">
+import 'package:flutter/material.dart';
+class SignupAppBarUi extends StatelessWidget implements PreferredSizeWidget {
+  const SignupAppBarUi({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      elevation: 2,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          ),
+        ),
+      ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF059669).withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFDE68A), width: 1.1),
+            ),
+            child: const Icon(Icons.verified_user_rounded, color: Color(0xFFFDE68A), size: 18),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'صوتی پیغام: $patronName',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      isPlaying ? 'چل رہا ہے...' : durationText,
-                      style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                Text(
+                  'رجسٹریشن برائے اقساط کھاتہ',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  '36 اقساط پلانز، فوری الیکٹرانکس فراہمی اور کسٹمر رازداری پالیسی کی تفصیل سنیں',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                SizedBox(height: 1),
+                Text(
+                  'نایاب قسط پوائنٹ (قائم پور) • ڈیجیٹل پورٹل',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: Color(0xFFFDE68A),
+                    fontWeight: FontWeight.bold,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -160,533 +289,559 @@ class AudioAnnouncementBarUi extends StatelessWidget {
       ),
     );
   }
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/components/contact_location_card_ui.dart">
+<file path="lib/customer_side/auth/components/signup_bottom_action_bar_ui.dart">
 import 'package:flutter/material.dart';
-class ContactLocationCardUi extends StatelessWidget {
-  final String whatsappNumber;
-  const ContactLocationCardUi({
+class SignupBottomActionBarUi extends StatelessWidget {
+  final int currentStep;
+  final VoidCallback onBack;
+  final VoidCallback onNextOrSubmit;
+  const SignupBottomActionBarUi({
     super.key,
-    required this.whatsappNumber,
+    required this.currentStep,
+    required this.onBack,
+    required this.onNextOrSubmit,
   });
   @override
   Widget build(BuildContext context) {
+    final bool isLastStep = currentStep == 2;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+      ),
+      child: Row(
+        children: [
+          if (currentStep > 0)
+            Expanded(
+              flex: 1,
+              child: OutlinedButton(
+                onPressed: onBack,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                    ),
+                    SizedBox(width: 5),
+                    Text('پیچھے', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+          if (currentStep > 0) const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: onNextOrSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isLastStep)
+                    const Icon(Icons.check_circle_outline_rounded, size: 16)
+                  else
+                    const Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Icon(Icons.arrow_back_ios_new_rounded, size: 14),
+                    ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isLastStep ? 'درخواست جمع کریں' : 'اگلا مرحلہ',
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/components/signup_step_tracker_ui.dart">
+import 'package:flutter/material.dart';
+class SignupStepTrackerUi extends StatelessWidget {
+  final int currentStep;
+  final ValueChanged<int> onStepTapped;
+  const SignupStepTrackerUi({
+    super.key,
+    required this.currentStep,
+    required this.onStepTapped,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final steps = [
+      {'title': 'کسٹمر کوائف', 'icon': Icons.person_rounded},
+      {'title': 'دستاویزات', 'icon': Icons.camera_front_rounded},
+      {'title': 'ضامن و اقرار', 'icon': Icons.gavel_rounded},
+    ];
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF86EFAC)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF22C55E).withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 22),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'کسٹمر ہیلپ لائن و فوری واٹس ایپ رابطہ',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            '36 اقساط پلانز، فوری الیکٹرانکس آرڈر یا نئی بکنگ کے لیے رابطہ فرمائیں:',
-            style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            decoration: BoxDecoration(
-              color: const Color(0xFF16A34A),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.chat_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: Text(
-                    whatsappNumber,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 1.0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Row(
+          children: List.generate(steps.length, (idx) {
+            final bool isDone = currentStep > idx;
+            final bool isActive = currentStep == idx;
+            Color bgColor = Colors.white;
+            if (isActive) {
+              bgColor = const Color(0xFF059669);
+            } else if (isDone) {
+              bgColor = const Color(0xFFECFDF5);
+            }
+            final Color textColor = isActive
+                ? Colors.white
+                : (isDone ? const Color(0xFF065F46) : const Color(0xFF64748B));
+            return Expanded(
+              child: InkWell(
+                onTap: () => onStepTapped(idx),
+                child: CustomPaint(
+                  painter: _WhiteChevronPainter(
+                    isFirst: idx == 0,
+                    isLast: idx == steps.length - 1,
+                    fillColor: bgColor,
+                    borderColor: isActive ? const Color(0xFFFDE68A) : const Color(0xFFCBD5E1),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isDone)
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF059669),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check, size: 10, color: Colors.white),
+                          )
+                        else
+                          Icon(
+                            steps[idx]['icon'] as IconData,
+                            size: 13,
+                            color: isActive ? const Color(0xFFFDE68A) : const Color(0xFF94A3B8),
+                          ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            steps[idx]['title'] as String,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: (isActive || isDone) ? FontWeight.w900 : FontWeight.bold,
+                              color: textColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
 }
+class _WhiteChevronPainter extends CustomPainter {
+  final bool isFirst;
+  final bool isLast;
+  final Color fillColor;
+  final Color borderColor;
+  _WhiteChevronPainter({
+    required this.isFirst,
+    required this.isLast,
+    required this.fillColor,
+    required this.borderColor,
+  });
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    final path = Path();
+    const arrowWidth = 8.0;
+    if (isFirst) {
+      path.moveTo(size.width, 0);
+      path.lineTo(arrowWidth, 0);
+      path.lineTo(0, size.height / 2);
+      path.lineTo(arrowWidth, size.height);
+      path.lineTo(size.width, size.height);
+      path.close();
+    } else if (isLast) {
+      path.moveTo(size.width, 0);
+      path.lineTo(size.width - arrowWidth, size.height / 2);
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+      path.lineTo(0, 0);
+      path.close();
+    } else {
+      path.moveTo(size.width, 0);
+      path.lineTo(size.width - arrowWidth, size.height / 2);
+      path.lineTo(size.width, size.height);
+      path.lineTo(arrowWidth, size.height);
+      path.lineTo(0, size.height / 2);
+      path.lineTo(arrowWidth, 0);
+      path.close();
+    }
+    canvas.drawPath(path, paint);
+    canvas.drawPath(path, borderPaint);
+  }
+  @override
+  bool shouldRepaint(covariant _WhiteChevronPainter oldDelegate) =>
+      oldDelegate.fillColor != fillColor ||
+      oldDelegate.isFirst != isFirst ||
+      oldDelegate.isLast != isLast ||
+      oldDelegate.borderColor != borderColor;
+}
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/components/large_slots_schedule_ui.dart">
+<file path="lib/customer_side/auth/services/payload_builders/customer_payload_builder.dart">
+class CustomerPayloadBuilder {
+  static Map<String, dynamic> build(Map<String, dynamic>? d, String phone) {
+    return {
+      'docId': phone,
+      'customerPhone': phone,
+      'customerName': (d?['name'] ?? d?['customerName'] ?? 'محمد محیب').toString().trim(),
+      'customerFatherName': (d?['fatherName'] ?? d?['customerFatherName'] ?? 'احمد علی').toString().trim(),
+      'customerCaste': (d?['caste'] ?? d?['customerCaste'] ?? 'آرائیں').toString().trim(),
+      'customerCnic': (d?['cnic'] ?? d?['customerCnic'] ?? '31202-1234567-1').toString().trim(),
+      'customerAddress': (d?['address'] ?? d?['customerAddress'] ?? 'مین بازار، حاصل پور').toString().trim(),
+      'isAgreementAccepted': d?['agreementAccepted'] ?? true,
+      'status': 'pending',
+      'cashLoanBalance': 0,
+      'installmentDueBalance': 0,
+      'grandNetTotal': 0,
+      'currentBalance': 0,
+      'isSynced': false,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/services/payload_builders/guarantor_payload_builder.dart">
+class GuarantorPayloadBuilder {
+  static Map<String, dynamic> build(Map<String, dynamic>? d, String phone) {
+    return {
+      'docId': phone,
+      'customerPhone': phone,
+      'guarantorName': (d?['gName'] ?? d?['guarantorName'] ?? '').toString().trim(),
+      'guarantorFatherName': (d?['gFather'] ?? d?['guarantorFatherName'] ?? '').toString().trim(),
+      'guarantorCaste': (d?['gCaste'] ?? d?['guarantorCaste'] ?? '').toString().trim(),
+      'guarantorPhone': (d?['gPhone'] ?? d?['guarantorPhone'] ?? '').toString().trim(),
+      'guarantorCnic': (d?['gCnic'] ?? d?['guarantorCnic'] ?? '').toString().trim(),
+      'guarantorRelation': (d?['gRelation'] ?? d?['guarantorRelation'] ?? '').toString().trim(),
+      'guarantorAddress': (d?['gAddress'] ?? d?['guarantorAddress'] ?? '').toString().trim(),
+      'isSynced': false,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/services/payload_builders/media_payload_builder.dart">
+class MediaPayloadBuilder {
+  static Map<String, dynamic> build(Map<String, dynamic>? d, String phone) {
+    final custFront = (d?['customerCnicFront'] ?? '').toString().trim();
+    final custBack = (d?['customerCnicBack'] ?? '').toString().trim();
+    final custSelfie = (d?['customerSelfie'] ?? '').toString().trim();
+    final custAudio = (d?['customerAudio'] ?? '').toString().trim();
+    final guarFront = (d?['guarantorCnicFront'] ?? '').toString().trim();
+    final guarBack = (d?['guarantorCnicBack'] ?? '').toString().trim();
+    final bool isUploaded = custFront.startsWith('https:
+    return {
+      'docId': phone,
+      'customerPhone': phone,
+      'status': isUploaded ? 'ready_to_push' : 'pending_upload',
+      'isSynced': !isUploaded,
+      'createdAt': DateTime.now().toIso8601String(),
+      'customerCnicFront': custFront,
+      'customerCnicBack': custBack,
+      'customerSelfie': custSelfie,
+      'customerAudio': custAudio,
+      'guarantorCnicFront': guarFront,
+      'guarantorCnicBack': guarBack,
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/services/payload_builders/user_auth_payload_builder.dart">
+class UserAuthPayloadBuilder {
+  static Map<String, dynamic> build(Map<String, dynamic>? d, String phone) {
+    return {
+      'docId': phone,
+      'customerPhone': phone,
+      'pin': (d?['pin'] ?? '7860').toString().trim(),
+      'status': 'pending',
+      'isSynced': false,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/services/signup_payload_service.dart">
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_builders/customer_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_builders/guarantor_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_builders/media_payload_builder.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_builders/user_auth_payload_builder.dart';
+class SignupPayloadService {
+  static String? validate(Map<String, dynamic> data) {
+    final phone = (data['phone'] ?? data['customerPhone'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final cnic = (data['cnic'] ?? data['customerCnic'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final pin = (data['pin'] ?? '').toString().trim();
+    final name = (data['name'] ?? data['customerName'] ?? '').toString().trim();
+    if (phone.length != 11) return 'درست 11 ہندسوں کا موبائل نمبر درج کریں';
+    if (name.isEmpty) return 'کسٹمر کا پورا نام درج کریں';
+    if (cnic.length != 13) return 'شناختی کارڈ 13 ہندسوں کا ہونا ضروری ہے';
+    if (pin.length < 4) return 'کم از کم 4 ہندسوں کا پن کوڈ درج کریں';
+    if (data['agreementAccepted'] != true) return 'اقرار نامہ قبول کریں';
+    return null;
+  }
+  static Map<String, Map<String, dynamic>> buildAllPayloads([Map<String, dynamic>? d]) {
+    final phone = (d?['phone'] ?? d?['customerPhone'] ?? '03012700351')
+        .toString()
+        .trim()
+        .replaceAll(RegExp(r'[^0-9]'), '');
+    return {
+      HiveBoxManager.customerBoxName: CustomerPayloadBuilder.build(d, phone),
+      HiveBoxManager.guarantorBoxName: GuarantorPayloadBuilder.build(d, phone),
+      HiveBoxManager.mediaBoxName: MediaPayloadBuilder.build(d, phone),
+      HiveBoxManager.usersBoxName: UserAuthPayloadBuilder.build(d, phone),
+    };
+  }
+  static Map<String, dynamic> getBenchmarkPayload() => buildAllPayloads();
+}
+</file>
+
+<file path="lib/customer_side/auth/services/signup_storage_handler.dart">
+
+</file>
+
+<file path="lib/customer_side/auth/customer_signup_args.dart">
+
+</file>
+
+<file path="lib/customer_side/auth/components/step3_guarantor_and_terms_ui.dart">
 import 'package:flutter/material.dart';
-import '../services/slots_feed_service.dart';
-class LargeSlotsScheduleUi extends StatelessWidget {
-  final List<ShowcaseSlotItem> slots;
-  const LargeSlotsScheduleUi({
-    super.key,
-    required this.slots,
-  });
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/guarantor_info_card_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/legal_agreement_card_ui.dart';
+class Step3GuarantorAndTermsUi extends StatelessWidget {
+  final CustomerSignupController controller;
+  const Step3GuarantorAndTermsUi({super.key, required this.controller});
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('لائیو سلاٹ و ڈلیوری شیڈول', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-            Text('اکتوبر 2026', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
-          ],
+        GuarantorInfoCardUi(controller: controller),
+        const SizedBox(height: 18),
+        LegalAgreementCardUi(
+          agreementAccepted: controller.agreementAccepted,
+          onAgreementChanged: controller.toggleAgreement,
         ),
-        const SizedBox(height: 10),
-        ...slots.map((s) => _buildSlotCard(s)),
       ],
     );
   }
-  Widget _buildSlotCard(ShowcaseSlotItem s) {
-    Color tagBg;
-    Color tagColor;
-    if (s.isAvailable) {
-      tagBg = const Color(0xFFEFF6FF);
-      tagColor = const Color(0xFF2563EB);
-    } else if (s.tag.contains('جاری')) {
-      tagBg = const Color(0xFFFEF3C7);
-      tagColor = const Color(0xFFB45309);
-    } else {
-      tagBg = const Color(0xFFDCFCE7);
-      tagColor = const Color(0xFF16A34A);
+}
+</file>
+
+<file path="lib/customer_side/auth/services/signup_media_service.dart">
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:nayab_qist_point_customer/core/services/media_picker_service.dart';
+class SignupMediaService {
+  String cnicFront = '';
+  String cnicBack = '';
+  String selfie = '';
+  String gCnicFront = '';
+  String gCnicBack = '';
+  Future<void> pickDoc(String key, {required VoidCallback onUpdate}) async {
+    final path = await MediaPickerService.pickDocument(
+      source: ImageSource.camera,
+      subFolder: 'customer_media',
+    );
+    if (path == null) {
+      return;
     }
+    if (key == 'cnicFront') {
+      cnicFront = path;
+    } else if (key == 'cnicBack') {
+      cnicBack = path;
+    } else if (key == 'gCnicFront') {
+      gCnicFront = path;
+    } else if (key == 'gCnicBack') {
+      gCnicBack = path;
+    }
+    onUpdate();
+  }
+  Future<void> pickSelfie({required VoidCallback onUpdate}) async {
+    final path = await MediaPickerService.pickSelfie(subFolder: 'customer_media');
+    if (path != null) {
+      selfie = path;
+      onUpdate();
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/components/audio_record_tile_ui.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+class AudioRecordTileUi extends StatelessWidget {
+  final CustomerSignupController controller;
+  const AudioRecordTileUi({super.key, required this.controller});
+  @override
+  Widget build(BuildContext context) {
+    final bool hasAudio = controller.isAudioRecorded;
+    final bool isRec = controller.isRecording;
+    final bool isPlay = controller.isPlayingAudio;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: isRec
+            ? const Color(0xFFFEF2F2)
+            : (hasAudio ? const Color(0xFFF0FDF4) : Colors.white),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: s.isAvailable ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
-          width: s.isAvailable ? 1.5 : 1,
+          color: isRec
+              ? const Color(0xFFEF4444)
+              : (hasAudio ? const Color(0xFF10B981) : const Color(0xFFCBD5E1)),
+          width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      s.date,
-                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    s.token,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: tagBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  s.tag,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: tagColor),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
           Row(
             children: [
               Icon(
-                s.isAvailable ? Icons.event_available_rounded : Icons.check_circle_rounded,
-                size: 15,
-                color: s.isAvailable ? const Color(0xFF2563EB) : const Color(0xFF10B981),
+                isRec ? Icons.fiber_manual_record : Icons.mic_rounded,
+                color: isRec ? Colors.red : const Color(0xFF0D9488),
+                size: 20,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  s.item,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: s.isAvailable ? const Color(0xFF1E40AF) : const Color(0xFF334155),
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                isRec
+                    ? 'آواز ریکارڈ ہو رہی ہے...'
+                    : (hasAudio ? 'آواز ریکارڈ ہو چکی ہے' : 'اقرار نامہ آڈیو ریکارڈ کریں'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isRec ? Colors.red.shade700 : const Color(0xFF0F172A),
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/components/live_metrics_ribbon_ui.dart">
-import 'package:flutter/material.dart';
-class LiveMetricsRibbonUi extends StatelessWidget {
-  final int totalQuota;
-  final int deliveredCount;
-  const LiveMetricsRibbonUi({
-    super.key,
-    required this.totalQuota,
-    required this.deliveredCount,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _metricTile('$totalQuota میں سے $deliveredCount', 'موبائل کوٹہ ترسیل', Icons.phone_android_rounded, const Color(0xFF0D9488), const Color(0xFFF0FDFA)),
-        const SizedBox(width: 8),
-        _metricTile('24 گھنٹے', 'الیکٹرانکس ڈلیوری', Icons.electric_bolt_rounded, const Color(0xFFD97706), const Color(0xFFFFFBEB)),
-        const SizedBox(width: 8),
-        _metricTile('100% محفوظ', 'رازداری گارنٹی', Icons.security_rounded, const Color(0xFF16A34A), const Color(0xFFF0FDF4)),
-      ],
-    );
-  }
-  Widget _metricTile(String val, String sub, IconData icon, Color accent, Color bgColor) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: accent.withValues(alpha: 0.25)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-              child: Icon(icon, size: 16, color: accent),
-            ),
-            const SizedBox(height: 5),
-            Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accent)),
-            const SizedBox(height: 2),
-            Text(
-              sub,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/components/media_showcase_row_ui.dart">
-import 'package:flutter/material.dart';
-class MediaShowcaseRowUi extends StatelessWidget {
-  final List<Map<String, dynamic>> mediaList;
-  const MediaShowcaseRowUi({
-    super.key,
-    required this.mediaList,
-  });
-  @override
-  Widget build(BuildContext context) {
-    if (mediaList.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.video_library_rounded, color: Color(0xFF0D9488), size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'سیل کٹ و ہینڈ اوور ویڈیوز (پرائیویسی پروٹیکٹڈ)',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                  ),
-                ],
-              ),
-              Text('لائیو ریکارڈ', style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (isRec)
+                Text(
+                  GlobalAudioService.formatSeconds(GlobalAudioService.recordSeconds),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: mediaList.map((item) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _videoThumbnailCard(
-                    item['title']?.toString() ?? '',
-                    item['token']?.toString() ?? '',
-                    item['duration']?.toString() ?? '',
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '📌 ویڈیوز میں کسٹمر کا چہرہ دکھائے بغیر صرف اوریجنل پروڈکٹ، سیل کٹ اور ڈبہ دکھایا جاتا ہے۔',
-            style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-  static Widget _videoThumbnailCard(String title, String token, String duration) {
-    return Container(
-      height: 85,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.play_arrow_rounded, color: Color(0xFFFDE68A), size: 20),
+          if (!hasAudio)
+            ElevatedButton.icon(
+              onPressed: controller.toggleAudio,
+              icon: Icon(isRec ? Icons.stop_rounded : Icons.mic, size: 18),
+              label: Text(isRec ? 'ریکارڈنگ مکمل کریں' : 'ریکارڈنگ شروع کریں'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isRec ? const Color(0xFFDC2626) : const Color(0xFF0D9488),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size(double.infinity, 42),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
-              ),
-              Text(token, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 8.5)),
-            ],
-          ),
-          Positioned(
-            bottom: 4,
-            right: 6,
-            child: Text(duration, style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 8)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/components/patron_hero_card_ui.dart">
-import 'package:flutter/material.dart';
-class PatronHeroCardUi extends StatelessWidget {
-  final String patronName;
-  final String patronRole;
-  final String shopName;
-  final String address;
-  const PatronHeroCardUi({
-    super.key,
-    required this.patronName,
-    required this.patronRole,
-    required this.shopName,
-    required this.address,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            )
+          else
+            Row(
               children: [
-                Container(
-                  width: 95,
-                  height: 115,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.person_pin_rounded,
-                              size: 36,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'تصویر نگران',
-                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                          ),
-                        ],
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'NQP',
-                            style: TextStyle(color: Color(0xFFFDE68A), fontSize: 8.5, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                      ),
-                    ],
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF0D9488),
+                  radius: 18,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(isPlay ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
+                    onPressed: controller.togglePlayAudio,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Text(
-                          patronRole,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        patronName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: 0.2,
-                        ),
+                      LinearProgressIndicator(
+                        value: controller.audioDuration.inMilliseconds > 0
+                            ? controller.audioPosition.inMilliseconds / controller.audioDuration.inMilliseconds
+                            : 0.0,
+                        backgroundColor: Colors.grey.shade300,
+                        color: const Color(0xFF0D9488),
+                        minHeight: 4,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        shopName,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'باہمی اعتماد، آسان شرائط اور 100% شفاف لین دین کی باوقار پہچان۔',
-                        style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), height: 1.4),
+                        '${controller.formatDuration(controller.audioPosition)} / ${controller.formatDuration(controller.audioDuration)}',
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on_rounded, color: Color(0xFFE11D48), size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    address,
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w600),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                  onPressed: controller.deleteAudio,
                 ),
               ],
             ),
-          ),
         ],
       ),
     );
@@ -694,701 +849,568 @@ class PatronHeroCardUi extends StatelessWidget {
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/components/privacy_shield_card_ui.dart">
+<file path="lib/customer_side/auth/components/guarantor_info_card_ui.dart">
 import 'package:flutter/material.dart';
-class PrivacyShieldCardUi extends StatelessWidget {
-  final String title;
-  final String description;
-  const PrivacyShieldCardUi({
-    super.key,
-    required this.title,
-    required this.description,
-  });
+import 'package:nayab_qist_point_customer/core/services/zoom_handler.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+class GuarantorInfoCardUi extends StatelessWidget {
+  final CustomerSignupController controller;
+  const GuarantorInfoCardUi({super.key, required this.controller});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: const BoxDecoration(color: Color(0xFF16A34A), shape: BoxShape.circle),
-            child: const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF34D399), width: 1.1),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF14532D)),
+          child: const Row(
+            children: [
+              Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ضامن (گارنٹر) کی معلومات اختیاری ہیں۔ ضامن نہ ہونے کی صورت میں یہ حصہ خالی چھوڑ سکتے ہیں۔',
+                  style: TextStyle(fontSize: 10.5, color: Color(0xFF065F46), height: 1.4, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF166534), height: 1.45),
-                ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'ضامن کی معلومات (اختیاری)',
+          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'دفتری ریکارڈ کی مضبوطی کیلئے درج کریں',
+          style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+        ),
+        const SizedBox(height: 11),
+        Row(
+          children: [
+            Expanded(flex: 3, child: _buildField(controller.gNameCtrl, 'ضامن کا مکمل نام', 'ضامن کا نام', TextInputType.text)),
+            const SizedBox(width: 10),
+            Expanded(flex: 2, child: _buildField(controller.gCasteCtrl, 'ضامن کی ذات', 'قوم / ذات', TextInputType.text)),
+          ],
+        ),
+        const SizedBox(height: 11),
+        Row(
+          children: [
+            Expanded(child: _buildField(controller.gFatherCtrl, 'ضامن کی ولدیت', 'والد کا نام', TextInputType.text)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildField(controller.gRelationCtrl, 'کسٹمر سے رشتہ', 'بھائی، والد، دوست', TextInputType.text)),
+          ],
+        ),
+        const SizedBox(height: 11),
+        Row(
+          children: [
+            Expanded(child: _buildField(controller.gPhoneCtrl, 'ضامن موبائل نمبر', '0300xxxxxxx', TextInputType.phone)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildField(controller.gCnicCtrl, 'ضامن شناختی کارڈ', '31202-xxxxxxx-x', TextInputType.number)),
+          ],
+        ),
+        const SizedBox(height: 11),
+        _buildField(controller.gAddressCtrl, 'ضامن کا رہائشی پتہ', 'ضامن کا مستقل پتہ', TextInputType.streetAddress),
+        const SizedBox(height: 13),
+        Row(
+          children: [
+            Expanded(
+              child: ZoomHandler(
+                title: 'ضامن CNIC فرنٹ',
+                imagePath: controller.media.gCnicFront,
+                onPick: controller.toggleGuarantorCnicFront,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: ZoomHandler(
+                title: 'ضامن CNIC بیک',
+                imagePath: controller.media.gCnicBack,
+                onPick: controller.toggleGuarantorCnicBack,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+  Widget _buildField(TextEditingController ctrl, String label, String hint, TextInputType type) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: type,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.bold),
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+        isDense: true,
+        filled: true,
+        fillColor: const Color(0xFFF9FBF9),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.4)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       ),
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/components/prize_draw_card_ui.dart">
+<file path="lib/customer_side/auth/components/step1_customer_info_ui.dart">
 import 'package:flutter/material.dart';
-class PrizeDrawCardUi extends StatelessWidget {
-  final String title;
-  final String description;
-  const PrizeDrawCardUi({
-    super.key,
-    required this.title,
-    required this.description,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFDE68A)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: const BoxDecoration(color: Color(0xFFD97706), shape: BoxShape.circle),
-            child: const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFF78350F)),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  description,
-                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF92400E), height: 1.4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/components/products_wings_card_ui.dart">
-import 'package:flutter/material.dart';
-class ProductsWingsCardUi extends StatelessWidget {
-  final int plansCount;
-  const ProductsWingsCardUi({
-    super.key,
-    required this.plansCount,
-  });
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+class Step1CustomerInfoUi extends StatelessWidget {
+  final CustomerSignupController controller;
+  const Step1CustomerInfoUi({super.key, required this.controller});
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'شاپ شیڈول پالیسی و کیٹیگریز',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+          'گاہک کے بنیادی کوائف',
+          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
+        const Text(
+          'شناختی کارڈ کے مطابق معلومات درج کریں تاکہ تصدیق میں آسانی ہو',
+          style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+        ),
+        const SizedBox(height: 12),
+        _buildField(
+          controller: controller.nameCtrl,
+          label: 'گاہک کا مکمل نام*',
+          hint: 'شناختی کارڈ کے مطابق نام لکھیں',
+          type: TextInputType.text,
+        ),
+        const SizedBox(height: 11),
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.phone_iphone_rounded, color: Color(0xFF0284C7), size: 16),
-                        SizedBox(width: 4),
-                        Text('اسمارٹ فونز', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '• ماہانہ کوٹہ: 10 موبائلز\n• سلیکشن شاپ پر $plansCount پلانز سے\n• ایڈوانس و قسط خود طے کریں',
-                      style: const TextStyle(fontSize: 10, color: Color(0xFF475569), height: 1.45),
-                    ),
-                  ],
-                ),
+              child: _buildField(
+                controller: controller.fatherCtrl,
+                label: 'ولدیت / سرپرست*',
+                hint: 'والد کا نام',
+                type: TextInputType.text,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFED7AA)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.blender_rounded, color: Color(0xFFEA580C), size: 16),
-                        SizedBox(width: 4),
-                        Text('چھوٹے الیکٹرانکس', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      '• جوسر، استری، واشنگ مشین\n• کوئی سلاٹ ویٹنگ نہیں!\n• درخواست پر 24 گھنٹے میں تیار',
-                      style: TextStyle(fontSize: 10, color: Color(0xFF475569), height: 1.45),
-                    ),
-                  ],
-                ),
+              child: _buildField(
+                controller: controller.casteCtrl,
+                label: 'قوم / برادری*',
+                hint: 'مثلاً آرائیں، جٹ',
+                type: TextInputType.text,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 11),
+        _buildField(
+          controller: controller.cnicCtrl,
+          label: 'شناختی کارڈ نمبر (CNIC)*',
+          hint: '31202-xxxxxxx-x',
+          type: TextInputType.number,
+        ),
+        const SizedBox(height: 11),
+        _buildField(
+          controller: controller.phoneCtrl,
+          label: 'موبائل نمبر (یہی یوزر نیم ہوگا)*',
+          hint: '03001234567',
+          type: TextInputType.phone,
+          helper: '💡 یاد رکھیں: پورٹل میں لاگ ان کیلئے یہ نمبر استعمال ہوگا',
+        ),
+        const SizedBox(height: 11),
+        _buildField(
+          controller: controller.pinCtrl,
+          label: 'خفیہ لاگ ان پن کوڈ (4 ہندسے)*',
+          hint: 'مثلاً 7860 یا 1234',
+          type: TextInputType.number,
+          obscureText: true,
+          helper: '🔒 یہ پن کوڈ مستقبل میں لاگ ان ہونے کیلئے استعمال ہوگا',
+        ),
+        const SizedBox(height: 11),
+        _buildField(
+          controller: controller.addressCtrl,
+          label: 'مکمل رہائشی پتہ مع ڈاکخانہ*',
+          hint: 'محلہ، گلی اور گاؤں یا شہر',
+          type: TextInputType.streetAddress,
+          maxLines: 2,
+        ),
+      ],
+    );
+  }
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required TextInputType type,
+    String? helper,
+    int maxLines = 1,
+    bool obscureText = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          keyboardType: type,
+          maxLines: maxLines,
+          obscureText: obscureText,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.bold),
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+            isDense: true,
+            filled: true,
+            fillColor: const Color(0xFFF9FBF9),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: Color(0xFF059669), width: 1.4)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          ),
+        ),
+        if (helper != null) ...[
+          const SizedBox(height: 3),
+          Text(helper, style: const TextStyle(fontSize: 9.5, color: Color(0xFF059669), fontWeight: FontWeight.bold)),
+        ],
       ],
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/components/share_notice_card_ui.dart">
+<file path="lib/customer_side/auth/components/step2_customer_media_ui.dart">
 import 'package:flutter/material.dart';
-class ShareNoticeCardUi extends StatelessWidget {
-  final VoidCallback onSharePressed;
-  const ShareNoticeCardUi({
-    super.key,
-    required this.onSharePressed,
-  });
+import 'package:nayab_qist_point_customer/core/services/zoom_handler.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/audio_record_tile_ui.dart';
+class Step2CustomerMediaUi extends StatelessWidget {
+  final CustomerSignupController controller;
+  const Step2CustomerMediaUi({super.key, required this.controller});
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onSharePressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFBFDBFE)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
-                child: const Icon(Icons.share_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'دوستوں کو نایاب قسط پوائنٹ شیڈول بھیجیں',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: Color(0xFF1E40AF)),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'واٹس ایپ پر اپنے دوستوں اور رشتہ داروں کے ساتھ دکان کی آفرز شیئر کریں',
-                      style: TextStyle(fontSize: 9.5, color: Color(0xFF3B82F6)),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF2563EB)),
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'ڈیجیٹل تصدیق و دستاویزات',
+          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
         ),
-      ),
+        const SizedBox(height: 2),
+        const Text(
+          'کارڈ اور چہرہ بالکل صاف فریم میں ہونا چاہیے',
+          style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: ZoomHandler(
+                title: 'شناختی کارڈ فرنٹ',
+                imagePath: controller.media.cnicFront,
+                onPick: controller.toggleCnicFront,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ZoomHandler(
+                title: 'شناختی کارڈ بیک',
+                imagePath: controller.media.cnicBack,
+                onPick: controller.toggleCnicBack,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 13),
+        ZoomHandler(
+          title: 'لائیو فرنٹ سیلفی',
+          imagePath: controller.media.selfie,
+          onPick: controller.toggleSelfie,
+          height: 120,
+        ),
+        const SizedBox(height: 13),
+        AudioRecordTileUi(controller: controller),
+      ],
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/services/live_quota_service.dart">
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-class LiveQuotaService {
-  static Future<Map<String, int>> getMonthlyQuotaMetrics() async {
-    int totalQuota = 10;
-    int delivered = 6;
-    try {
-      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
-      final quotaConfig = box.get('quota_config');
-      if (quotaConfig is Map) {
-        totalQuota = (quotaConfig['monthly_mobile_quota'] as num?)?.toInt() ?? 10;
-      }
-      if (Hive.isBoxOpen(HiveBoxManager.installmentsBoxName)) {
-        final instBox = await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
-        if (instBox.isNotEmpty) {
-        }
-      }
-    } catch (_) {}
-    return {
-      'total': totalQuota,
-      'delivered': delivered,
-      'remaining': (totalQuota - delivered).clamp(0, totalQuota),
-    };
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/services/plan_counter_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-class PlanCounterService {
-  static Future<int> getAvailablePlansCount() async {
-    try {
-      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
-      final calcConfig = box.get('calculator_config');
-      if (calcConfig is Map) {
-        final durations = calcConfig['allowedDurations'] ?? calcConfig['durations'];
-        final plansPerDuration = calcConfig['plansPerDuration'] ?? 4;
-        if (durations is List && durations.isNotEmpty) {
-          return durations.length * (plansPerDuration is int ? plansPerDuration : 4);
-        }
-      }
-    } catch (_) {}
-    return 36;
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/services/showcase_audio_service.dart">
-class ShowcaseAudioService {
-  bool _isPlaying = false;
-  bool get isPlaying => _isPlaying;
-  bool togglePlayState() {
-    _isPlaying = !_isPlaying;
-    return _isPlaying;
-  }
-  void stop() {
-    _isPlaying = false;
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/services/showcase_config_service.dart">
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-class ShowcaseConfigService {
-  static const String configDocKey = 'shop_showcase_config';
-  static Future<Map<String, dynamic>> loadShowcaseConfig() async {
-    try {
-      final box = await HiveBoxManager.openSafeBox(HiveBoxManager.appConfigBoxName);
-      final rawData = box.get(configDocKey);
-      if (rawData is Map) {
-        return Map<String, dynamic>.from(rawData);
-      }
-    } catch (_) {}
-    return {
-      'patron_name': 'حافظ محمد صابر مونڈ',
-      'patron_role': 'پروپرائیٹر و نگرانِ اعلیٰ',
-      'shop_name': 'نایاب قسط پوائنٹ',
-      'address': 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
-      'whatsapp': '03231988351',
-      'privacy_title': '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت',
-      'privacy_desc':
-          'قسطوں پر خریداری آپ کا نجی معاملہ ہے۔ کسی بھی صارف کا نام، چہرہ یا ڈلیوری ویڈیو کبھی تشہیر کے لیے ظاہر نہیں کی جاتی۔ لائیو شیڈول پر شفافیت کے لیے صرف آفیشل ٹوکن (#NQP-408) نظر آتا ہے۔',
-      'prize_title': '🎁 ماہانہ انعامی قرعہ اندازی و زیرو ایڈوانس',
-      'prize_desc':
-          'تمام اقساط تاریخ پر جمع کرانے والے معزز کسٹمرز کو خصوصی لکی ڈرا میں شامل کیا جائے گا اور اگلی ڈیوائس پر 0% ایڈوانس کی خصوصی رعایت دی جائے گی۔',
-      'audio_url': '',
-      'audio_duration': '0:42 سیکنڈ',
-    };
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/services/showcase_share_service.dart">
-class ShowcaseShareService {
-  static String generateShareText({
-    required String shopName,
-    required String patronName,
-    required String address,
-    required String whatsapp,
-    required int plansCount,
-  }) {
-    return '📢 $shopName (قائم پور)\n'
-        'نگرانِ اعلیٰ: $patronName\n\n'
-        '✨ ہر موبائل پر $plansCount آسان اقساط پلانز دستیاب ہیں!\n'
-        '⚡ چھوٹے گھریلو الیکٹرانکس بغیر سلاٹ کے 24 گھنٹے میں دستیاب۔\n'
-        '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت۔\n\n'
-        '📍 پتہ: $address\n'
-        '📞 واٹس ایپ رابطہ: $whatsapp';
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/services/slots_feed_service.dart">
-class ShowcaseSlotItem {
-  final String date;
-  final String token;
-  final String item;
-  final String tag;
-  final bool isAvailable;
-  const ShowcaseSlotItem({
-    required this.date,
-    required this.token,
-    required this.item,
-    required this.tag,
-    required this.isAvailable,
-  });
-}
-class SlotsFeedService {
-  static List<ShowcaseSlotItem> getLiveSlotsFeed(int availablePlansCount) {
-    return [
-      const ShowcaseSlotItem(
-        date: '03 اکتوبر',
-        token: '#NQP-401',
-        item: 'Redmi 13C (128GB)',
-        tag: 'کامیابی سے ڈلیور شدہ ✓',
-        isAvailable: false,
-      ),
-      const ShowcaseSlotItem(
-        date: '06 اکتوبر',
-        token: '#NQP-EL-88',
-        item: 'نیشنل جوسر بلینڈر 3in1',
-        tag: '24 گھنٹے میں ترسیل مکمل ✓',
-        isAvailable: false,
-      ),
-      const ShowcaseSlotItem(
-        date: '08 اکتوبر',
-        token: '#NQP-404',
-        item: 'Infinix Hot 40 (256GB)',
-        tag: 'ہینڈ اوور مکمل ✓',
-        isAvailable: false,
-      ),
-      const ShowcaseSlotItem(
-        date: '12 اکتوبر',
-        token: '#NQP-408',
-        item: 'Tecno Spark 20',
-        tag: 'ضمانتی تصدیق جاری ⏳',
-        isAvailable: false,
-      ),
-      ShowcaseSlotItem(
-        date: '15 اکتوبر',
-        token: 'سلاٹ نمبر 07',
-        item: 'اسمارٹ فون (کوٹہ نشست خالی)',
-        tag: 'دکان پر آ کر $availablePlansCount پلانز سے بک کریں 🟢',
-        isAvailable: true,
-      ),
-      ShowcaseSlotItem(
-        date: '18 اکتوبر',
-        token: 'سلاٹ نمبر 08',
-        item: 'اسمارٹ فون (کوٹہ نشست خالی)',
-        tag: 'دکان پر آ کر $availablePlansCount پلانز سے بک کریں 🟢',
-        isAvailable: true,
-      ),
-    ];
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/shop_showcase_controller.dart">
+<file path="lib/customer_side/auth/services/signup_submit_service.dart">
 import 'package:flutter/material.dart';
-import 'services/showcase_config_service.dart';
-import 'services/plan_counter_service.dart';
-import 'services/live_quota_service.dart';
-import 'services/slots_feed_service.dart';
-import 'services/showcase_audio_service.dart';
-import 'services/showcase_share_service.dart';
-class ShopShowcaseController extends ChangeNotifier {
-  final ShowcaseAudioService _audioService = ShowcaseAudioService();
-  bool isLoading = true;
-  Map<String, dynamic> config = {};
-  int availablePlansCount = 36;
-  Map<String, int> quotaMetrics = {'total': 10, 'delivered': 5, 'remaining': 5};
-  List<ShowcaseSlotItem> slots = [];
-  List<Map<String, dynamic>> mediaList = [];
-  bool get isAudioPlaying => _audioService.isPlaying;
-  ShopShowcaseController() {
-    initData();
-  }
-  Future<void> initData() async {
-    isLoading = true;
-    notifyListeners();
-    config = await ShowcaseConfigService.loadShowcaseConfig();
-    availablePlansCount = await PlanCounterService.getAvailablePlansCount();
-    quotaMetrics = await LiveQuotaService.getMonthlyQuotaMetrics();
-    slots = SlotsFeedService.getLiveSlotsFeed(availablePlansCount);
-    if (config['media_showcase'] is List) {
-      mediaList = (config['media_showcase'] as List)
-          .whereType<Map>()
-          .map((m) => Map<String, dynamic>.from(m))
-          .toList();
+import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/submission_receipt_sheet_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/sync/media_sync/pending_media_sync_service.dart';
+class SignupSubmitService {
+  static Future<void> process({
+    required BuildContext context,
+    required Map<String, dynamic> data,
+    required VoidCallback onStart,
+    required VoidCallback onEnd,
+    required VoidCallback onSuccess,
+  }) async {
+    final error = SignupPayloadService.validate(data);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error, textDirection: TextDirection.rtl),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+      return;
     }
-    isLoading = false;
-    notifyListeners();
-  }
-  void toggleAudio() {
-    _audioService.togglePlayState();
-    notifyListeners();
-  }
-  String getShareContent() {
-    final shop = (config['shop_info'] as Map?) ?? {};
-    return ShowcaseShareService.generateShareText(
-      shopName: shop['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ',
-      patronName: shop['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
-      address: shop['address']?.toString() ?? 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
-      whatsapp: shop['whatsapp']?.toString() ?? '0323 1988351',
-      plansCount: availablePlansCount,
-    );
-  }
-  @override
-  void dispose() {
-    _audioService.stop();
-    super.dispose();
-  }
-}
-</file>
-
-<file path="lib/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart">
-import 'package:flutter/material.dart';
-import 'shop_showcase_controller.dart';
-import 'components/patron_hero_card_ui.dart';
-import 'components/audio_announcement_bar_ui.dart';
-import 'components/live_metrics_ribbon_ui.dart';
-import 'components/privacy_shield_card_ui.dart';
-import 'components/prize_draw_card_ui.dart';
-import 'components/products_wings_card_ui.dart';
-import 'components/large_slots_schedule_ui.dart';
-import 'components/media_showcase_row_ui.dart';
-import 'components/share_notice_card_ui.dart';
-import 'components/contact_location_card_ui.dart';
-class ShopShowcasePortalPage extends StatefulWidget {
-  const ShopShowcasePortalPage({super.key});
-  @override
-  State<ShopShowcasePortalPage> createState() => _ShopShowcasePortalPageState();
-}
-class _ShopShowcasePortalPageState extends State<ShopShowcasePortalPage> {
-  late final ShopShowcaseController controller;
-  @override
-  void initState() {
-    super.initState();
-    controller = ShopShowcaseController();
-  }
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        if (controller.isLoading) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF8FAFC),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF0D9488)),
-            ),
-          );
-        }
-        final config = controller.config;
-        final shopInfo = (config['shop_info'] as Map?) ?? {};
-        final audioInfo = (config['audio_announcement'] as Map?) ?? {};
-        final policies = (config['policies'] as Map?) ?? {};
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
-            appBar: AppBar(
-              elevation: 2,
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                ),
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    shopInfo['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ - لائیو پورٹل',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const Text(
-                    'قائم پور، تحصیل حاصل پور',
-                    style: TextStyle(
-                      color: Color(0xFFFDE68A),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D9488).withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF14B8A6), width: 0.8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF2DD4BF)),
-                      SizedBox(width: 5),
-                      Text(
-                        'لائیو کاؤنٹر',
-                        style: TextStyle(color: Color(0xFF5EEAD4), fontSize: 10.5, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            body: ListView(
-              padding: const EdgeInsets.all(14),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                PatronHeroCardUi(
-                  patronName: shopInfo['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
-                  patronRole: shopInfo['patron_role']?.toString() ?? 'پروپرائیٹر و نگرانِ اعلیٰ',
-                  shopName: shopInfo['shop_name']?.toString() ?? 'نایاب قسط پوائنٹ',
-                  address: shopInfo['address']?.toString() ?? 'ہیڈ اسلام روڈ، نزد گورنمنٹ بوائز ہائی اسکول، قائم پور',
-                ),
-                const SizedBox(height: 14),
-                AudioAnnouncementBarUi(
-                  isPlaying: controller.isAudioPlaying,
-                  patronName: shopInfo['patron_name']?.toString() ?? 'حافظ محمد صابر مونڈ',
-                  durationText: audioInfo['duration_text']?.toString() ?? '0:42 سیکنڈ',
-                  onTogglePlay: controller.toggleAudio,
-                ),
-                const SizedBox(height: 14),
-                LiveMetricsRibbonUi(
-                  totalQuota: controller.quotaMetrics['total'] ?? 10,
-                  deliveredCount: controller.quotaMetrics['delivered'] ?? 5,
-                ),
-                const SizedBox(height: 14),
-                PrivacyShieldCardUi(
-                  title: policies['privacy_title']?.toString() ?? '🛡️ کسٹمر کی عزت و رازداری کی 100% ضمانت',
-                  description: policies['privacy_desc']?.toString() ?? '',
-                ),
-                const SizedBox(height: 14),
-                PrizeDrawCardUi(
-                  title: policies['prize_title']?.toString() ?? '🎁 ماہانہ انعامی قرعہ اندازی و زیرو ایڈوانس',
-                  description: policies['prize_desc']?.toString() ?? '',
-                ),
-                const SizedBox(height: 16),
-                ProductsWingsCardUi(plansCount: controller.availablePlansCount),
-                const SizedBox(height: 16),
-                LargeSlotsScheduleUi(slots: controller.slots),
-                const SizedBox(height: 16),
-                MediaShowcaseRowUi(mediaList: controller.mediaList),
-                const SizedBox(height: 16),
-                ShareNoticeCardUi(
-                  onSharePressed: () {
-                    final text = controller.getShareContent();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('شیئرنگ مواد تیار ہو گیا: $text')),
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-                ContactLocationCardUi(
-                  whatsappNumber: shopInfo['whatsapp']?.toString() ?? '0323 1988351',
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+    final phone = (data['customerPhone'] ?? data['phone'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final allPayloads = SignupPayloadService.buildAllPayloads(data);
+    SubmissionReceiptSheetUi.show(
+      context,
+      title: 'کسٹمر رجسٹریشن تصدیق',
+      subtitle: 'تمام معلومات کی جانچ کے بعد کنفرم کریں',
+      rawPayload: allPayloads,
+      onConfirm: () async {
+        onStart();
+        await HiveBoxManager.openSessionBoxes();
+        final isSaved = await HiveBoxManager.writeBatchPayloads(
+          docId: phone,
+          payloads: allPayloads,
+          logTitle: 'کسٹمر رجسٹریشن مکمل',
         );
+        if (isSaved) {
+          final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
+          await settingsBox.put('isLoggedIn', true);
+          await settingsBox.put('activePhone', phone);
+          debugPrint('⏳ میڈیا کلاؤڈینیری پر اپلوڈ ہونا شروع ہو رہا ہے...');
+          await PendingMediaSyncService.processPendingUploads();
+          debugPrint('🏁 کلاؤڈینیری پروسیس مکمل، اب اگلے صفحے پر جا رہے ہیں');
+          onEnd();
+          onSuccess();
+        } else {
+          onEnd();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('رجسٹریشن محفوظ کرنے میں خرابی ہوئی!')),
+            );
+          }
+        }
       },
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/shop_showcase_portal/shop_showcase_args.dart">
-class OrderReceiptArgs {
-  final Map<String, dynamic> plan;
-  final String deviceName;
-  final String? customerPhone;
-  final List<Map<String, dynamic>> installmentSchedule;
-  final String? sourceMode;
-  final String? imeiNo;
-  const OrderReceiptArgs({
-    required this.plan,
-    required this.deviceName,
-    this.customerPhone,
-    required this.installmentSchedule,
-    this.sourceMode,
-    this.imeiNo,
-  });
-  Map<String, dynamic> toMap() {
-    return {
-      'plan': plan,
-      'deviceName': deviceName,
-      'customerPhone': customerPhone,
-      'installmentSchedule': installmentSchedule,
-      'sourceMode': sourceMode,
-      'imeiNo': imeiNo,
-    };
+<file path="lib/customer_side/auth/customer_signup_page.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/customer_side/inspector/floating_inspector_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_app_bar_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_step_tracker_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step1_customer_info_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step2_customer_media_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/step3_guarantor_and_terms_ui.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_bottom_action_bar_ui.dart';
+class CustomerSignupPage extends StatefulWidget {
+  const CustomerSignupPage({super.key});
+  @override
+  State<CustomerSignupPage> createState() => _CustomerSignupPageState();
+}
+class _CustomerSignupPageState extends State<CustomerSignupPage> {
+  late final CustomerSignupController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = CustomerSignupController();
   }
-  factory OrderReceiptArgs.fromMap(Map<String, dynamic>? map) {
-    if (map == null) {
-      return const OrderReceiptArgs(
-        plan: {},
-        deviceName: '',
-        installmentSchedule: [],
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  void _handleNextOrSubmit() {
+    if (_controller.currentStep < 2) {
+      _controller.nextStep();
+    } else {
+      _controller.handleFinalSubmit(
+        context,
+        onSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Color(0xFF059669),
+              content: Text('مبارک ہو! رجسٹریشن کامیابی سے مکمل ہو گئی ہے'),
+            ),
+          );
+          Navigator.pop(context);
+        },
       );
     }
-    return OrderReceiptArgs(
-      plan: (map['plan'] as Map<dynamic, dynamic>?)?.cast<String, dynamic>() ?? {},
-      deviceName: map['deviceName']?.toString() ?? '',
-      customerPhone: map['customerPhone']?.toString(),
-      installmentSchedule: (map['installmentSchedule'] as List?)
-              ?.map((e) => (e as Map<dynamic, dynamic>).cast<String, dynamic>())
-              .toList() ??
-          [],
-      sourceMode: map['sourceMode']?.toString(),
-      imeiNo: map['imeiNo']?.toString(),
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8FAFC),
+            appBar: const SignupAppBarUi(),
+            body: Column(
+              children: [
+                SignupStepTrackerUi(
+                  currentStep: _controller.currentStep,
+                  onStepTapped: _controller.setStep,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    child: _buildActiveStep(),
+                  ),
+                ),
+                SignupBottomActionBarUi(
+                  currentStep: _controller.currentStep,
+                  onBack: _controller.previousStep,
+                  onNextOrSubmit: _handleNextOrSubmit,
+                ),
+              ],
+            ),
+            floatingActionButton: FloatingActionButton(
+              backgroundColor: const Color(0xFF0F172A),
+              mini: true,
+              child: const Icon(Icons.bug_report, color: Color(0xFF10B981), size: 20),
+              onPressed: () => FloatingInspectorUi.show(context),
+            ),
+          );
+        },
+      ),
     );
+  }
+  Widget _buildActiveStep() {
+    switch (_controller.currentStep) {
+      case 0:
+        return Step1CustomerInfoUi(controller: _controller);
+      case 1:
+        return Step2CustomerMediaUi(controller: _controller);
+      case 2:
+        return Step3GuarantorAndTermsUi(controller: _controller);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/auth/customer_signup_controller.dart">
+import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_media_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_submit_service.dart';
+class CustomerSignupController extends ChangeNotifier {
+  final media = SignupMediaService();
+  int currentStep = 0;
+  bool isSubmitting = false;
+  bool agreementAccepted = false;
+  final nameCtrl = TextEditingController();
+  final fatherCtrl = TextEditingController();
+  final casteCtrl = TextEditingController();
+  final phoneCtrl = TextEditingController();
+  final cnicCtrl = TextEditingController();
+  final pinCtrl = TextEditingController();
+  final addressCtrl = TextEditingController();
+  final gNameCtrl = TextEditingController();
+  final gFatherCtrl = TextEditingController();
+  final gCasteCtrl = TextEditingController();
+  final gPhoneCtrl = TextEditingController();
+  final gCnicCtrl = TextEditingController();
+  final gRelationCtrl = TextEditingController();
+  final gAddressCtrl = TextEditingController();
+  bool get isCnicFrontUploaded => media.cnicFront.isNotEmpty;
+  bool get isCnicBackUploaded => media.cnicBack.isNotEmpty;
+  bool get isSelfieUploaded => media.selfie.isNotEmpty;
+  bool get isAudioRecorded => GlobalAudioService.audioPath.isNotEmpty;
+  bool get isRecording => GlobalAudioService.isRecording;
+  bool get isPlayingAudio => GlobalAudioService.isPlaying;
+  Duration get audioDuration => GlobalAudioService.duration;
+  Duration get audioPosition => GlobalAudioService.position;
+  String formatDuration(Duration d) => GlobalAudioService.formatDuration(d);
+  bool get isGuarantorCnicFrontUploaded => media.gCnicFront.isNotEmpty;
+  set isGuarantorCnicFrontUploaded(bool val) {
+    if (!val) {
+      media.gCnicFront = '';
+      notifyListeners();
+    }
+  }
+  bool get isGuarantorCnicBackUploaded => media.gCnicBack.isNotEmpty;
+  set isGuarantorCnicBackUploaded(bool val) {
+    if (!val) {
+      media.gCnicBack = '';
+      notifyListeners();
+    }
+  }
+  // نیویگیشن
+  void setStep(int s) { currentStep = s; notifyListeners(); }
+  void nextStep() { if (currentStep < 2) { currentStep++; notifyListeners(); } }
+  void previousStep() { if (currentStep > 0) { currentStep--; notifyListeners(); } }
+  void toggleAgreement(bool? val) { agreementAccepted = val ?? false; notifyListeners(); }
+  // میڈیا ایکشنز
+  void toggleCnicFront() => media.pickDoc('cnicFront', onUpdate: notifyListeners);
+  void toggleCnicBack() => media.pickDoc('cnicBack', onUpdate: notifyListeners);
+  void toggleGuarantorCnicFront() => media.pickDoc('gCnicFront', onUpdate: notifyListeners);
+  void toggleGuarantorCnicBack() => media.pickDoc('gCnicBack', onUpdate: notifyListeners);
+  void toggleSelfie() => media.pickSelfie(onUpdate: notifyListeners);
+  void toggleAudio() => GlobalAudioService.toggleRecord(onUpdate: notifyListeners);
+  void togglePlayAudio() => GlobalAudioService.togglePlay(onUpdate: notifyListeners);
+  void deleteAudio() => GlobalAudioService.deleteAudio(onUpdate: notifyListeners);
+  Future<void> handleFinalSubmit(BuildContext context, {required VoidCallback onSuccess}) async {
+    final data = {
+      'customerPhone': phoneCtrl.text.trim(),
+      'customerName': nameCtrl.text.trim(),
+      'customerFatherName': fatherCtrl.text.trim(),
+      'customerCaste': casteCtrl.text.trim(),
+      'customerCnic': cnicCtrl.text.trim(),
+      'customerAddress': addressCtrl.text.trim(),
+      'pin': pinCtrl.text.trim(),
+      'agreementAccepted': agreementAccepted,
+      'customerCnicFront': media.cnicFront,
+      'customerCnicBack': media.cnicBack,
+      'customerSelfie': media.selfie,
+      'customerAudio': GlobalAudioService.audioPath,
+      'guarantorName': gNameCtrl.text.trim(),
+      'guarantorFatherName': gFatherCtrl.text.trim(),
+      'guarantorCaste': gCasteCtrl.text.trim(),
+      'guarantorPhone': gPhoneCtrl.text.trim(),
+      'guarantorCnic': gCnicCtrl.text.trim(),
+      'guarantorRelation': gRelationCtrl.text.trim(),
+      'guarantorAddress': gAddressCtrl.text.trim(),
+      'guarantorCnicFront': media.gCnicFront,
+      'guarantorCnicBack': media.gCnicBack,
+    };
+    await SignupSubmitService.process(
+      context: context,
+      data: data,
+      onStart: () { isSubmitting = true; notifyListeners(); },
+      onEnd: () { isSubmitting = false; notifyListeners(); },
+      onSuccess: onSuccess,
+    );
+  }
+  @override
+  void dispose() {
+    GlobalAudioService.dispose();
+    final list = [
+      nameCtrl, fatherCtrl, casteCtrl, phoneCtrl, cnicCtrl, pinCtrl, addressCtrl,
+      gNameCtrl, gFatherCtrl, gCasteCtrl, gPhoneCtrl, gCnicCtrl, gRelationCtrl, gAddressCtrl,
+    ];
+    for (final c in list) {
+      c.dispose();
+    }
+    super.dispose();
   }
 }
 </file>

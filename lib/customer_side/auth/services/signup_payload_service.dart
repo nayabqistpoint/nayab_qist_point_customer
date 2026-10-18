@@ -5,7 +5,6 @@ import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_bu
 import 'package:nayab_qist_point_customer/customer_side/auth/services/payload_builders/user_auth_payload_builder.dart';
 
 class SignupPayloadService {
-  /// فارم کی بنیادی تصدیق
   static String? validate(Map<String, dynamic> data) {
     final phone = (data['phone'] ?? data['customerPhone'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
     final cnic = (data['cnic'] ?? data['customerCnic'] ?? '').toString().trim().replaceAll(RegExp(r'[^0-9]'), '');
@@ -20,7 +19,54 @@ class SignupPayloadService {
     return null;
   }
 
-  /// چاروں بلڈرز کو یکجا کر کے حتمی پے لوڈ بنانا
+  static Map<String, dynamic> bundleFormData({
+    required String phone,
+    required String name,
+    required String fatherName,
+    required String caste,
+    required String cnic,
+    required String address,
+    required String pin,
+    required bool agreementAccepted,
+    required String cnicFront,
+    required String cnicBack,
+    required String selfie,
+    required String audioPath,
+    required String gName,
+    required String gFather,
+    required String gCaste,
+    required String gPhone,
+    required String gCnic,
+    required String gRelation,
+    required String gAddress,
+    required String gCnicFront,
+    required String gCnicBack,
+  }) {
+    return {
+      'customerPhone': phone.trim(),
+      'customerName': name.trim(),
+      'customerFatherName': fatherName.trim(),
+      'customerCaste': caste.trim(),
+      'customerCnic': cnic.trim(),
+      'customerAddress': address.trim(),
+      'pin': pin.trim(),
+      'agreementAccepted': agreementAccepted,
+      'customerCnicFront': cnicFront,
+      'customerCnicBack': cnicBack,
+      'customerSelfie': selfie,
+      'customerAudio': audioPath,
+      'guarantorName': gName.trim(),
+      'guarantorFatherName': gFather.trim(),
+      'guarantorCaste': gCaste.trim(),
+      'guarantorPhone': gPhone.trim(),
+      'guarantorCnic': gCnic.trim(),
+      'guarantorRelation': gRelation.trim(),
+      'guarantorAddress': gAddress.trim(),
+      'guarantorCnicFront': gCnicFront,
+      'guarantorCnicBack': gCnicBack,
+    };
+  }
+
   static Map<String, Map<String, dynamic>> buildAllPayloads([Map<String, dynamic>? d]) {
     final phone = (d?['phone'] ?? d?['customerPhone'] ?? '03012700351')
         .toString()
@@ -35,6 +81,5 @@ class SignupPayloadService {
     };
   }
 
-  /// انسپکٹر بینچ مارک
   static Map<String, dynamic> getBenchmarkPayload() => buildAllPayloads();
 }

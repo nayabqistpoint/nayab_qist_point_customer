@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_storage_handler.dart';
 
 class LoginCloudSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// کلاؤڈ فائر اسٹور سے یوزر کا تازہ ریکارڈ لا کر لوکل کیشے میں ڈالنا
   Future<bool> syncUserFromCloud(String cleanPhone) async {
     try {
       final docSnap = await _firestore
@@ -15,13 +14,13 @@ class LoginCloudSyncService {
 
       if (docSnap.exists && docSnap.data() != null) {
         final cloudData = Map<String, dynamic>.from(docSnap.data()!);
-        final usersBox = await HiveBoxManager.openSafeBox(HiveBoxManager.usersBoxName);
-        await usersBox.put(cleanPhone, cloudData);
+        await LoginStorageHandler.saveCloudUserLocally(
+          phone: cleanPhone,
+          userData: cloudData,
+        );
         return true;
       }
-    } catch (_) {
-      // نیٹ ورک نہ ہونے پر بغیر کریش ہوئے فال بیک
-    }
+    } catch (_) {}
     return false;
   }
 }

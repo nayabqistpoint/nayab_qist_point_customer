@@ -8,7 +8,7 @@ import 'package:nayab_qist_point_customer/customer_side/purchase_market_page/ser
 class PurchaseMarketController extends ChangeNotifier {
   int expandedCardIndex = -1;
 
-  ValueListenable<Box>? get boxListenable => PurchaseMarketStorageHandler.boxListenable;
+  ValueListenable<Box>? get boxListenable => PurchaseMarketStorageHandler.stockListenable;
 
   int get totalPlansCount => PurchaseMarketCalculationService.getTotalPlansCount();
 

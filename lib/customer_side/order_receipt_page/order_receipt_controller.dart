@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/services/order_receipt_storage_handler.dart';
-import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/services/purchase_order_payload_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
 import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/components/sign_up_barrier_dialog_ui.dart';
 
 class OrderReceiptController extends ChangeNotifier {
@@ -50,11 +48,13 @@ class OrderReceiptController extends ChangeNotifier {
       SignUpBarrierDialogUi.show(context);
       return;
     }
+
     isSubmitting = true;
     localError = null;
     notifyListeners();
+
     try {
-      final payload = PurchaseOrderPayloadService.buildOrderPayload(
+      final payload = OrderReceiptStorageHandler.buildOrderPayload(
         docId: tokenNo,
         customerPhone: customerPhone.trim(),
         sourceMode: sourceMode ?? 'STOCK',
@@ -70,24 +70,29 @@ class OrderReceiptController extends ChangeNotifier {
         orderDateTime: DateTime.now(),
       );
 
-      await OrderReceiptStorageHandler.saveOrderRecord(
+      final isSaved = await OrderReceiptStorageHandler.saveOrderRecord(
         tokenNo: tokenNo,
         payload: payload,
       );
 
-      MasterSyncHub.pushAllPendingRecords().catchError((_) {});
-
       if (!context.mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں کامیابی سے بن گیا!'),
-          backgroundColor: const Color(0xFF059669),
-        ),
-      );
+
+      if (isSaved) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('آرڈر $tokenNo کسٹمر $customerPhone کے کھاتے میں کامیابی سے بن گیا!'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
+      } else {
+        isSubmitting = false;
+        localError = 'آرڈر محفوظ کرتے وقت مسئلہ پیش آیا، دوبارہ کوشش کریں۔';
+        notifyListeners();
+      }
     } catch (e) {
       isSubmitting = false;
-      localError = 'آرڈر محفوظ کرتے وقت مسئلہ پیش آیا، دوبارہ کوشش کریں۔';
+      localError = 'غیر متوقع خرابی پیش آئی، دوبارہ کوشش کریں۔';
       notifyListeners();
     }
   }
