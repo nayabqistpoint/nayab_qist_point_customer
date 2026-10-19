@@ -1,15 +1,24 @@
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
 import 'transfer_to_installment_payload_service.dart';
 
 class TransferStorageHandler {
+  TransferStorageHandler._();
+
+  static ValueListenable<Box>? get customerBoxListenable {
+    if (Hive.isBoxOpen(HiveBoxManager.customerBoxName)) {
+      return Hive.box(HiveBoxManager.customerBoxName).listenable();
+    }
+    return null;
+  }
+
   static Future<bool> executeTransfer({
     required String customerPhone,
     required String contractDocId,
     required String productName,
     required int transferAmount,
   }) async {
-    final String nowIso = DateTime.now().toIso8601String();
-
     final txPayload = TransferToInstallmentPayloadService.buildTransactionPayload(
       customerPhone: customerPhone,
       productName: productName,
@@ -24,7 +33,7 @@ class TransferStorageHandler {
     for (var key in instBox.keys) {
       final doc = instBox.get(key);
       if (doc is Map && doc['customerPhone'] == customerPhone && doc['docId'] == contractDocId) {
-        batchPayloads[HiveBoxManager.installmentsBoxName] = 
+        batchPayloads[HiveBoxManager.installmentsBoxName] =
             TransferToInstallmentPayloadService.buildContractPayload(
               existingContractDoc: Map<String, dynamic>.from(doc),
               transferAmount: transferAmount,
@@ -36,22 +45,11 @@ class TransferStorageHandler {
     final custBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
     final custData = custBox.get(customerPhone);
     if (custData is Map) {
-      final int oldCashBal = (custData['cashLoanBalance'] as num?)?.toInt() ?? 0;
-      final int oldInstBal = (custData['installmentDueBalance'] as num?)?.toInt() ?? 0;
-
-      final int newCashBal = oldCashBal + transferAmount;
-      final int newInstBal = (oldInstBal - transferAmount).clamp(0, oldInstBal);
-
-      batchPayloads[HiveBoxManager.customerBoxName] = {
-        ...Map<String, dynamic>.from(custData),
-        'customerPhone': customerPhone,
-        'cashLoanBalance': newCashBal,
-        'installmentDueBalance': newInstBal,
-        'grandNetTotal': newCashBal + newInstBal,
-        'updatedAt': nowIso,
-        'lastUpdated': nowIso,
-        'isSynced': false,
-      };
+      batchPayloads[HiveBoxManager.customerBoxName] =
+          TransferToInstallmentPayloadService.buildCustomerPayload(
+            existingCustomerDoc: Map<String, dynamic>.from(custData),
+            transferAmount: transferAmount,
+          );
     }
 
     return await HiveBoxManager.writeBatchPayloads(

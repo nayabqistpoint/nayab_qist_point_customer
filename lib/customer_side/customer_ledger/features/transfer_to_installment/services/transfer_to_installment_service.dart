@@ -1,24 +1,37 @@
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
-
 class TransferToInstallmentService {
-  static Future<void> executeTransfer({
-    required BuildContext context,
-    required Map<String, dynamic> targetProduct,
+  TransferToInstallmentService._();
+
+  static String? validateTransferAmount({
     required int amount,
-  }) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UniversalPaymentPage(
-          title: 'نقد کھاتے سے قسط منتقلی (${targetProduct['name']})',
-          baseAmount: amount,
-          isInstallment: true,
-          itemName: targetProduct['name']?.toString() ?? 'موبائل فون',
-          planTitle: targetProduct['plan']?.toString() ?? 'اقساط پلان',
-          maxAllowedAmount: (targetProduct['remaining'] as int?) ?? 0,
-        ),
-      ),
+    required int maxRemaining,
+    required int availableGreenAdvance,
+  }) {
+    if (amount <= 0) {
+      return 'برائے مہربانی درست رقم درج کریں';
+    }
+    if (amount > availableGreenAdvance) {
+      return 'رقم دستیاب ایڈوانس سے زیادہ نہیں ہو سکتی';
+    }
+    if (amount > maxRemaining) {
+      return 'رقم اس پلان کے کل بقایا سے زیادہ نہیں ہو سکتی';
+    }
+    return null;
+  }
+
+  static int calculateMaxAllowed({
+    required int availableGreenAdvance,
+    required int maxRemaining,
+  }) {
+    if (availableGreenAdvance < maxRemaining) {
+      return availableGreenAdvance;
+    }
+    return maxRemaining;
+  }
+
+  static String formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
     );
   }
 }

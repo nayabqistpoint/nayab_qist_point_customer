@@ -1,18 +1,19 @@
-// lib/customer_side/universal_payments/universal_payment_page.dart
-
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_app_bar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_target_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_sources_split_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_adjustment_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_notes_media_card_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/components/payment_footer_action_bar_ui.dart';
+import 'universal_payment_args.dart';
+import 'universal_payment_controller.dart';
+import 'components/payment_app_bar_ui.dart';
+import 'components/payment_target_card_ui.dart';
+import 'components/payment_sources_split_card_ui.dart';
+import 'components/payment_adjustment_card_ui.dart';
+import 'components/payment_notes_media_card_ui.dart';
+import 'components/payment_footer_action_bar_ui.dart';
 
 class UniversalPaymentPage extends StatefulWidget {
-  final String title;
-  final int baseAmount;
-  final bool isInstallment;
+  final UniversalPaymentArgs? args;
+
+  final String? title;
+  final int? baseAmount;
+  final bool? isInstallment;
   final String? itemName;
   final String? planTitle;
   final int? installmentNo;
@@ -20,9 +21,10 @@ class UniversalPaymentPage extends StatefulWidget {
 
   const UniversalPaymentPage({
     super.key,
-    required this.title,
-    required this.baseAmount,
-    required this.isInstallment,
+    this.args,
+    this.title,
+    this.baseAmount,
+    this.isInstallment,
     this.itemName,
     this.planTitle,
     this.installmentNo,
@@ -39,15 +41,18 @@ class _UniversalPaymentPageState extends State<UniversalPaymentPage> {
   @override
   void initState() {
     super.initState();
-    controller = UniversalPaymentController(
-      baseAmount: widget.baseAmount,
-      isInstallment: widget.isInstallment,
-      title: widget.title,
-      itemName: widget.itemName,
-      planTitle: widget.planTitle,
-      installmentNo: widget.installmentNo,
-      maxAllowedAmount: widget.maxAllowedAmount,
-    );
+    final effectiveArgs = widget.args ??
+        UniversalPaymentArgs(
+          title: widget.title ?? 'ادائیگی رسید',
+          baseAmount: widget.baseAmount ?? 0,
+          isInstallment: widget.isInstallment ?? true,
+          itemName: widget.itemName,
+          planTitle: widget.planTitle,
+          installmentNo: widget.installmentNo,
+          maxAllowedAmount: widget.maxAllowedAmount,
+        );
+
+    controller = UniversalPaymentController(args: effectiveArgs);
   }
 
   @override
@@ -65,7 +70,7 @@ class _UniversalPaymentPageState extends State<UniversalPaymentPage> {
           textDirection: TextDirection.rtl,
           child: Scaffold(
             backgroundColor: const Color(0xFFF8FAFC),
-            appBar: PaymentAppBarUi(title: widget.title),
+            appBar: PaymentAppBarUi(title: controller.title),
             body: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
@@ -78,7 +83,7 @@ class _UniversalPaymentPageState extends State<UniversalPaymentPage> {
                   const SizedBox(height: 14),
                   PaymentSourcesSplitCardUi(
                     controller: controller,
-                    onStateChange: controller.refresh,
+                    onStateChange: () => setState(() {}),
                   ),
                   const SizedBox(height: 14),
                   PaymentAdjustmentCardUi(controller: controller),

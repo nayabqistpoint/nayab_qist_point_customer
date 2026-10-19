@@ -1,26 +1,61 @@
 class LedgerCalculationService {
-  static int calculateTotalInstallmentDue(List<Map<String, dynamic>> products) {
-    return products.fold(0, (sum, p) => sum + ((p['remaining'] as int?) ?? 0));
+  LedgerCalculationService._();
+
+  static String formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 
-  static int calculatePendingServiceCredit(List<Map<String, dynamic>> txs) {
-    return txs
-        .where((t) => (t['status'] ?? '').toString().toUpperCase() != 'APPROVED')
-        .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
-  }
+  static Map<String, dynamic> parseInstallmentsSummary(List<Map<String, dynamic>> rawOrders) {
+    int totalDue = 0;
+    int overdueCount = 0;
+    int overdueAmount = 0;
+    String firstMobileTitle = 'کوئی فعال پلان نہیں';
+    String firstPlanSubtitle = '0 اقساط';
 
-  static int calculateApprovedServiceCredit(List<Map<String, dynamic>> txs) {
-    return txs
-        .where((t) => (t['status'] ?? '').toString().toUpperCase() == 'APPROVED')
-        .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
+    if (rawOrders.isNotEmpty) {
+      final first = rawOrders.first;
+      firstMobileTitle = first['itemName']?.toString() ?? 'موبائل فون';
+      final totalMonths = first['totalMonths']?.toString() ?? '';
+      firstPlanSubtitle = totalMonths.isNotEmpty ? '$totalMonths ماہ پلان' : 'اقساط پلان';
+
+      for (final order in rawOrders) {
+        final installments = (order['installments'] as List?) ?? [];
+        for (final rawInst in installments) {
+          if (rawInst is Map) {
+            final due = (rawInst['dueAmount'] as num?)?.toInt() ?? 0;
+            final vStatus = (rawInst['verificationStatus'] ?? '').toString().toUpperCase();
+            final bool isApproved = vStatus == 'APPROVED' || vStatus == 'VERIFIED';
+            final paid = isApproved ? ((rawInst['paidAmount'] as num?)?.toInt() ?? 0) : 0;
+            final remaining = (due - paid).clamp(0, due);
+
+            totalDue += remaining;
+
+            final status = (rawInst['status'] ?? '').toString().toUpperCase();
+            if (status == 'DUE' && remaining > 0) {
+              overdueCount++;
+              overdueAmount += remaining;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      'totalDue': totalDue,
+      'overdueCount': overdueCount,
+      'overdueAmount': overdueAmount,
+      'mobileTitle': firstMobileTitle,
+      'planSubtitle': firstPlanSubtitle,
+    };
   }
 
   static int calculateGrandNetTotal({
     required int installmentDue,
     required int cashLoanBalance,
-    required int approvedServiceCredit,
   }) {
-    final int net = (installmentDue + cashLoanBalance) - approvedServiceCredit;
-    return net > 0 ? net : 0;
+    return installmentDue + cashLoanBalance;
   }
 }

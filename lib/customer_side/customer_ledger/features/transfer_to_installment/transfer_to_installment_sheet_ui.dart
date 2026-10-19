@@ -1,31 +1,47 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'transfer_to_installment_args.dart';
 import 'transfer_to_installment_controller.dart';
 
 class TransferToInstallmentSheetUi {
-  static void show({
-    required BuildContext context,
-    required String customerPhone,
-    required int availableGreenAdvance,
-    required List<Map<String, dynamic>> customerProducts,
-    required String Function(int) formatAmount,
-  }) {
-    final controller = TransferToInstallmentController(customerPhone: customerPhone, products: customerProducts);
+  TransferToInstallmentSheetUi._();
 
-    showModalBottomSheet(
+  static Future<TransferToInstallmentResult?> show({
+    required BuildContext context,
+    TransferToInstallmentArgs? args,
+    String? customerPhone,
+    int? availableGreenAdvance,
+    List<Map<String, dynamic>>? customerProducts,
+    String Function(int)? formatAmount,
+  }) {
+    final effectiveArgs = args ??
+        TransferToInstallmentArgs(
+          customerPhone: customerPhone ?? '',
+          products: customerProducts ?? [],
+          availableGreenAdvance: availableGreenAdvance ?? 0,
+        );
+
+    final controller = TransferToInstallmentController(args: effectiveArgs);
+
+    return showModalBottomSheet<TransferToInstallmentResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ListenableBuilder(
         listenable: controller,
         builder: (ctx, _) {
-          final maxAllowed = min(availableGreenAdvance, controller.maxRemaining);
-
           return Directionality(
             textDirection: TextDirection.rtl,
             child: Container(
-              padding: EdgeInsets.only(left: 16, right: 16, top: 18, bottom: MediaQuery.of(ctx).viewInsets.bottom + 18),
-              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 18,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 18,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,19 +49,42 @@ class TransferToInstallmentSheetUi {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('نقد ایڈوانس سے قسط میں منتقلی', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F766E))),
-                      IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close_rounded)),
+                      const Text(
+                        'نقد ایڈوانس سے قسط میں منتقلی',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F766E),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
                     ],
                   ),
                   const Divider(),
-                  Text('دستیاب نقد ایڈوانس رقم: Rs. ${formatAmount(availableGreenAdvance)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                  Text(
+                    'دستیاب نقد ایڈوانس رقم: Rs. ${controller.formatAmount(controller.availableGreenAdvance)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF059669),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<int>(
                     initialValue: controller.selectedIndex,
-                    items: List.generate(customerProducts.length, (i) => DropdownMenuItem(
-                      value: i,
-                      child: Text('${customerProducts[i]['name']} - بقایا: Rs. ${formatAmount(customerProducts[i]['remaining'] ?? 0)}', style: const TextStyle(fontSize: 12)),
-                    )),
+                    items: List.generate(
+                      controller.products.length,
+                      (i) => DropdownMenuItem(
+                        value: i,
+                        child: Text(
+                          '${controller.products[i]['name'] ?? controller.products[i]['title']} - بقایا: Rs. ${controller.formatAmount(controller.products[i]['remaining'] ?? 0)}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
                     onChanged: (v) => v != null ? controller.selectProduct(v) : null,
                   ),
                   const SizedBox(height: 12),
@@ -53,7 +92,7 @@ class TransferToInstallmentSheetUi {
                     controller: controller.amountCtrl,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'زیادہ سے زیادہ رقم: Rs. ${formatAmount(maxAllowed)}',
+                      hintText: 'زیادہ سے زیادہ رقم: Rs. ${controller.formatAmount(controller.maxAllowed)}',
                       prefixText: 'Rs. ',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -64,21 +103,41 @@ class TransferToInstallmentSheetUi {
                     width: double.infinity,
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final inputAmt = controller.parsedAmount;
-                        if (inputAmt <= 0) return;
-                        if (inputAmt > maxAllowed) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('رقم دستیاب ایڈوانس (Rs. ${formatAmount(maxAllowed)}) سے زیادہ نہیں ہو سکتی'),
-                            backgroundColor: const Color(0xFFDC2626),
-                          ));
-                          return;
-                        }
-                        Navigator.pop(ctx);
-                        await controller.submitTransfer();
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
-                      child: const Text('واٹر فال منتقلی کریں', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: controller.isSubmitting
+                          ? null
+                          : () async {
+                              final validationError = controller.validate();
+                              if (validationError != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(validationError),
+                                    backgroundColor: const Color(0xFFDC2626),
+                                  ),
+                                );
+                                return;
+                              }
+                              final result = await controller.submitTransfer();
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx, result);
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F766E),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: controller.isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'واٹر فال منتقلی کریں',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                 ],

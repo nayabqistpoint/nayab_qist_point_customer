@@ -4,6 +4,7 @@ import 'transaction_history_args.dart';
 import 'transaction_history_controller.dart';
 import 'components/transaction_filter_bar_ui.dart';
 import 'components/transaction_card_tile_ui.dart';
+import 'components/transaction_empty_state_ui.dart';
 
 class TransactionHistoryPage extends StatefulWidget {
   final TransactionHistoryArgs args;
@@ -54,7 +55,11 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
             children: [
               const Text(
                 'رسیدیں و واٹرفال تفصیلات:',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF334155),
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -65,7 +70,11 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                 ),
                 child: Text(
                   'تعداد: ${items.length}',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF475569),
+                  ),
                 ),
               ),
             ],
@@ -73,21 +82,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           const SizedBox(height: 10),
           Expanded(
             child: items.isEmpty
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'اس فلٹر کے مطابق کوئی رسید یا ٹرانزیکشن موجود نہیں ہے۔',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  )
+                ? const Center(child: TransactionEmptyStateUi())
                 : ListView.separated(
                     physics: const BouncingScrollPhysics(),
                     itemCount: items.length,
@@ -118,7 +113,11 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           backgroundColor: const Color(0xFF0F172A),
           title: const Text(
             'ٹرانزیکشن ریکارڈ و رسیدیں',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
         body: listenable == null

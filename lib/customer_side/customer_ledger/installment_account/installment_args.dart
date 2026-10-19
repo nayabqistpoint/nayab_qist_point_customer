@@ -14,12 +14,12 @@ class InstallmentArgs {
     this.initialFilter = 'Active',
   });
 
-  factory InstallmentArgs.fromMap(Map<String, dynamic> map) {
+  factory InstallmentArgs.fromMap(Map<String, dynamic>? map) {
     return InstallmentArgs(
-      customerPhone: map['customerPhone'] as String? ?? '',
-      customerName: map['customerName'] as String?,
-      targetOrderId: map['targetOrderId'] as String?,
-      initialFilter: map['initialFilter'] as String? ?? 'Active',
+      customerPhone: map?['customerPhone']?.toString() ?? '',
+      customerName: map?['customerName']?.toString(),
+      targetOrderId: map?['targetOrderId']?.toString(),
+      initialFilter: map?['initialFilter']?.toString() ?? 'Active',
     );
   }
 

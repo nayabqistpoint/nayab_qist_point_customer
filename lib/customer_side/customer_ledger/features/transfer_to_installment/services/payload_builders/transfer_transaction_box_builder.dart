@@ -1,4 +1,6 @@
 class TransferTransactionBoxBuilder {
+  TransferTransactionBoxBuilder._();
+
   static Map<String, dynamic> build({
     required String customerPhone,
     required String productName,
@@ -16,12 +18,12 @@ class TransferTransactionBoxBuilder {
       'title': 'نقد ایڈوانس سے قسط منتقلی ($productName)',
       'amount': transferAmount,
       'type': 'DEBIT',
-      'txColor': 'RED', // 🔴 نقد کھاتے سے کٹوتی
+      'txColor': 'RED',
       'status': 'PENDING',
       'date': '${now.day} اکتوبر ${now.year}',
       'createdAt': nowIso,
       'updatedAt': nowIso,
-      'isSynced': false, // ☁️ سنک ٹریگر
+      'isSynced': false,
       'hasPhoto': false,
       'hasAudio': false,
     };

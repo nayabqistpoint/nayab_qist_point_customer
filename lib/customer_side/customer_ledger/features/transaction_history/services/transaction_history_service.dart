@@ -1,50 +1,77 @@
-import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-
 class TransactionHistoryService {
-  static Future<Box> ensureBoxOpen() async {
-    return await HiveBoxManager.openSafeBox(HiveBoxManager.transactionBoxName);
-  }
+  TransactionHistoryService._();
 
-  static ValueListenable<Box>? get boxListenable {
-    if (Hive.isBoxOpen(HiveBoxManager.transactionBoxName)) {
-      return Hive.box(HiveBoxManager.transactionBoxName).listenable();
-    }
-    return null;
-  }
-
-  static Future<List<Map<String, dynamic>>> getCustomerTransactions(String customerPhone) async {
-    final box = await ensureBoxOpen();
+  static List<Map<String, dynamic>> filterAndSortByCustomer({
+    required List<Map<String, dynamic>> rawTransactions,
+    required String customerPhone,
+  }) {
     final cleanPhone = customerPhone.replaceAll(RegExp(r'\s+'), '').trim();
-    final List<Map<String, dynamic>> results = [];
+    final List<Map<String, dynamic>> matched = [];
 
-    for (var key in box.keys) {
-      final rawData = box.get(key);
-      if (rawData is Map) {
-        final orderPhone = (rawData['customerPhone'] ?? '')
-            .toString()
-            .replaceAll(RegExp(r'\s+'), '')
-            .trim();
+    for (final entry in rawTransactions) {
+      final orderPhone = (entry['customerPhone'] ?? '')
+          .toString()
+          .replaceAll(RegExp(r'\s+'), '')
+          .trim();
 
-        final bool isMatch = cleanPhone.isNotEmpty &&
-            (orderPhone == cleanPhone ||
-                (cleanPhone.length >= 10 && orderPhone.endsWith(cleanPhone.substring(cleanPhone.length - 10))));
+      final bool isMatch = cleanPhone.isNotEmpty &&
+          (orderPhone == cleanPhone ||
+              (cleanPhone.length >= 10 &&
+                  orderPhone.endsWith(cleanPhone.substring(cleanPhone.length - 10))));
 
-        if (isMatch) {
-          final Map<String, dynamic> entry = Map<String, dynamic>.from(rawData);
-          entry['key'] = key;
-          results.add(entry);
-        }
+      if (isMatch) {
+        matched.add(entry);
       }
     }
 
-    results.sort((a, b) {
+    matched.sort((a, b) {
       final String dateA = (a['date'] ?? a['paymentDate'] ?? a['createdAt'] ?? '').toString();
       final String dateB = (b['date'] ?? b['paymentDate'] ?? b['createdAt'] ?? '').toString();
       return dateB.compareTo(dateA);
     });
 
-    return results;
+    return matched;
+  }
+
+  static List<Map<String, dynamic>> applyFilterTab({
+    required List<Map<String, dynamic>> transactions,
+    required int filterIndex,
+  }) {
+    if (filterIndex == 0) return transactions;
+
+    if (filterIndex == 1) {
+      return transactions.where((t) {
+        final String type = (t['type'] ?? t['txType'] ?? '').toString().toUpperCase();
+        final String orderDocId = (t['orderDocId'] ?? '').toString();
+        return type.contains('INSTALLMENT') || orderDocId != 'CASH_LOAN_ACCOUNT';
+      }).toList();
+    }
+
+    if (filterIndex == 2) {
+      return transactions.where((t) {
+        final String type = (t['type'] ?? t['txType'] ?? '').toString().toUpperCase();
+        final String orderDocId = (t['orderDocId'] ?? '').toString();
+        return type.contains('CASH') ||
+            type.contains('GROCERY') ||
+            type.contains('STOCK') ||
+            orderDocId == 'CASH_LOAN_ACCOUNT';
+      }).toList();
+    }
+
+    if (filterIndex == 3) {
+      return transactions.where((t) {
+        final String vStatus = (t['verificationStatus'] ?? 'UNDER_REVIEW').toString().toUpperCase();
+        return vStatus != 'APPROVED' && vStatus != 'VERIFIED';
+      }).toList();
+    }
+
+    return transactions;
+  }
+
+  static String formatAmount(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
   }
 }

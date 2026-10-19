@@ -1,4 +1,6 @@
 class TransferInstallmentsBoxBuilder {
+  TransferInstallmentsBoxBuilder._();
+
   static Map<String, dynamic> build({
     required Map<String, dynamic> existingContractDoc,
     required int transferAmount,
@@ -10,7 +12,7 @@ class TransferInstallmentsBoxBuilder {
     int remainingTransferPool = transferAmount;
     final List<Map<String, dynamic>> updatedInstallments = [];
 
-    for (var rawItem in rawInstallments) {
+    for (final rawItem in rawInstallments) {
       final inst = Map<String, dynamic>.from(rawItem as Map);
       final int dueAmount = (inst['dueAmount'] as num?)?.toInt() ?? 0;
       int paidAmount = (inst['paidAmount'] as num?)?.toInt() ?? 0;
@@ -28,7 +30,7 @@ class TransferInstallmentsBoxBuilder {
           remainingAmount -= remainingTransferPool;
           remainingTransferPool = 0;
           inst['status'] = 'PENDING';
-          inst['paymentPercentage'] = ((paidAmount / dueAmount) * 100).round();
+          inst['paymentPercentage'] = dueAmount > 0 ? ((paidAmount / dueAmount) * 100).round() : 0;
         }
         inst['verificationStatus'] = 'approved';
       }
@@ -42,7 +44,7 @@ class TransferInstallmentsBoxBuilder {
     contract['lastAdjustmentNote'] = 'نقد کھاتے سے قسط میں Rs. $transferAmount ایڈجسٹ کیے گئے';
     contract['updatedAt'] = nowIso;
     contract['lastUpdated'] = nowIso;
-    contract['isSynced'] = false; // ☁️ सिंक ट्रिगर
+    contract['isSynced'] = false;
 
     return contract;
   }

@@ -1,27 +1,20 @@
-// lib/customer_side/universal_payments/universal_payment_controller.dart
-
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/services/payment_config_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/services/payment_rebalance_engine.dart';
+import 'universal_payment_args.dart';
+import 'services/payment_config_service.dart';
+import 'services/payment_math_service.dart';
+import 'services/payment_rebalance_engine.dart';
+import 'services/payment_storage_handler.dart';
 
 class UniversalPaymentController extends ChangeNotifier {
-  final int baseAmount;
-  final bool isInstallment;
-  final String title;
-  final String? itemName;
-  final String? planTitle;
-  final int? installmentNo;
-  final int? maxAllowedAmount; // موبائل کا کل واجب الادا بقایا
+  final UniversalPaymentArgs args;
 
   late final TextEditingController targetAmountCtrl;
   late final TextEditingController discountCtrl;
   final TextEditingController noteCtrl = TextEditingController();
-
   final List<TextEditingController> splitTextControllers = [];
 
   bool isCustomAmountMode = false;
   bool isLoadingConfig = true;
-
   bool hasReceiptPhoto = false;
   bool hasVoiceNote = false;
   bool isRecording = false;
@@ -30,58 +23,25 @@ class UniversalPaymentController extends ChangeNotifier {
   List<String> availableSources = [];
   List<String> availableDiscountCategories = [];
   int selectedDiscountCategoryIndex = 0;
-
   final List<SplitSourceItem> splitEntries = [];
 
-  UniversalPaymentController({
-    required this.baseAmount,
-    required this.isInstallment,
-    required this.title,
-    this.itemName,
-    this.planTitle,
-    this.installmentNo,
-    this.maxAllowedAmount,
-  }) {
-    targetAmountCtrl = TextEditingController(text: baseAmount.toString());
+  UniversalPaymentController({required this.args}) {
+    targetAmountCtrl = TextEditingController(text: args.baseAmount.toString());
     discountCtrl = TextEditingController(text: '0');
-
-    targetAmountCtrl.addListener(_onTargetOrDiscountChanged);
-    discountCtrl.addListener(_onTargetOrDiscountChanged);
-
+    targetAmountCtrl.addListener(_syncCalculations);
+    discountCtrl.addListener(_syncCalculations);
     _initData();
   }
 
-  Future<void> _initData() async {
-    availableSources = await PaymentConfigService.getPaymentSources();
-    availableDiscountCategories = await PaymentConfigService.getDiscountCategories();
-
-    final primarySource = availableSources.isNotEmpty ? availableSources.first : 'دکان کیش دراز';
-    splitEntries.add(SplitSourceItem(source: primarySource, amount: baseAmount));
-
-    final ctrl = TextEditingController(text: baseAmount.toString());
-    splitTextControllers.add(ctrl);
-
-    isLoadingConfig = false;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    targetAmountCtrl.dispose();
-    discountCtrl.dispose();
-    noteCtrl.dispose();
-    for (final c in splitTextControllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
+  int get baseAmount => args.baseAmount;
+  bool get isInstallment => args.isInstallment;
+  String get title => args.title;
+  String? get itemName => args.itemName;
+  String? get planTitle => args.planTitle;
+  int? get maxAllowedAmount => args.maxAllowedAmount;
 
   int get targetPayable => int.tryParse(targetAmountCtrl.text.replaceAll(',', '').trim()) ?? 0;
   int get discountAmount => int.tryParse(discountCtrl.text.replaceAll(',', '').trim()) ?? 0;
-  int get netRequiredCash => PaymentRebalanceEngine.calculateNetPayableAfterDiscount(
-        totalTarget: targetPayable,
-        discountAmount: discountAmount,
-      );
   int get splitsSum => PaymentRebalanceEngine.calculateTotalSplits(splitEntries);
   int get discrepancy => PaymentRebalanceEngine.calculateDiscrepancy(
         totalTarget: targetPayable,
@@ -89,15 +49,9 @@ class UniversalPaymentController extends ChangeNotifier {
         discountAmount: discountAmount,
       );
 
-  /// 🎯 زیادہ سے زیادہ حد (Ceiling) کی ویلیڈیشن: کیا رقم کل بقایا سے بڑھ گئی ہے؟
-  bool get isExceedingMaxLimit {
-    if (isInstallment && maxAllowedAmount != null && maxAllowedAmount! > 0) {
-      return targetPayable > maxAllowedAmount!;
-    }
-    return false;
-  }
+  bool get isExceedingMaxLimit =>
+      isInstallment && maxAllowedAmount != null && maxAllowedAmount! > 0 && targetPayable > maxAllowedAmount!;
 
-  /// حتمی ویلیڈیشن: حساب بھی برابر ہو اور حد سے زیادہ بھی نہ ہو
   bool get isReconciled =>
       !isExceedingMaxLimit &&
       PaymentRebalanceEngine.verifyReconciliation(
@@ -106,34 +60,33 @@ class UniversalPaymentController extends ChangeNotifier {
         discountAmount: discountAmount,
       );
 
-  void refresh() => notifyListeners();
+  Future<void> _initData() async {
+    availableSources = await PaymentConfigService.getPaymentSources();
+    availableDiscountCategories = await PaymentConfigService.getDiscountCategories();
 
-  void _syncPrimaryBox() {
-    PaymentRebalanceEngine.autoAdjustPrimarySource(
-      splits: splitEntries,
-      totalTarget: targetPayable,
-      discountAmount: discountAmount,
-    );
+    final primary = availableSources.isNotEmpty ? availableSources.first : 'دکان کیش دراز';
+    splitEntries.add(SplitSourceItem(source: primary, amount: baseAmount));
+    splitTextControllers.add(TextEditingController(text: baseAmount.toString()));
 
-    if (splitTextControllers.isNotEmpty && splitEntries.isNotEmpty) {
-      final currentTxt = splitTextControllers[0].text;
-      final newTxt = splitEntries[0].amount.toString();
-      if (currentTxt != newTxt) {
-        splitTextControllers[0].text = newTxt;
-      }
-    }
+    isLoadingConfig = false;
     notifyListeners();
   }
 
-  void _onTargetOrDiscountChanged() {
-    _syncPrimaryBox();
+  void _syncCalculations() {
+    PaymentRebalanceEngine.autoAdjustPrimarySource(
+      splits: splitEntries,
+      controllers: splitTextControllers,
+      totalTarget: targetPayable,
+      discountAmount: discountAmount,
+    );
+    notifyListeners();
   }
 
   void toggleCustomMode(bool custom) {
     isCustomAmountMode = custom;
     targetAmountCtrl.text = baseAmount.toString();
     discountCtrl.text = '0';
-    _syncPrimaryBox();
+    _syncCalculations();
   }
 
   void setDiscountCategoryIndex(int index) {
@@ -146,28 +99,28 @@ class UniversalPaymentController extends ChangeNotifier {
     if (index >= 0 && index < splitEntries.length) {
       splitEntries[index].amount = parsed;
       if (index > 0) {
-        _syncPrimaryBox();
+        _syncCalculations();
       } else {
         notifyListeners();
       }
     }
   }
 
-  void updateSplitSource(int index, String newSource) {
+  void updateSplitSource(int index, String source) {
     if (index >= 0 && index < splitEntries.length) {
-      splitEntries[index].source = newSource;
+      splitEntries[index].source = source;
       notifyListeners();
     }
   }
 
   void addSplitEntry() {
-    final defaultSource = availableSources.length > splitEntries.length
+    final nextSource = availableSources.length > splitEntries.length
         ? availableSources[splitEntries.length]
         : (availableSources.isNotEmpty ? availableSources.last : 'بینک');
 
-    splitEntries.add(SplitSourceItem(source: defaultSource, amount: 0));
+    splitEntries.add(SplitSourceItem(source: nextSource, amount: 0));
     splitTextControllers.add(TextEditingController(text: '0'));
-    _syncPrimaryBox();
+    _syncCalculations();
   }
 
   void removeSplitEntry(int index) {
@@ -175,7 +128,7 @@ class UniversalPaymentController extends ChangeNotifier {
       splitEntries.removeAt(index);
       splitTextControllers[index].dispose();
       splitTextControllers.removeAt(index);
-      _syncPrimaryBox();
+      _syncCalculations();
     }
   }
 
@@ -186,24 +139,29 @@ class UniversalPaymentController extends ChangeNotifier {
   void deleteVoiceNote() {}
 
   Map<String, dynamic> buildSubmissionResult() {
-    return {
-      'targetPayable': targetPayable,
-      'paid': splitsSum,
-      'discount': discountAmount,
-      'extra': 0,
-      'splits': splitEntries.map((e) => e.toMap()).toList(),
-      'note': noteCtrl.text.trim(),
-      'receiptImagePath': '',
-      'voiceNotePath': '',
-      'hasPhoto': hasReceiptPhoto,
-      'hasAudio': hasVoiceNote,
-    };
+    return PaymentStorageHandler.generateSubmissionPayload(
+      targetPayable: targetPayable,
+      splitsSum: splitsSum,
+      discountAmount: discountAmount,
+      splits: splitEntries.map((e) => e.toMap()).toList(),
+      note: noteCtrl.text.trim(),
+      receiptImagePath: '',
+      voiceNotePath: '',
+      hasPhoto: hasReceiptPhoto,
+      hasAudio: hasVoiceNote,
+    );
   }
 
-  String formatAmount(int amount) {
-    return amount.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+  String formatAmount(int amount) => PaymentMathService.formatAmount(amount);
+
+  @override
+  void dispose() {
+    targetAmountCtrl.dispose();
+    discountCtrl.dispose();
+    noteCtrl.dispose();
+    for (final c in splitTextControllers) {
+      c.dispose();
+    }
+    super.dispose();
   }
 }
