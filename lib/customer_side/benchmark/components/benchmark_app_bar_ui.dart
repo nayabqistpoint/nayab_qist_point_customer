@@ -18,79 +18,73 @@ class BenchmarkAppBarUi extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(56);
 
-  void _executeMasterCopyForAi(BuildContext context) {
-    String output = '';
-
-    if (activeTabIndex == 0) {
-      // 🎯 टैब 1: सारे 6 पेजों के पेलोड स्कीमा एक साथ AI के लिए
-      final pages = BenchmarkRegistryService.getRegisteredPages();
-      final Map<String, dynamic> fullPagesMap = {};
-      for (final p in pages) {
-        fullPagesMap[p.title] = {
-          'targetBoxes': p.targetBoxes,
-          'payload': p.samplePayload(),
-        };
-      }
-      output = '''
-// ==========================================
-// BENCHMARK MASTER SCHEMA: ALL PAGES (6)
-// ==========================================
-${BenchmarkLiveLogger.formatJson(fullPagesMap)}
-''';
-    } else if (activeTabIndex == 1) {
-      // 🎯 टैब 2: सारे ऐक्टिव हाइव बॉक्सेज का लाइव डेटा AI के लिए
-      final boxesMeta = BenchmarkRegistryService.getBoxesMetadata();
-      final Map<String, dynamic> liveBoxesDump = {};
-
-      for (final meta in boxesMeta) {
-        if (Hive.isBoxOpen(meta.boxName)) {
-          final b = Hive.box(meta.boxName);
-          final Map<String, dynamic> boxContents = {};
-          for (final k in b.keys) {
-            boxContents[k.toString()] = b.get(k);
-          }
-          liveBoxesDump[meta.boxName] = {
-            'recordsCount': b.keys.length,
-            'primaryKeys': meta.primaryKeys,
-            'data': boxContents,
-          };
-        } else {
-          liveBoxesDump[meta.boxName] = {'status': 'CLOSED'};
-        }
-      }
-      output = '''
-// ==========================================
-// BENCHMARK LIVE HIVE STORAGE DUMP (ALL BOXES)
-// ==========================================
-${BenchmarkLiveLogger.formatJson(liveBoxesDump)}
-''';
-    } else {
-      // 🎯 टैब 3: लाइव फ्लाइट रिकॉर्डर के सारे लॉग्स AI के लिए
-      final logs = BenchmarkLiveLogger.instance.logs;
-      final logsList = logs.map((l) => {
-        'title': l.title,
-        'time': l.timeFormatted,
-        'data': l.data,
-      }).toList();
-
-      output = '''
-// ==========================================
-// BENCHMARK LIVE FLIGHT RECORDER LOGS (${logs.length})
-// ==========================================
-${BenchmarkLiveLogger.formatJson(logsList)}
-''';
+  void _copyAllPagesSchema(BuildContext context) {
+    final pages = BenchmarkRegistryService.getRegisteredPages();
+    final Map<String, dynamic> fullPagesMap = {};
+    for (final p in pages) {
+      fullPagesMap[p.title] = {
+        'folder': p.featureFolder,
+        'targetBoxes': p.targetBoxes,
+        'schema': p.samplePayload(),
+      };
     }
+    final text = '// تمام 7 پیجز کا آفیشل پے لوڈ اسکیما\n${BenchmarkLiveLogger.formatJson(fullPagesMap)}';
+    Clipboard.setData(ClipboardData(text: text));
+    _showToast(context, 'تمام پیجز کا پے لوڈ اسکیما AI کے لیے کاپی ہو گیا!');
+  }
 
-    Clipboard.setData(ClipboardData(text: output));
+  void _copyAllBoxesDump(BuildContext context) {
+    final boxesMeta = BenchmarkRegistryService.getBoxesMetadata();
+    final Map<String, dynamic> liveDump = {};
+    for (final meta in boxesMeta) {
+      if (Hive.isBoxOpen(meta.boxName)) {
+        final b = Hive.box(meta.boxName);
+        final Map<String, dynamic> data = {};
+        for (final k in b.keys) {
+          data[k.toString()] = b.get(k);
+        }
+        liveDump[meta.boxName] = {
+          'status': 'OPEN',
+          'totalRecords': b.keys.length,
+          'primaryKeys': meta.primaryKeys,
+          'data': data,
+        };
+      } else {
+        liveDump[meta.boxName] = {'status': 'CLOSED', 'primaryKeys': meta.primaryKeys};
+      }
+    }
+    final text = '// ہائیو کے تمام 9 باکسز کا لائیو ڈیٹا ڈمپ\n${BenchmarkLiveLogger.formatJson(liveDump)}';
+    Clipboard.setData(ClipboardData(text: text));
+    _showToast(context, 'تمام 9 ہائیو باکسز کا لائیو ڈیٹا AI کے لیے کاپی ہو گیا!');
+  }
+
+  void _copyBoxMatrixChart(BuildContext context) {
+    final boxesMeta = BenchmarkRegistryService.getBoxesMetadata();
+    final Map<String, dynamic> matrix = {};
+    for (final meta in boxesMeta) {
+      matrix[meta.boxName] = {
+        'purpose': meta.purpose,
+        'incomingPages': meta.writablePages,
+        'requiredKeys': meta.primaryKeys,
+      };
+    }
+    final text = '// باکس بمقابلہ پیجز میپنگ میٹرکس\n${BenchmarkLiveLogger.formatJson(matrix)}';
+    Clipboard.setData(ClipboardData(text: text));
+    _showToast(context, 'باکسز میپنگ میٹرکس AI کے لیے کاپی ہو گیا!');
+  }
+
+  void _copyFlightLogs(BuildContext context) {
+    final logs = BenchmarkLiveLogger.instance.logs;
+    final list = logs.map((l) => {'title': l.title, 'time': l.timeFormatted, 'data': l.data}).toList();
+    final text = '// لائیو فلائٹ ریکارڈر لاگز (${logs.length})\n${BenchmarkLiveLogger.formatJson(list)}';
+    Clipboard.setData(ClipboardData(text: text));
+    _showToast(context, 'تمام فلائٹ لاگز AI کے لیے کاپی ہو گئے!');
+  }
+
+  void _showToast(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          activeTabIndex == 0
-              ? 'تمام 6 پیجز کا اسکیما AI کے لیے کاپی ہو گیا!'
-              : (activeTabIndex == 1
-                  ? 'تمام ہائیو باکسز کا لائیو ڈیٹا AI کے لیے کاپی ہو گیا!'
-                  : 'تمام فلائٹ لاگز AI کے لیے کاپی ہو گئے!'),
-        ),
+        content: Text(msg, textDirection: TextDirection.rtl),
         backgroundColor: const Color(0xFF059669),
       ),
     );
@@ -113,21 +107,63 @@ ${BenchmarkLiveLogger.formatJson(logsList)}
             tooltip: 'لاگز صاف کریں',
             onPressed: onClearLogs,
           ),
-        // 🎯 मास्टर Copy for AI बटन
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-          child: ElevatedButton.icon(
-            onPressed: () => _executeMasterCopyForAi(context),
-            icon: const Icon(Icons.smart_toy_rounded, size: 14),
-            label: const Text('Copy for AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F172A),
-              foregroundColor: const Color(0xFF5EEAD4),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              elevation: 0,
+        PopupMenuButton<String>(
+          tooltip: 'AI کے لیے کاپی کریں',
+          icon: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.smart_toy_rounded, color: Color(0xFF5EEAD4), size: 14),
+                SizedBox(width: 4),
+                Text(
+                  'Copy for AI',
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF5EEAD4)),
+                ),
+                Icon(Icons.arrow_drop_down, color: Color(0xFF5EEAD4), size: 16),
+              ],
             ),
           ),
+          onSelected: (val) {
+            switch (val) {
+              case 'pages':
+                _copyAllPagesSchema(context);
+                break;
+              case 'boxes':
+                _copyAllBoxesDump(context);
+                break;
+              case 'matrix':
+                _copyBoxMatrixChart(context);
+                break;
+              case 'logs':
+                _copyFlightLogs(context);
+                break;
+            }
+          },
+          itemBuilder: (ctx) => [
+            const PopupMenuItem(
+              value: 'pages',
+              child: Text('تمام پیجز کا اسکیما کاپی کریں', style: TextStyle(fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: 'boxes',
+              child: Text('تمام 9 باکسز کا ڈیٹا ڈمپ کاپی کریں', style: TextStyle(fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: 'matrix',
+              child: Text('باکسز میپنگ میٹرکس کاپی کریں', style: TextStyle(fontSize: 12)),
+            ),
+            const PopupMenuItem(
+              value: 'logs',
+              child: Text('فلائٹ لاگز کاپی کریں', style: TextStyle(fontSize: 12)),
+            ),
+          ],
         ),
+        const SizedBox(width: 6),
       ],
     );
   }
