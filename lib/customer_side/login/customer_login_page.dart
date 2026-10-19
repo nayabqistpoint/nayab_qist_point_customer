@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/database_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/customer_login_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/login/components/login_header_ui.dart';
@@ -87,37 +86,6 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                   },
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            top: 40,
-            right: 15,
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white, size: 28),
-              color: Colors.white,
-              onSelected: (value) {
-                if (value == 'db_monitor') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DatabasePage()),
-                  );
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem<String>(
-                  value: 'db_monitor',
-                  child: Row(
-                    children: [
-                      Icon(Icons.storage, color: Colors.teal),
-                      SizedBox(width: 10),
-                      Text(
-                        'Database Monitor',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
         ],
