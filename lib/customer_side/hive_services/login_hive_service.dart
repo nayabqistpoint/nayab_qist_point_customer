@@ -1,5 +1,5 @@
+import 'package:nayab_qist_point_customer/customer_side/benchmark/services/benchmark_live_logger.dart';
 import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
 
 class LoginHiveService {
   /// محفوظ اسناد چیک کر کے لاگ ان پروسیس کرنا
@@ -25,7 +25,7 @@ class LoginHiveService {
 
     // ۲. اسٹیٹس کی سخت تصدیق (صرف approved صارفین کو اجازت ہے)
     final status = (userCredentials['status'] ?? '').toString().trim().toLowerCase();
-    
+
     if (status != 'approved') {
       return {'success': false, 'message': 'آپ کا اکاؤنٹ ابھی ایڈمن کی منظوری کا منتظر ہے'};
     }
@@ -39,10 +39,10 @@ class LoginHiveService {
       await settingsBox.put(entry.key, entry.value);
     }
 
-    // ۵. انسپکٹر اسٹور میں لاگ بنانا
-    InspectorStore.instance.logPayload(
+    // ۵. بینچ مارک لائیو لاگر میں ریکارڈ بنانا
+    BenchmarkLiveLogger.instance.record(
       title: 'کسٹمر لاگ ان کامیاب ($phone)',
-      direction: PayloadDirection.localHiveWrite,
+      direction: BenchmarkPayloadDirection.localHiveWrite,
       data: sessionPayload,
     );
 
@@ -79,9 +79,9 @@ class LoginHiveService {
     // تمام پرائیویٹ سیشن باکسز بند کرنا
     await HiveBoxManager.closeSessionBoxes();
 
-    InspectorStore.instance.logPayload(
+    BenchmarkLiveLogger.instance.record(
       title: 'کسٹمر لاگ آؤٹ مکمل',
-      direction: PayloadDirection.localHiveWrite,
+      direction: BenchmarkPayloadDirection.localHiveWrite,
       data: {'isLoggedIn': false},
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/inspector/inspector_store.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/services/benchmark_live_logger.dart';
 import 'package:nayab_qist_point_customer/customer_side/sync/master_sync_hub.dart';
 
 class HiveBoxManager {
@@ -97,9 +97,10 @@ class HiveBoxManager {
         }
       }
 
-      InspectorStore.instance.logPayload(
+      // 🎯 سینٹرلائزڈ بینچ مارک لائیو فلائٹ ریکارڈر
+      BenchmarkLiveLogger.instance.record(
         title: '$logTitle (DocId: $docId)',
-        direction: PayloadDirection.localHiveWrite,
+        direction: BenchmarkPayloadDirection.localHiveWrite,
         data: payloads,
       );
 

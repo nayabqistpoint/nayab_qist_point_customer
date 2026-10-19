@@ -33,7 +33,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: lib/customer_side/customer_ledger/main_dashboard
+- Only files matching these patterns are included: lib/customer_side/benchmark
 - Files matching these patterns are excluded: **/*.g.dart, build/**, .dart_tool/**, android/**, ios/**, windows/**
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
@@ -47,1215 +47,1113 @@ The content is organized as follows:
 <directory_structure>
 lib/
   customer_side/
-    customer_ledger/
-      main_dashboard/
-        components/
-          cash_account_gateway_card_ui.dart
-          frozen_bottom_action_bar_ui.dart
-          installment_gateway_card_ui.dart
-          ledger_app_bar_ui.dart
-          logout_confirm_dialog_ui.dart
-          shop_notice_ticker_ui.dart
-          wallet_master_card_ui.dart
-        services/
-          ledger_action_handler_service.dart
-          ledger_calculation_service.dart
-          shop_notice_ticker_service.dart
-        customer_ledger_args.dart
-        customer_ledger_controller.dart
-        customer_ledger_view.dart
+    benchmark/
+      components/
+        benchmark_app_bar_ui.dart
+        benchmark_box_tab_ui.dart
+        benchmark_field_list_ui.dart
+        benchmark_live_tab_ui.dart
+        benchmark_page_tab_ui.dart
+      services/
+        benchmark_live_logger.dart
+        benchmark_registry_service.dart
+      benchmark_args.dart
+      benchmark_controller.dart
+      benchmark_page.dart
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/cash_account_gateway_card_ui.dart">
+<file path="lib/customer_side/benchmark/components/benchmark_app_bar_ui.dart">
 import 'package:flutter/material.dart';
-class CashAccountGatewayCardUi extends StatelessWidget {
-  final int balance;
-  final bool hasAdvance;
-  final String Function(int) formatAmount;
-  final VoidCallback onTap;
-  const CashAccountGatewayCardUi({
+import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../services/benchmark_registry_service.dart';
+import '../services/benchmark_live_logger.dart';
+class BenchmarkAppBarUi extends StatelessWidget implements PreferredSizeWidget {
+  final int activeTabIndex;
+  final VoidCallback onClearLogs;
+  const BenchmarkAppBarUi({
     super.key,
-    required this.balance,
-    required this.hasAdvance,
-    required this.formatAmount,
-    required this.onTap,
+    required this.activeTabIndex,
+    required this.onClearLogs,
+    required VoidCallback onCopyAll,
   });
   @override
+  Size get preferredSize => const Size.fromHeight(56);
+  void _executeMasterCopyForAi(BuildContext context) {
+    String output = '';
+    if (activeTabIndex == 0) {
+      // 🎯 टैब 1: सारे 6 पेजों के पेलोड स्कीमा एक साथ AI के लिए
+      final pages = BenchmarkRegistryService.getRegisteredPages();
+      final Map<String, dynamic> fullPagesMap = {};
+      for (final p in pages) {
+        fullPagesMap[p.title] = {
+          'targetBoxes': p.targetBoxes,
+          'payload': p.samplePayload(),
+        };
+      }
+      output = '''
+${BenchmarkLiveLogger.formatJson(fullPagesMap)}
+''';
+    } else if (activeTabIndex == 1) {
+      final boxesMeta = BenchmarkRegistryService.getBoxesMetadata();
+      final Map<String, dynamic> liveBoxesDump = {};
+      for (final meta in boxesMeta) {
+        if (Hive.isBoxOpen(meta.boxName)) {
+          final b = Hive.box(meta.boxName);
+          final Map<String, dynamic> boxContents = {};
+          for (final k in b.keys) {
+            boxContents[k.toString()] = b.get(k);
+          }
+          liveBoxesDump[meta.boxName] = {
+            'recordsCount': b.keys.length,
+            'primaryKeys': meta.primaryKeys,
+            'data': boxContents,
+          };
+        } else {
+          liveBoxesDump[meta.boxName] = {'status': 'CLOSED'};
+        }
+      }
+      output = '''
+${BenchmarkLiveLogger.formatJson(liveBoxesDump)}
+''';
+    } else {
+      final logs = BenchmarkLiveLogger.instance.logs;
+      final logsList = logs.map((l) => {
+        'title': l.title,
+        'time': l.timeFormatted,
+        'data': l.data,
+      }).toList();
+      output = '''
+${BenchmarkLiveLogger.formatJson(logsList)}
+''';
+    }
+    Clipboard.setData(ClipboardData(text: output));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          activeTabIndex == 0
+              ? 'تمام 6 پیجز کا اسکیما AI کے لیے کاپی ہو گیا!'
+              : (activeTabIndex == 1
+                  ? 'تمام ہائیو باکسز کا لائیو ڈیٹا AI کے لیے کاپی ہو گیا!'
+                  : 'تمام فلائٹ لاگز AI کے لیے کاپی ہو گئے!'),
+        ),
+        backgroundColor: const Color(0xFF059669),
+      ),
+    );
+  }
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    return AppBar(
+      elevation: 0.5,
+      backgroundColor: Colors.white,
+      foregroundColor: const Color(0xFF0F172A),
+      title: const Text(
+        'بینچ مارک کنٹرول ٹاور',
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0FDFA),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF99F6E4)),
-                          ),
-                          child: const Icon(Icons.payments_rounded, size: 24, color: Color(0xFF0F766E)),
-                        ),
-                        const SizedBox(width: 12),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'نقد کھاتہ',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'دستی لین دین و نقد تفصیلات',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          hasAdvance ? 'دستیاب ایڈوانس' : 'واجب نقد رقم',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                        ),
-                        Text(
-                          '${hasAdvance ? '-' : ''}Rs. ${formatAmount(balance.abs())}',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            color: hasAdvance ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: hasAdvance ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: hasAdvance ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        hasAdvance ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                        size: 15,
-                        color: hasAdvance ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          hasAdvance
-                              ? 'سبز ایڈوانس رقم موجود ہے جسے اقساط میں ایڈجسٹ کیا جا سکتا ہے۔'
-                              : 'خالص نقد ادھار واجب الادا بیلنس ہے۔',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: hasAdvance ? const Color(0xFF166534) : const Color(0xFF991B1B),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'اس کھاتے میں نقد لین دین کا رننگ بیلنس اور تصدیق شدہ رسیدیں شامل ہیں۔',
-                  style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
-                ),
-              ],
+      actions: [
+        if (activeTabIndex == 2)
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded, color: Color(0xFFDC2626), size: 20),
+            tooltip: 'لاگز صاف کریں',
+            onPressed: onClearLogs,
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          child: ElevatedButton.icon(
+            onPressed: () => _executeMasterCopyForAi(context),
+            icon: const Icon(Icons.smart_toy_rounded, size: 14),
+            label: const Text('Copy for AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+              foregroundColor: const Color(0xFF5EEAD4),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              elevation: 0,
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          InkWell(
-            onTap: onTap,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'نقد کھاتہ پاس بک و ٹرانزیکشنز کھولیں',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F766E)),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF0F766E)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 </file>
 
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/installment_gateway_card_ui.dart">
+<file path="lib/customer_side/benchmark/components/benchmark_box_tab_ui.dart">
 import 'package:flutter/material.dart';
-class InstallmentGatewayCardUi extends StatelessWidget {
-  final String itemName;
-  final String planTitle;
-  final int remainingAmount;
-  final int overdueCount;
-  final int overdueAmount;
-  final String Function(int) formatAmount;
-  final VoidCallback onTap;
-  const InstallmentGatewayCardUi({
-    super.key,
-    required this.itemName,
-    required this.planTitle,
-    required this.remainingAmount,
-    required this.overdueCount,
-    required this.overdueAmount,
-    required this.formatAmount,
-    required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final bool hasOverdue = overdueCount > 0;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
-                          ),
-                          child: const Icon(Icons.phone_android_rounded, size: 24, color: Color(0xFF2563EB)),
-                        ),
-                        const SizedBox(width: 12),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'اقساط کھاتہ',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'موبائل فون اقساط پلانز',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'کل بقایا',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                        ),
-                        Text(
-                          'Rs. ${formatAmount(remainingAmount)}',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle_outline_rounded, size: 14, color: Color(0xFF0D9488)),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '$itemName • $planTitle',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: hasOverdue ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: hasOverdue ? const Color(0xFFFECACA) : const Color(0xFFBBF7D0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        hasOverdue ? Icons.warning_amber_rounded : Icons.verified_rounded,
-                        size: 15,
-                        color: hasOverdue ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          hasOverdue
-                              ? 'واجب الادا الرٹ: $overdueCount قسط واجب الادا ہے (Rs. ${formatAmount(overdueAmount)})'
-                              : 'اطمینان بخش: تمام شیڈول اقساط کلیئر ہیں ✓',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: hasOverdue ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          InkWell(
-            onTap: onTap,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'اقساط کھاتہ شیڈول و ادائیگی پیج کھولیں',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF2563EB)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/logout_confirm_dialog_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/login_hive_service.dart';
-class LogoutConfirmDialogUi extends StatelessWidget {
-  const LogoutConfirmDialogUi({super.key});
-  static Future<void> show(BuildContext context) {
-    return showDialog(
+import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../services/benchmark_registry_service.dart';
+import '../services/benchmark_live_logger.dart';
+import 'benchmark_field_list_ui.dart';
+class BenchmarkBoxTabUi extends StatelessWidget {
+  final ValueChanged<String>? onPageChipTapped;
+  const BenchmarkBoxTabUi({super.key, this.onPageChipTapped});
+  void _showDocumentDetail(BuildContext context, String boxName, dynamic key, dynamic value) {
+    final Map<String, dynamic> dataMap = value is Map ? Map<String, dynamic>.from(value) : {'value': value};
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      builder: (_) => const LogoutConfirmDialogUi(),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Dialog(
-        backgroundColor: Colors.white,
-        elevation: 10,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFEE2E2), width: 2),
-                ),
-                child: const Icon(
-                  Icons.power_settings_new_rounded,
-                  color: Color(0xFFDC2626),
-                  size: 28,
-                ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
               ),
-              const SizedBox(height: 14),
-              const Text(
-                'لاگ آؤٹ کی تصدیق',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'کیا آپ واقعی اپنا کھاتہ سیشن بند کر کے لاگ ان اسکرین پر واپس جانا چاہتے ہیں؟',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF64748B),
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
+              child: Row(
                 children: [
+                  const Icon(Icons.description_rounded, color: Color(0xFF0D9488), size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'منسوخ',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12.5,
-                        ),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('باکس: $boxName', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                        Text('$key', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await LoginHiveService.executeLogout();
-                        if (context.mounted) {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            AppRoutes.login,
-                            (route) => false,
-                          );
-                        }
-                      },
-                      child: const Text(
-                        'لاگ آؤٹ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12.5,
-                        ),
-                      ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final str = BenchmarkLiveLogger.formatJson(dataMap);
+                      Clipboard.setData(ClipboardData(text: '// Box: $boxName | Key: $key\n$str'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('डॉक्यूमेंट डेटा कॉपी हो गया!')),
+                      );
+                    },
+                    icon: const Icon(Icons.smart_toy_outlined, size: 12),
+                    label: const Text('Copy for AI', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  BenchmarkFieldListUi(payload: dataMap),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+  @override
+  Widget build(BuildContext context) {
+    final boxesMeta = BenchmarkRegistryService.getBoxesMetadata();
+    return ListView.separated(
+      padding: const EdgeInsets.all(10),
+      itemCount: boxesMeta.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final meta = boxesMeta[index];
+        final bool isOpen = Hive.isBoxOpen(meta.boxName);
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFCBD5E1), width: 1.1),
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            shape: const Border(),
+            leading: Icon(
+              Icons.inventory_2_rounded,
+              color: isOpen ? const Color(0xFF0D9488) : const Color(0xFFDC2626),
+              size: 20,
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    meta.boxName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5, fontWeight: FontWeight.w900),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: isOpen ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    isOpen ? 'Open' : 'Closed',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.bold,
+                      color: isOpen ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Text(
+              meta.purpose,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+            ),
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('اینٹری کے ذمہ دار پیجز:', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: meta.writablePages.map((pageName) {
+                        return ActionChip(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                          avatar: const Icon(Icons.open_in_new_rounded, size: 11, color: Color(0xFF1D4ED8)),
+                          label: Text(pageName, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          side: const BorderSide(color: Color(0xFFBFDBFE)),
+                          onPressed: () {
+                            if (onPageChipTapped != null) {
+                              onPageChipTapped!(pageName);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('لازمی کیز (Primary Keys):', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(
+                      meta.primaryKeys.join(' • '),
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.w600),
+                    ),
+                    if (isOpen) ...[
+                      const SizedBox(height: 8),
+                      const Divider(),
+                      _buildLiveBoxRecords(context, meta.boxName),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  Widget _buildLiveBoxRecords(BuildContext context, String boxName) {
+    final box = Hive.box(boxName);
+    return ValueListenableBuilder(
+      valueListenable: box.listenable(),
+      builder: (context, Box b, _) {
+        final keys = b.keys.toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'کل ریکارڈز: ${keys.length}',
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                ),
+                const Text(
+                  'تفصیل کے لیے ٹیپ کریں',
+                  style: TextStyle(fontSize: 9.5, color: Color(0xFF059669), fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (keys.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Center(
+                  child: Text('اس باکس میں فی الحال کوئی ڈیٹا نہیں ہے', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                ),
+              )
+            else
+              Container(
+                constraints: const BoxConstraints(maxHeight: 220),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: keys.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  itemBuilder: (ctx, i) {
+                    final k = keys[i];
+                    final val = b.get(k);
+                    return InkWell(
+                      onTap: () => _showDocumentDetail(context, boxName, k, val),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text('${i + 1}', style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              flex: 4,
+                              child: Text(
+                                '$k',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontFamily: 'monospace', fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              flex: 5,
+                              child: Text(
+                                val is Map ? '{${val.keys.length} keys}' : val.toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B)),
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 9, color: Color(0xFF94A3B8)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
 </file>
 
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/shop_notice_ticker_ui.dart">
-import 'dart:async';
+<file path="lib/customer_side/benchmark/components/benchmark_live_tab_ui.dart">
 import 'package:flutter/material.dart';
-import '../services/shop_notice_ticker_service.dart';
-class ShopNoticeTickerUi extends StatefulWidget {
-  const ShopNoticeTickerUi({super.key});
+import 'package:flutter/services.dart';
+import '../services/benchmark_live_logger.dart';
+class BenchmarkLiveTabUi extends StatelessWidget {
+  const BenchmarkLiveTabUi({super.key});
   @override
-  State<ShopNoticeTickerUi> createState() => _ShopNoticeTickerUiState();
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: BenchmarkLiveLogger.instance,
+      builder: (context, _) {
+        final logs = BenchmarkLiveLogger.instance.logs;
+        if (logs.isEmpty) {
+          return const Center(
+            child: Text(
+              'ابھی تک کوئی نیا لائیو پے لوڈ ریکارڈ نہیں ہوا。\nایپ میں کوئی بھی لین دین کریں تاکہ لائیو لاگ یہاں ظاہر ہو۔',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: logs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final record = logs[index];
+            final rawJson = BenchmarkLiveLogger.formatJson(record.data);
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.1),
+              ),
+              child: ExpansionTile(
+                leading: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: const Text('Hive Write 💾', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+                ),
+                title: Text(
+                  record.title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                ),
+                subtitle: Text(
+                  'وقت: ${record.timeFormatted}  •  کل باکسز/فیلڈز: ${record.data.keys.length}',
+                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                ),
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8FAFC),
+                      border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Captured Raw Payload (Exact Keys):',
+                              style: TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final textToCopy = '''
+$rawJson
+''';
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('مکمل لاگ کلپ بورڈ پر کاپی ہو گیا! AI کو پیسٹ کر دیں۔'),
+                                    backgroundColor: Color(0xFF059669),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.smart_toy_outlined, size: 14),
+                              label: const Text('Copy for AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF059669),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          rawJson,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: Color(0xFF0F172A),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
-class _ShopNoticeTickerUiState extends State<ShopNoticeTickerUi> {
-  late final ScrollController _scrollController;
-  Timer? _timer;
+</file>
+
+<file path="lib/customer_side/benchmark/components/benchmark_page_tab_ui.dart">
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../services/benchmark_registry_service.dart';
+import '../services/benchmark_live_logger.dart';
+import 'benchmark_field_list_ui.dart';
+class BenchmarkPageTabUi extends StatefulWidget {
+  const BenchmarkPageTabUi({super.key});
+  @override
+  State<BenchmarkPageTabUi> createState() => _BenchmarkPageTabUiState();
+}
+class _BenchmarkPageTabUiState extends State<BenchmarkPageTabUi> {
+  int selectedIndex = 0;
+  @override
+  Widget build(BuildContext context) {
+    final pages = BenchmarkRegistryService.getRegisteredPages();
+    final active = pages[selectedIndex];
+    final payload = active.samplePayload();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isSmallScreen = screenWidth < 500;
+    Widget buildSidebar() {
+      return Container(
+        width: isSmallScreen ? double.infinity : 200,
+        height: isSmallScreen ? 140 : double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            left: isSmallScreen ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0)),
+            bottom: isSmallScreen ? const BorderSide(color: Color(0xFFE2E8F0)) : BorderSide.none,
+          ),
+        ),
+        child: ListView.builder(
+          scrollDirection: isSmallScreen ? Axis.horizontal : Axis.vertical,
+          itemCount: pages.length,
+          itemBuilder: (ctx, i) {
+            final item = pages[i];
+            final isSel = i == selectedIndex;
+            if (isSmallScreen) {
+              return Padding(
+                padding: const EdgeInsets.all(6),
+                child: ChoiceChip(
+                  label: Text(
+                    item.title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                      color: isSel ? Colors.white : const Color(0xFF1E293B),
+                    ),
+                  ),
+                  selected: isSel,
+                  selectedColor: const Color(0xFF059669),
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  onSelected: (_) => setState(() => selectedIndex = i),
+                ),
+              );
+            }
+            return ListTile(
+              dense: true,
+              selected: isSel,
+              selectedTileColor: const Color(0xFFECFDF5),
+              leading: Icon(
+                Icons.article_rounded,
+                size: 16,
+                color: isSel ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+              ),
+              title: Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
+                  color: isSel ? const Color(0xFF059669) : const Color(0xFF1E293B),
+                ),
+              ),
+              onTap: () => setState(() => selectedIndex = i),
+            );
+          },
+        ),
+      );
+    }
+    Widget buildContent() {
+      return ListView(
+        padding: const EdgeInsets.all(10),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        active.title,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final str = BenchmarkLiveLogger.formatJson(payload);
+                        Clipboard.setData(ClipboardData(text: '// Page: ${active.title}\n$str'));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('JSON कॉपी हो गया!')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 12),
+                      label: const Text('Copy JSON', style: TextStyle(fontSize: 10)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F172A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: active.targetBoxes.map((b) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      b,
+                      style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+                    ),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          BenchmarkFieldListUi(payload: payload),
+        ],
+      );
+    }
+    if (isSmallScreen) {
+      return Column(
+        children: [
+          buildSidebar(),
+          Expanded(child: buildContent()),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        buildSidebar(),
+        Expanded(child: buildContent()),
+      ],
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/benchmark/services/benchmark_live_logger.dart">
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+enum BenchmarkPayloadDirection {
+  localHiveWrite,
+  localHiveRead,
+  outToCloud,
+  inFromCloud,
+}
+class BenchmarkRecord {
+  final String title;
+  final BenchmarkPayloadDirection direction;
+  final Map<String, dynamic> data;
+  final DateTime timestamp;
+  BenchmarkRecord({
+    required this.title,
+    required this.direction,
+    required this.data,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+  String get timeFormatted {
+    final h = timestamp.hour.toString().padLeft(2, '0');
+    final m = timestamp.minute.toString().padLeft(2, '0');
+    final s = timestamp.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+}
+class BenchmarkLiveLogger extends ChangeNotifier {
+  static final BenchmarkLiveLogger instance = BenchmarkLiveLogger._internal();
+  BenchmarkLiveLogger._internal();
+  final List<BenchmarkRecord> _logs = [];
+  List<BenchmarkRecord> get logs => List.unmodifiable(_logs.reversed);
+  void record({
+    required String title,
+    required BenchmarkPayloadDirection direction,
+    required Map<String, dynamic> data,
+  }) {
+    _logs.add(BenchmarkRecord(
+      title: title,
+      direction: direction,
+      data: data,
+    ));
+    if (_logs.length > 50) {
+      _logs.removeAt(0);
+    }
+    notifyListeners();
+  }
+  void clearLogs() {
+    _logs.clear();
+    notifyListeners();
+  }
+  static String formatJson(dynamic data) {
+    const encoder = JsonEncoder.withIndent('  ');
+    try {
+      return encoder.convert(data);
+    } catch (_) {
+      return data.toString();
+    }
+  }
+}
+</file>
+
+<file path="lib/customer_side/benchmark/benchmark_args.dart">
+class BenchmarkArgs {
+  final int initialTabIndex;
+  const BenchmarkArgs({this.initialTabIndex = 0});
+  factory BenchmarkArgs.fromMap(Map<String, dynamic>? map) {
+    return BenchmarkArgs(
+      initialTabIndex: (map?['initialTabIndex'] as num?)?.toInt() ?? 0,
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {'initialTabIndex': initialTabIndex};
+  }
+}
+</file>
+
+<file path="lib/customer_side/benchmark/components/benchmark_field_list_ui.dart">
+import 'package:flutter/material.dart';
+class BenchmarkFieldListUi extends StatelessWidget {
+  final Map<String, dynamic> payload;
+  final int nestingLevel;
+  const BenchmarkFieldListUi({
+    super.key,
+    required this.payload,
+    this.nestingLevel = 0,
+  });
+  @override
+  Widget build(BuildContext context) {
+    if (payload.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+        ),
+        child: const Center(
+          child: Text('کوئی فیلڈز موجود نہیں ہیں', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+        ),
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: nestingLevel > 0 ? const Color(0xFFF8FAFC) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: nestingLevel > 0 ? const Color(0xFFE2E8F0) : const Color(0xFFCBD5E1)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Column(
+          children: payload.entries.toList().asMap().entries.map((item) {
+            final idx = item.key + 1;
+            final e = item.value;
+            final dynamic val = e.value;
+            final bool isMap = val is Map;
+            final bool isList = val is List;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          nestingLevel > 0 ? '•' : '#$idx',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFF475569)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          e.key,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildTypeBadge(val),
+                      if (!isMap && !isList) ...[
+                        const SizedBox(width: 8),
+                        _buildSimpleValue(val),
+                      ],
+                    ],
+                  ),
+                  if (isMap) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: BenchmarkFieldListUi(
+                        payload: Map<String, dynamic>.from(val),
+                        nestingLevel: nestingLevel + 1,
+                      ),
+                    ),
+                  ] else if (isList) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildListItemsView(val),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+  Widget _buildListItemsView(List list) {
+    if (list.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF1F2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text('خالی لسٹ [ ]', style: TextStyle(fontSize: 10, color: Color(0xFFBE123C), fontWeight: FontWeight.bold)),
+      );
+    }
+    return Column(
+      children: List.generate(list.length, (i) {
+        final item = list[i];
+        if (item is Map) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFECDD3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFE4E6),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('آئٹم [$i]', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFBE123C))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                BenchmarkFieldListUi(
+                  payload: Map<String, dynamic>.from(item),
+                  nestingLevel: nestingLevel + 1,
+                ),
+              ],
+            ),
+          );
+        }
+        return Container(
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Text('[$i]: ', style: const TextStyle(fontFamily: 'monospace', fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+              Expanded(
+                child: Text(item?.toString() ?? 'null', style: const TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+              ),
+              _buildTypeBadge(item),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+  Widget _buildTypeBadge(dynamic val) {
+    String type = 'String';
+    Color bg = const Color(0xFFF1F5F9);
+    Color fg = const Color(0xFF475569);
+    if (val is bool) {
+      type = 'Boolean';
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFFB45309);
+    } else if (val is num) {
+      type = val is int ? 'Integer' : 'Double';
+      bg = const Color(0xFFEFF6FF);
+      fg = const Color(0xFF1D4ED8);
+    } else if (val is Map) {
+      type = 'Map (${val.keys.length})';
+      bg = const Color(0xFFFAF5FF);
+      fg = const Color(0xFF7E22CE);
+    } else if (val is List) {
+      type = 'List (${val.length})';
+      bg = const Color(0xFFFFF1F2);
+      fg = const Color(0xFFBE123C);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+      child: Text(type, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: fg)),
+    );
+  }
+  Widget _buildSimpleValue(dynamic val) {
+    return SelectableText(
+      val?.toString() ?? 'null',
+      style: TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: val is bool ? const Color(0xFFD97706) : (val is num ? const Color(0xFF2563EB) : const Color(0xFF0F172A)),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="lib/customer_side/benchmark/benchmark_controller.dart">
+import 'package:flutter/material.dart';
+import 'benchmark_args.dart';
+import 'services/benchmark_live_logger.dart';
+class BenchmarkController extends ChangeNotifier {
+  final BenchmarkArgs args;
+  late int currentTabIndex;
+  BenchmarkController({BenchmarkArgs? args}) : args = args ?? const BenchmarkArgs() {
+    currentTabIndex = this.args.initialTabIndex;
+  }
+  void setTab(int index) {
+    currentTabIndex = index;
+    notifyListeners();
+  }
+  void clearLogs() {
+    BenchmarkLiveLogger.instance.clearLogs();
+  }
+}
+</file>
+
+<file path="lib/customer_side/benchmark/benchmark_page.dart">
+import 'package:flutter/material.dart';
+import 'benchmark_args.dart';
+import 'benchmark_controller.dart';
+import 'components/benchmark_app_bar_ui.dart';
+import 'components/benchmark_page_tab_ui.dart';
+import 'components/benchmark_box_tab_ui.dart';
+import 'components/benchmark_live_tab_ui.dart';
+class BenchmarkPage extends StatefulWidget {
+  final BenchmarkArgs? args;
+  const BenchmarkPage({super.key, this.args});
+  @override
+  State<BenchmarkPage> createState() => _BenchmarkPageState();
+}
+class _BenchmarkPageState extends State<BenchmarkPage> with SingleTickerProviderStateMixin {
+  late final BenchmarkController controller;
+  late final TabController tabController;
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startContinuousScroll());
-  }
-  void _startContinuousScroll() {
-    _timer = Timer.periodic(const Duration(milliseconds: 35), (_) {
-      if (!_scrollController.hasClients) return;
-      final maxExtent = _scrollController.position.maxScrollExtent;
-      final currentPos = _scrollController.offset;
-      if (currentPos >= maxExtent) {
-        _scrollController.jumpTo(0.0);
-      } else {
-        _scrollController.jumpTo(currentPos + 1.2);
+    controller = BenchmarkController(args: widget.args);
+    tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: controller.currentTabIndex,
+    );
+    tabController.addListener(() {
+      if (!tabController.indexIsChanging) {
+        controller.setTab(tabController.index);
       }
     });
   }
   @override
   void dispose() {
-    _timer?.cancel();
-    _scrollController.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: const RadialGradient(
-          center: Alignment(0.2, -0.2),
-          radius: 1.8,
-          colors: [
-            Color(0xFF24334C),
-            Color(0xFF0F172A),
-            Color(0xFF080D1A),
-          ],
-          stops: [0.0, 0.65, 1.0],
-        ),
-        border: Border.all(
-          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0284C7).withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => ShopNoticeTickerService.openShowcasePortal(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF38BDF8), width: 1),
-                  ),
-                  child: const Icon(
-                    Icons.campaign_rounded,
-                    size: 16,
-                    color: Color(0xFF38BDF8),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SizedBox(
-                    height: 20,
-                    child: ListView(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        Center(
-                          child: Text(
-                            ShopNoticeTickerService.liveTickerText,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFF8FAFC),
-                              letterSpacing: 0.2,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black87,
-                                  offset: Offset(0, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFDE68A),
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'شیڈول و سرگرمیاں',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      SizedBox(width: 3),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 8,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/services/ledger_calculation_service.dart">
-class LedgerCalculationService {
-  static int calculateTotalInstallmentDue(List<Map<String, dynamic>> products) {
-    return products.fold(0, (sum, p) => sum + ((p['remaining'] as int?) ?? 0));
-  }
-  static int calculatePendingServiceCredit(List<Map<String, dynamic>> txs) {
-    return txs
-        .where((t) => (t['status'] ?? '').toString().toUpperCase() != 'APPROVED')
-        .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
-  }
-  static int calculateApprovedServiceCredit(List<Map<String, dynamic>> txs) {
-    return txs
-        .where((t) => (t['status'] ?? '').toString().toUpperCase() == 'APPROVED')
-        .fold(0, (sum, t) => sum + ((t['totalAmount'] as num?)?.toInt() ?? 0));
-  }
-  static int calculateGrandNetTotal({
-    required int installmentDue,
-    required int cashLoanBalance,
-    required int approvedServiceCredit,
-  }) {
-    final int net = (installmentDue + cashLoanBalance) - approvedServiceCredit;
-    return net > 0 ? net : 0;
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/services/shop_notice_ticker_service.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-class ShopNoticeTickerService {
-  static String get liveTickerText =>
-      '📢 نایاب قسط پوائنٹ: ماہانہ موبائل کوٹہ (10 میں سے 6 ڈلیور) • 36 پلانز کی سلیکشن دکان پر جاری • چھوٹے الیکٹرانکس (جوسر، استری، واشنگ مشین) بغیر کسی سلاٹ کے 24 گھنٹے میں دستیاب • کسٹمر نام و تصویر کی 100% رازداری ہماری اولین پالیسی ہے • رابطہ: 0323 1988351 (حافظ محمد صابر مونڈ) • ';
-  static void openShowcasePortal(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.shopShowcase);
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/frozen_bottom_action_bar_ui.dart">
-import 'package:flutter/material.dart';
-class FrozenBottomActionBarUi extends StatelessWidget {
-  final VoidCallback onStatementPressed;
-  final VoidCallback onPurchasePressed;
-  const FrozenBottomActionBarUi({
-    super.key,
-    required this.onStatementPressed,
-    required this.onPurchasePressed,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFCBD5E1), width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              flex: 5,
-              child: OutlinedButton.icon(
-                onPressed: onStatementPressed,
-                icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                label: const Text(
-                  'ٹرانزیکشن ریکارڈ و رسیدیں',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF0F172A),
-                  backgroundColor: const Color(0xFFF8FAFC),
-                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 6,
-              child: ElevatedButton.icon(
-                onPressed: onPurchasePressed,
-                icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                label: const Text(
-                  'نیا موبائل لیں (+)',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  foregroundColor: const Color(0xFFFDE68A),
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/ledger_app_bar_ui.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/logout_confirm_dialog_ui.dart';
-class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
-  const LedgerAppBarUi({super.key});
-  @override
-  Size get preferredSize => const Size.fromHeight(66);
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () => LogoutConfirmDialogUi.show(context),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.power_settings_new_rounded,
-                    color: Color(0xFFFCA5A5),
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'میرا کھاتہ',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'نایاب قسط پوائنٹ کسٹمر پورٹل',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFFDE68A),
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/customer_ledger_args.dart">
-class CustomerLedgerArgs {
-  final String customerPhone;
-  final String? customerName;
-  const CustomerLedgerArgs({
-    required this.customerPhone,
-    this.customerName,
-  });
-  factory CustomerLedgerArgs.fromMap(Map<String, dynamic>? map) {
-    return CustomerLedgerArgs(
-      customerPhone: map?['customerPhone']?.toString() ?? '',
-      customerName: map?['customerName']?.toString(),
-    );
-  }
-  Map<String, dynamic> toMap() {
-    return {
-      'customerPhone': customerPhone,
-      'customerName': customerName,
-    };
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/components/wallet_master_card_ui.dart">
-import 'package:flutter/material.dart';
-class WalletMasterCardUi extends StatelessWidget {
-  final int netAmount;
-  final bool isDebtor;
-  final String Function(int) formatAmount;
-  const WalletMasterCardUi({
-    super.key,
-    required this.netAmount,
-    required this.isDebtor,
-    required this.formatAmount,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDebtor
-              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-              : [const Color(0xFF064E3B), const Color(0xFF022C22)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDebtor ? const Color(0xFF334155) : const Color(0xFF10B981).withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Color(0xFFFDE68A)),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isDebtor ? 'کل خالص واجب الادا میزان' : 'آپ کی پیشگی جمع رقم (ایڈوانس)',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFFE2E8F0)),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isDebtor ? const Color(0xFFDC2626) : const Color(0xFF059669),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isDebtor ? 'واجب الادا' : 'ایڈوانس',
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              const Text(
-                'Rs. ',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFDE68A)),
-              ),
-              Text(
-                formatAmount(netAmount.abs()),
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'اقساط کھاتہ اور نقد کھاتہ کا مجموعی بقایا (فائر اسٹور لائیو سنک)',
-            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/customer_ledger_controller.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/installment_args.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/installment_ledger_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/installment_account/services/ledger_math_service.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/cash_account/cash_account_args.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_args.dart';
-class CustomerLedgerController extends ChangeNotifier {
-  String customerPhone;
-  bool isLoading = true;
-  List<Map<String, dynamic>> customerProducts = [];
-  int totalInstallmentDue = 0;
-  int overdueInstallmentCount = 0;
-  int overdueInstallmentAmount = 0;
-  String activeMobileTitle = 'کوئی فعال پلان نہیں';
-  String activePlanSubtitle = 'اقساط پلان';
-  int cashLoanBalance = 0;
-  CustomerLedgerController({this.customerPhone = ''}) {
-    initialize();
-  }
-  Future<void> initialize() async {
-    isLoading = true;
-    notifyListeners();
-    if (customerPhone.trim().isEmpty) {
-      customerPhone = await _resolveActivePhone();
-    }
-    await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
-    await HiveBoxManager.openSafeBox(HiveBoxManager.installmentsBoxName);
-    await refreshDashboardData();
-    isLoading = false;
-    notifyListeners();
-  }
-  Future<String> _resolveActivePhone() async {
-    try {
-      final settingsBox = await HiveBoxManager.openSafeBox(HiveBoxManager.settingsBoxName);
-      final phone = settingsBox.get('activePhone') ??
-          settingsBox.get('remembered_phone') ??
-          settingsBox.get('last_logged_phone');
-      if (phone != null && phone.toString().trim().isNotEmpty) {
-        return phone.toString().trim();
-      }
-    } catch (_) {}
-    return '';
-  }
-  Future<void> refreshDashboardData() async {
-    if (customerPhone.trim().isEmpty) return;
-    // 1. اقساط ڈیٹا لوڈ کریں
-    customerProducts = await InstallmentLedgerService.getCustomerInstallmentOrders(customerPhone);
-    totalInstallmentDue = 0;
-    overdueInstallmentCount = 0;
-    overdueInstallmentAmount = 0;
-    if (customerProducts.isNotEmpty) {
-      final firstProd = customerProducts.first;
-      activeMobileTitle = firstProd['name']?.toString() ?? 'موبائل فون';
-      activePlanSubtitle = firstProd['plan']?.toString() ?? 'اقساط پلان';
-      for (var prod in customerProducts) {
-        totalInstallmentDue += (prod['remaining'] as int?) ?? 0;
-        final schedule = (prod['schedule'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-        final overdue = LedgerMathService.calculateOverdueSummary(schedule);
-        overdueInstallmentCount += (overdue['count'] as int?) ?? 0;
-        overdueInstallmentAmount += (overdue['amount'] as int?) ?? 0;
-      }
-    } else {
-      activeMobileTitle = 'کوئی فعال پلان نہیں';
-      activePlanSubtitle = '0 اقساط';
-    }
-    final custBox = await HiveBoxManager.openSafeBox(HiveBoxManager.customerBoxName);
-    final custData = custBox.get(customerPhone);
-    if (custData is Map) {
-      cashLoanBalance = (custData['cashLoanBalance'] as num?)?.toInt() ?? 0;
-    } else {
-      cashLoanBalance = 0;
-    }
-    notifyListeners();
-  }
-  int get grandNetTotal => totalInstallmentDue + cashLoanBalance;
-  bool get isDebtor => grandNetTotal >= 0;
-  bool get hasAdvance => cashLoanBalance < 0;
-  String formatAmount(int amount) => LedgerMathService.formatAmount(amount);
-  void openInstallmentPage(BuildContext context) async {
-    await Navigator.pushNamed(
-      context,
-      AppRoutes.installmentAccount,
-      arguments: InstallmentArgs(customerPhone: customerPhone),
-    );
-    await refreshDashboardData();
-  }
-  void openCashLoanPage(BuildContext context) async {
-    await Navigator.pushNamed(
-      context,
-      AppRoutes.cashAccount,
-      arguments: CashAccountArgs(customerPhone: customerPhone),
-    );
-    await refreshDashboardData();
-  }
-  void openPurchaseMarket(BuildContext context) {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.purchaseMarket,
-      arguments: {'customerPhone': customerPhone},
-    );
-  }
-  void openStatementSheet(BuildContext context) async {
-    await Navigator.pushNamed(
-      context,
-      AppRoutes.transactionHistory,
-      arguments: TransactionHistoryArgs(customerPhone: customerPhone),
-    );
-    await refreshDashboardData();
-  }
-}
-</file>
-
-<file path="lib/customer_side/customer_ledger/main_dashboard/customer_ledger_view.dart">
-import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:nayab_qist_point_customer/customer_side/hive_services/hive_box_manager.dart';
-import 'customer_ledger_controller.dart';
-import 'components/ledger_app_bar_ui.dart';
-import 'components/shop_notice_ticker_ui.dart';
-import 'components/wallet_master_card_ui.dart';
-import 'components/installment_gateway_card_ui.dart';
-import 'components/cash_account_gateway_card_ui.dart';
-import 'components/frozen_bottom_action_bar_ui.dart';
-class CustomerLedgerView extends StatefulWidget {
-  final String? customerPhone;
-  const CustomerLedgerView({
-    super.key,
-    this.customerPhone,
-  });
-  @override
-  State<CustomerLedgerView> createState() => _CustomerLedgerViewState();
-}
-class _CustomerLedgerViewState extends State<CustomerLedgerView> {
-  late final CustomerLedgerController controller;
-  @override
-  void initState() {
-    super.initState();
-    controller = CustomerLedgerController(customerPhone: widget.customerPhone ?? '');
-  }
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (controller.customerPhone.isEmpty) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map && args['customerPhone'] != null) {
-        controller.customerPhone = args['customerPhone'].toString();
-        controller.refreshDashboardData();
-      }
-    }
-  }
-  @override
-  void dispose() {
+    tabController.dispose();
     controller.dispose();
     super.dispose();
-  }
-  Widget _buildBody() {
-    if (controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ShopNoticeTickerUi(),
-          const SizedBox(height: 14),
-          WalletMasterCardUi(
-            netAmount: controller.grandNetTotal,
-            isDebtor: controller.isDebtor,
-            formatAmount: controller.formatAmount,
-          ),
-          const SizedBox(height: 18),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 2),
-            child: Text(
-              'کھاتہ تفصیلات و انتظام',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0F172A),
-                letterSpacing: 0.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          InstallmentGatewayCardUi(
-            itemName: controller.activeMobileTitle,
-            planTitle: controller.activePlanSubtitle,
-            remainingAmount: controller.totalInstallmentDue,
-            overdueCount: controller.overdueInstallmentCount,
-            overdueAmount: controller.overdueInstallmentAmount,
-            formatAmount: controller.formatAmount,
-            onTap: () => controller.openInstallmentPage(context),
-          ),
-          const SizedBox(height: 14),
-          CashAccountGatewayCardUi(
-            balance: controller.cashLoanBalance,
-            hasAdvance: controller.hasAdvance,
-            formatAmount: controller.formatAmount,
-            onTap: () => controller.openCashLoanPage(context),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
   }
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        appBar: const LedgerAppBarUi(),
-        body: Hive.isBoxOpen(HiveBoxManager.customerBoxName) &&
-                Hive.isBoxOpen(HiveBoxManager.installmentsBoxName)
-            ? ValueListenableBuilder(
-                valueListenable: Hive.box(HiveBoxManager.customerBoxName).listenable(),
-                builder: (context, _, __) {
-                  return ValueListenableBuilder(
-                    valueListenable: Hive.box(HiveBoxManager.installmentsBoxName).listenable(),
-                    builder: (context, _, __) {
-                      controller.refreshDashboardData();
-                      return ListenableBuilder(
-                        listenable: controller,
-                        builder: (context, _) => _buildBody(),
-                      );
-                    },
-                  );
-                },
-              )
-            : ListenableBuilder(
-                listenable: controller,
-                builder: (context, _) => _buildBody(),
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: BenchmarkAppBarUi(
+          activeTabIndex: controller.currentTabIndex,
+          onClearLogs: controller.clearLogs,
+          onCopyAll: () {},
+        ),
+        body: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: tabController,
+                indicatorColor: const Color(0xFF059669),
+                indicatorWeight: 3,
+                labelColor: const Color(0xFF059669),
+                unselectedLabelColor: const Color(0xFF64748B),
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                tabs: const [
+                  Tab(text: '1. پیج وائز اسکیما (Pages)'),
+                  Tab(text: '2. ہائیو باکسز میٹرکس (Boxes)'),
+                  Tab(text: '3. لائیو فلائٹ ریکارڈر (Live Logs)'),
+                ],
               ),
-        bottomNavigationBar: FrozenBottomActionBarUi(
-          onStatementPressed: () => controller.openStatementSheet(context),
-          onPurchasePressed: () => controller.openPurchaseMarket(context),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: [
+                  const BenchmarkPageTabUi(),
+                  BenchmarkBoxTabUi(
+                    onPageChipTapped: (pageName) {
+                      tabController.animateTo(0);
+                    },
+                  ),
+                  const BenchmarkLiveTabUi(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1263,21 +1161,168 @@ class _CustomerLedgerViewState extends State<CustomerLedgerView> {
 }
 </file>
 
-<file path="lib/customer_side/customer_ledger/main_dashboard/services/ledger_action_handler_service.dart">
-import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/app_routes.dart';
-import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/transaction_history/transaction_history_args.dart';
-class LedgerActionHandlerService {
-  static Future<void> openCustomerStatement(
-    BuildContext context,
-    String phone,
-    String Function(int) format,
-  ) async {
-    await Navigator.pushNamed(
-      context,
-      AppRoutes.transactionHistory,
-      arguments: TransactionHistoryArgs(customerPhone: phone),
-    );
+<file path="lib/customer_side/benchmark/services/benchmark_registry_service.dart">
+import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_payload_service.dart';
+import 'package:nayab_qist_point_customer/customer_side/login/services/login_payload_service.dart';
+class BenchmarkPageSchema {
+  final String id;
+  final String title;
+  final String featureFolder;
+  final List<String> targetBoxes;
+  final Map<String, dynamic> Function() samplePayload;
+  const BenchmarkPageSchema({
+    required this.id,
+    required this.title,
+    required this.featureFolder,
+    required this.targetBoxes,
+    required this.samplePayload,
+  });
+}
+class BenchmarkBoxMetadata {
+  final String boxName;
+  final String purpose;
+  final List<String> writablePages;
+  final List<String> primaryKeys;
+  const BenchmarkBoxMetadata({
+    required this.boxName,
+    required this.purpose,
+    required this.writablePages,
+    required this.primaryKeys,
+  });
+}
+class BenchmarkRegistryService {
+  BenchmarkRegistryService._();
+  static List<BenchmarkPageSchema> getRegisteredPages() {
+    return [
+      BenchmarkPageSchema(
+        id: 'AUTH_SIGNUP',
+        title: '1. کسٹمر سائن اپ سروس',
+        featureFolder: 'customer_side/auth',
+        targetBoxes: ['customerBox', 'guarantorBox', 'mediaBox', 'usersBox'],
+        samplePayload: () => SignupPayloadService.getBenchmarkPayload(),
+      ),
+      BenchmarkPageSchema(
+        id: 'AUTH_LOGIN',
+        title: '2. لاگ ان سیشن سروس',
+        featureFolder: 'customer_side/login',
+        targetBoxes: ['settingsBox'],
+        samplePayload: () => LoginPayloadService.getBenchmarkPayload(),
+      ),
+      BenchmarkPageSchema(
+        id: 'TRANSFER_INSTALLMENT',
+        title: '3. نقد ایڈوانس سے قسط منتقلی',
+        featureFolder: 'features/transfer_to_installment',
+        targetBoxes: ['transactionBox', 'installmentsBox', 'customerBox'],
+        samplePayload: () => {
+          'transactionBox': {
+            'docId': 'TX-TRANSFER-SAMPLE',
+            'customerPhone': '03001234567',
+            'txType': 'TRANSFER_TO_INSTALLMENT',
+            'amount': 5000,
+            'type': 'DEBIT',
+            'status': 'PENDING',
+          },
+          'installmentsBox': {
+            'installments': [
+              {
+                'installmentNo': 1,
+                'dueAmount': 5000,
+                'paidAmount': 5000,
+                'remainingAmount': 0,
+                'status': 'PAID',
+              }
+            ],
+            'lastAdjustmentNote': 'نقد کھاتے سے قسط میں ایڈجسٹمنٹ',
+          },
+        },
+      ),
+      BenchmarkPageSchema(
+        id: 'UNIVERSAL_PAYMENT',
+        title: '4. یونیورسل ادائیگی رسید سروس',
+        featureFolder: 'features/universal_payment_feature',
+        targetBoxes: ['transactionBox', 'installmentsBox'],
+        samplePayload: () => {
+          'targetPayable': 7500,
+          'paid': 7500,
+          'discount': 0,
+          'splits': [
+            {'source': 'JazzCash', 'amount': 7500}
+          ],
+          'note': 'آن لائن قسط ڈپازٹ',
+          'hasPhoto': false,
+          'hasAudio': false,
+        },
+      ),
+      BenchmarkPageSchema(
+        id: 'STOCK_ENTRY',
+        title: '5. موبائل و اسٹاک پرچیز سروس',
+        featureFolder: 'features/stock_entry',
+        targetBoxes: ['stockBox', 'transactionBox', 'customerBox'],
+        samplePayload: () => {
+          'itemName': 'Infinix Note 40 Pro',
+          'imeiList': ['358921102938471'],
+          'totalMonths': 10,
+          'monthlyAmount': 7560,
+          'totalContract': 75600,
+          'status': 'PENDING',
+        },
+      ),
+      BenchmarkPageSchema(
+        id: 'GROCERY_ENTRY',
+        title: '6. کریانہ / گھریلو سامان ادھار سروس',
+        featureFolder: 'features/grocery_entry',
+        targetBoxes: ['transactionBox', 'customerBox'],
+        samplePayload: () => {
+          'title': 'ماہانہ راشن اندراج',
+          'totalAmount': 8500,
+          'txType': 'GROCERY_EXPENSE',
+          'items': [
+            {'name': 'گھی 5 کلو', 'price': 2850},
+            {'name': 'آٹا 20 کلو', 'price': 2100},
+          ],
+        },
+      ),
+    ];
+  }
+  static List<BenchmarkBoxMetadata> getBoxesMetadata() {
+    return const [
+      BenchmarkBoxMetadata(
+        boxName: 'customerBox',
+        purpose: 'کسٹمر کا بنیادی پروفائل، کیش ادھار بیلنس اور اقساط کا کل بقایا',
+        writablePages: ['Signup', 'TransferToInstallment', 'StockEntry', 'GroceryEntry'],
+        primaryKeys: ['customerPhone', 'cashLoanBalance', 'installmentDueBalance', 'grandNetTotal'],
+      ),
+      BenchmarkBoxMetadata(
+        boxName: 'installmentsBox',
+        purpose: 'تمام فعال اور مکمل موبائلز کے اقساط شیڈولز اور واٹرفال ادائیگیاں',
+        writablePages: ['StockEntry', 'TransferToInstallment', 'UniversalPayment'],
+        primaryKeys: ['docId', 'customerPhone', 'installments', 'monthlyAmount', 'status'],
+      ),
+      BenchmarkBoxMetadata(
+        boxName: 'transactionBox',
+        purpose: 'تمام مالی رسیدیں، اسپلٹ اکاؤنٹس، اور تاریخی ٹرانزیکشن واؤچرز',
+        writablePages: ['UniversalPayment', 'TransferToInstallment', 'StockEntry', 'GroceryEntry'],
+        primaryKeys: ['docId', 'txId', 'customerPhone', 'amount', 'type', 'verificationStatus'],
+      ),
+      BenchmarkBoxMetadata(
+        boxName: 'stockBox',
+        purpose: 'دکان پر دستیاب اور بک شدہ موبائلز اور ڈیوائسز کا ریکارڈ',
+        writablePages: ['StockEntry', 'DevicePlanDetail'],
+        primaryKeys: ['model', 'cashPrice', 'installmentMonths', 'isAvailable'],
+      ),
+      BenchmarkBoxMetadata(
+        boxName: 'settingsBox',
+        purpose: 'فعال یوزر سیشن، ریممبر می اور ڈیوائس پریفرنسز',
+        writablePages: ['Login', 'Logout'],
+        primaryKeys: ['activePhone', 'isLoggedIn', 'is_remember_me'],
+      ),
+      BenchmarkBoxMetadata(
+        boxName: 'appConfigBox',
+        purpose: 'دکان کے تصدیق شدہ بینکس، ادائیگی سورسز اور ڈسکاؤنٹ کیٹیگریز',
+        writablePages: ['GlobalSync'],
+        primaryKeys: ['banks_config', 'discounts_config'],
+      ),
+    ];
   }
 }
 </file>

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/inspector/floating_inspector_ui.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_args.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/customer_signup_controller.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/components/signup_app_bar_ui.dart';
@@ -94,12 +93,6 @@ class _CustomerSignupPageState extends State<CustomerSignupPage> {
                   onNextOrSubmit: _handleNextOrSubmit,
                 ),
               ],
-            ),
-            floatingActionButton: FloatingActionButton(
-              backgroundColor: const Color(0xFF0F172A),
-              mini: true,
-              child: const Icon(Icons.bug_report, color: Color(0xFF10B981), size: 20),
-              onPressed: () => FloatingInspectorUi.show(context),
             ),
           );
         },

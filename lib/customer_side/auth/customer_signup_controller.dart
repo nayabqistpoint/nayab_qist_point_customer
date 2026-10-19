@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:nayab_qist_point_customer/core/services/audio_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_media_service.dart';
 import 'package:nayab_qist_point_customer/customer_side/auth/services/signup_storage_handler.dart';
-import 'package:nayab_qist_point_customer/customer_side/inspector/submission_receipt_sheet_ui.dart';
 
 class CustomerSignupController extends ChangeNotifier {
   final media = SignupMediaService();
@@ -93,32 +92,24 @@ class CustomerSignupController extends ChangeNotifier {
     final phone = (rawData['customerPhone'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), '');
     final allPayloads = SignupStorageHandler.prepareSignupPayloads(rawData);
 
-    SubmissionReceiptSheetUi.show(
-      context,
-      title: 'کسٹمر رجسٹریشن تصدیق',
-      subtitle: 'تمام معلومات کی جانچ کے بعد کنفرم کریں',
-      rawPayload: allPayloads,
-      onConfirm: () async {
-        isSubmitting = true;
-        notifyListeners();
+    isSubmitting = true;
+    notifyListeners();
 
-        final success = await SignupStorageHandler.executeSignupBatch(
-          phone: phone,
-          allPayloads: allPayloads,
-        );
-
-        isSubmitting = false;
-        notifyListeners();
-
-        if (success) {
-          onSuccess();
-        } else if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('رجسٹریشن محفوظ کرنے میں خرابی ہوئی!')),
-          );
-        }
-      },
+    final success = await SignupStorageHandler.executeSignupBatch(
+      phone: phone,
+      allPayloads: allPayloads,
     );
+
+    isSubmitting = false;
+    notifyListeners();
+
+    if (success) {
+      onSuccess();
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رجسٹریشن محفوظ کرنے میں خرابی ہوئی!')),
+      );
+    }
   }
 
   @override

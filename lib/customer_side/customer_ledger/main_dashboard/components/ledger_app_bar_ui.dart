@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nayab_qist_point_customer/app_routes.dart';
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/main_dashboard/components/logout_confirm_dialog_ui.dart';
 
 class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
@@ -71,6 +72,12 @@ class LedgerAppBarUi extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ],
                 ),
+              ),
+              // 🎯 صرف ایک ہلکا آئیکن بٹن (کل کو ہٹانا ہو تو صرف یہ 4 لائنیں ڈیلیٹ کر دیں)
+              IconButton(
+                icon: const Icon(Icons.terminal_rounded, color: Color(0xFF5EEAD4), size: 22),
+                tooltip: 'کنٹرول ٹاور',
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.benchmark),
               ),
             ],
           ),

@@ -1,78 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:nayab_qist_point_customer/customer_side/benchmark/benchmark_controller.dart';
-import 'package:nayab_qist_point_customer/customer_side/benchmark/components/benchmark_sidebar_ui.dart';
-import 'package:nayab_qist_point_customer/customer_side/benchmark/components/benchmark_field_list_ui.dart';
+import 'benchmark_args.dart';
+import 'benchmark_controller.dart';
+import 'components/benchmark_app_bar_ui.dart';
+import 'components/benchmark_page_tab_ui.dart';
+import 'components/benchmark_box_tab_ui.dart';
+import 'components/benchmark_live_tab_ui.dart';
 
 class BenchmarkPage extends StatefulWidget {
-  const BenchmarkPage({super.key});
+  final BenchmarkArgs? args;
+
+  const BenchmarkPage({super.key, this.args});
 
   @override
   State<BenchmarkPage> createState() => _BenchmarkPageState();
 }
 
-class _BenchmarkPageState extends State<BenchmarkPage> {
-  final controller = BenchmarkController();
+class _BenchmarkPageState extends State<BenchmarkPage> with SingleTickerProviderStateMixin {
+  late final BenchmarkController controller;
+  late final TabController tabController;
 
   @override
   void initState() {
     super.initState();
-    controller.addListener(() => setState(() {}));
+    controller = BenchmarkController(args: widget.args);
+    tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: controller.currentTabIndex,
+    );
+    tabController.addListener(() {
+      if (!tabController.indexIsChanging) {
+        controller.setTab(tabController.index);
+      }
+    });
   }
 
   @override
   void dispose() {
+    tabController.dispose();
     controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final active = controller.activeModule;
-    final payload = controller.activePayload;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-          title: const Text('اسٹینڈرڈ پے لوڈ رجسٹری و شیشہ (Service Mirror)',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF0F172A),
-          elevation: 0.5,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2563EB)),
-              tooltip: 'ریفریش',
-              onPressed: () => controller.refreshData(context),
-            ),
-            IconButton(
-              icon: const Icon(Icons.copy_all_rounded, color: Color(0xFF059669)),
-              tooltip: 'JSON کاپی کریں',
-              onPressed: () => controller.copyJson(context),
-            ),
-          ],
+        appBar: BenchmarkAppBarUi(
+          activeTabIndex: controller.currentTabIndex,
+          onClearLogs: controller.clearLogs,
+          onCopyAll: () {},
         ),
-        body: Row(
+        body: Column(
           children: [
-            BenchmarkSidebarUi(controller: controller),
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: tabController,
+                indicatorColor: const Color(0xFF059669),
+                indicatorWeight: 3,
+                labelColor: const Color(0xFF059669),
+                unselectedLabelColor: const Color(0xFF64748B),
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                tabs: const [
+                  Tab(text: '1. پیج وائز اسکیما (Pages)'),
+                  Tab(text: '2. ہائیو باکسز میٹرکس (Boxes)'),
+                  Tab(text: '3. لائیو فلائٹ ریکارڈر (Live Logs)'),
+                ],
+              ),
+            ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
+              child: TabBarView(
+                controller: tabController,
                 children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      Text(active.title,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                      _pill('سروس ماخذ: ${active.serviceClass}', const Color(0xFFEFF6FF), const Color(0xFF1D4ED8)),
-                      _pill('کل فیلڈز: ${payload.keys.length}', const Color(0xFFF1F5F9), const Color(0xFF475569)),
-                    ],
+                  const BenchmarkPageTabUi(),
+                  BenchmarkBoxTabUi(
+                    onPageChipTapped: (pageName) {
+                      tabController.animateTo(0);
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  BenchmarkFieldListUi(payload: payload),
+                  const BenchmarkLiveTabUi(),
                 ],
               ),
             ),
@@ -81,10 +90,4 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
       ),
     );
   }
-
-  Widget _pill(String label, Color bg, Color text) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
-        child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: text)),
-      );
 }

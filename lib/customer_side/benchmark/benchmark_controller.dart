@@ -1,37 +1,21 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:nayab_qist_point_customer/customer_side/benchmark/services/benchmark_registry_service.dart';
+import 'benchmark_args.dart';
+import 'services/benchmark_live_logger.dart';
 
 class BenchmarkController extends ChangeNotifier {
-  int selectedIndex = 0;
-  int refreshTick = 0;
+  final BenchmarkArgs args;
+  late int currentTabIndex;
 
-  List<BenchmarkModule> get modules => BenchmarkRegistryService.getModules();
-  BenchmarkModule get activeModule => modules[selectedIndex];
-  Map<String, dynamic> get activePayload => activeModule.payloadBuilder();
+  BenchmarkController({BenchmarkArgs? args}) : args = args ?? const BenchmarkArgs() {
+    currentTabIndex = this.args.initialTabIndex;
+  }
 
-  void selectModule(int index) {
-    selectedIndex = index;
+  void setTab(int index) {
+    currentTabIndex = index;
     notifyListeners();
   }
 
-  void refreshData(BuildContext context) {
-    refreshTick++;
-    notifyListeners();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('سروس کا تازہ ترین ڈیٹا لوڈ ہو گیا!'),
-        duration: Duration(milliseconds: 700),
-      ),
-    );
-  }
-
-  void copyJson(BuildContext context) {
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(activePayload);
-    Clipboard.setData(ClipboardData(text: jsonStr));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${activeModule.title} کا پے لوڈ کاپی ہو گیا!')),
-    );
+  void clearLogs() {
+    BenchmarkLiveLogger.instance.clearLogs();
   }
 }

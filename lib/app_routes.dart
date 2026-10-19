@@ -20,6 +20,7 @@ import 'package:nayab_qist_point_customer/customer_side/order_receipt_page/order
 import 'package:nayab_qist_point_customer/customer_side/customer_ledger/features/universal_payment_feature/universal_payment_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_portal_page.dart';
 import 'package:nayab_qist_point_customer/customer_side/shop_showcase_portal/shop_showcase_args.dart';
+import 'package:nayab_qist_point_customer/customer_side/benchmark/benchmark_page.dart';
 
 class AppRoutes {
   static const String login = '/';
@@ -33,6 +34,7 @@ class AppRoutes {
   static const String orderReceipt = '/order-receipt';
   static const String payment = '/payment';
   static const String shopShowcase = '/shop-showcase';
+  static const String benchmark = '/benchmark';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -133,6 +135,11 @@ class AppRoutes {
             : ShopShowcaseArgs.fromMap(rawArgs as Map<String, dynamic>? ?? {});
         return MaterialPageRoute(
           builder: (_) => ShopShowcasePortalPage(args: args),
+        );
+
+      case benchmark:
+        return MaterialPageRoute(
+          builder: (_) => const BenchmarkPage(),
         );
 
       default:
